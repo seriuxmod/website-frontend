@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function PrivacyPolicy() {
+    useState(() => {
+        document.title = 'SeriuxMod | Privacy Policy';
+    }, []);
     return (
         <div className="min-h-screen select-text">
             <div className="container mx-auto px-4 py-8">
