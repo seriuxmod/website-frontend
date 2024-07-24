@@ -38,7 +38,7 @@ export default function Navbar() {
 
     return (
         <div className="fixed left-0 top-0 z-[100] flex h-[var(--navbar-height)] w-screen items-center justify-between bg-[var(--background-color-secondary)] px-4 md:justify-start md:px-6">
-            <div className="flex items-center">
+            <div className="mr-5 flex items-center">
                 <Link to="/" className="flex items-center">
                     <img className="w-[50px] rounded-full" src={Logo} alt="Logo" />
                     <span className="inter-bold ml-2">SeriuxMod</span>
