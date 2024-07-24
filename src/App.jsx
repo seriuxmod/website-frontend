@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import ScrollToTop from './components/ScrollToTop';
+import useScrollToTop from './components/ScrollToTop';
 
 import Home from './pages/home/Home';
 
@@ -10,9 +10,9 @@ import Privacy from './pages/legal/Privacy';
 import Terms from './pages/legal/Terms';
 
 export default function App() {
+    useScrollToTop();
     return (
         <div className="min-h-screen w-screen pt-[var(--navbar-height)]">
-            <ScrollToTop />
             <Navbar />
             <Routes>
                 <Route path="/" element={<Home />} exact />
