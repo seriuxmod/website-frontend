@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import useScrollToTop from './hooks/useScrollToTop';
 
 import Home from './pages/home/Home';
@@ -22,6 +23,7 @@ export default function App() {
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
             <Footer />
+            <ScrollToTopButton />
         </div>
     );
 }

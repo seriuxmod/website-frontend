@@ -8,6 +8,16 @@
     --text-color-secondary: silver;
     --navbar-height: 60px;
 
+    --scroll-button-bg: #111111;
+    --scroll-button-bg-hover: #121212;
+    --scroll-button-text: var(--accent-color);
+    --scroll-button-shadow-color: var(--accent-color);
+    --scroll-button-ring-color: var(--accent-color);
+    --scroll-button-size: 50px;
+    --scroll-button-border-radius: 50%;
+    --scroll-button-position: 1rem;
+    --scroll-button-transition: 0.3s;
+
     --scrollbar-thumb-color: var(--accent-color);
     --scrollbar-thumb-hover-color: #ffae00;
     --scrollbar-track-color: #333333;
@@ -16,6 +26,10 @@
     --scrollbar-height: 12px;
     --scrollbar-border-width: 3px;
     --scrollbar-border-radius: 6px;
+}
+
+.scale-90 {
+    transform: scale(0.9);
 }
 
 .inter-normal {
