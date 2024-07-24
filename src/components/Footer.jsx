@@ -77,13 +77,13 @@ export default function Footer() {
 
                 <ul className="mx-auto mt-5 grid w-full max-w-[350px] grid-cols-1 items-center justify-center gap-2 text-center text-lg uppercase sm:max-w-[500px] md:max-w-[90vw] md:grid-cols-2 lg:grid-cols-4">
                     <li className="flex w-full items-center justify-center transition-colors duration-300 hover:text-[var(--accent-color)]">
-                        <Link to="#">Legal Disclosure</Link>
+                        <Link to="/disclosure">Legal Disclosure</Link>
                     </li>
                     <li className="flex w-full items-center justify-center transition-colors duration-300 hover:text-[var(--accent-color)]">
-                        <Link to="#">Terms of Service</Link>
+                        <Link to="/terms">Terms of Service</Link>
                     </li>
                     <li className="flex w-full items-center justify-center transition-colors duration-300 hover:text-[var(--accent-color)]">
-                        <Link to="#">Privacy Policy</Link>
+                        <Link to="/privacy">Privacy Policy</Link>
                     </li>
                     <li className="flex w-full items-center justify-center transition-colors duration-300 hover:text-[var(--accent-color)]">
                         <Link className="flex items-center justify-center" target="_blank" to="#">

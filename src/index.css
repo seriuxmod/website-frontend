@@ -2,8 +2,8 @@
 
 :root {
     --accent-color: #f8ab1b;
-    --background-color-primary: #201c1c;
-    --background-color-secondary: #111111;
+    --background-color-primary: #111111;
+    --background-color-secondary: #000000;
     --text-color-primary: white;
     --text-color-secondary: silver;
     --navbar-height: 60px;
@@ -44,6 +44,8 @@
 
     text-decoration: none;
     list-style: none;
+
+    scroll-behavior: smooth;
 }
 
 html {
