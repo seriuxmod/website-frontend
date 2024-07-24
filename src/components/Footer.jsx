@@ -86,7 +86,11 @@ export default function Footer() {
                         <Link to="/privacy">Privacy Policy</Link>
                     </li>
                     <li className="flex w-full items-center justify-center transition-colors duration-300 hover:text-[var(--accent-color)]">
-                        <Link className="flex items-center justify-center" target="_blank" to="#">
+                        <Link
+                            className="inter-bold flex items-center justify-center text-[var(--accent-color)] transition-colors duration-300 hover:text-white"
+                            target="_blank"
+                            to="mailto:contact@seriuxmod.net"
+                        >
                             <TfiEmail size={18} />
                             <span className="pl-2">Contact Us</span>
                         </Link>
