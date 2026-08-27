@@ -60,6 +60,39 @@ function SystemStatus() {
     return <a href={`${API}/status`} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-3 py-2 text-xs text-zinc-400"><i className={`h-2 w-2 rounded-full ${online === false ? 'bg-amber-400' : 'bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]'}`} />{online ? 'Alle Kernsysteme online' : 'Systemstatus ansehen'}</a>;
 }
 
+function ForumPreview() {
+    const [state, setState] = useState({ loading: true, topics: [], error: false });
+
+    useEffect(() => {
+        const controller = new AbortController();
+        fetch(`${API}/forum/forum/latest?size=6`, { signal: controller.signal })
+            .then((response) => response.ok ? response.json() : Promise.reject())
+            .then((payload) => setState({ loading: false, topics: payload.items ?? [], error: false }))
+            .catch((error) => {
+                if (error.name !== 'AbortError') setState({ loading: false, topics: [], error: true });
+            });
+        return () => controller.abort();
+    }, []);
+
+    return <section id="forum" className="border-y border-white/[.06] bg-[#0c0d11] py-24">
+        <div className="mx-auto max-w-7xl px-5 lg:px-10">
+            <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+                <div><p className="eyebrow">AUS DER COMMUNITY</p><h2 className="section-title">Aktuelle Themen.</h2><p className="section-copy">Das Forum ist für alle lesbar. Zum Schreiben und Bearbeiten meldest du dich mit deinem Minecraft-Konto an.</p></div>
+                <a href="/#/forum" className="button-secondary">Alle Foren öffnen <FaArrowRight /></a>
+            </div>
+            <div className="mt-12 overflow-hidden rounded-3xl border border-white/[.07] bg-[#121318]">
+                {state.loading && <p className="p-8 text-sm text-zinc-500">Themen werden geladen …</p>}
+                {state.error && <p className="p-8 text-sm text-amber-400">Das Forum ist momentan nicht erreichbar.</p>}
+                {!state.loading && !state.error && state.topics.length === 0 && <p className="p-8 text-sm text-zinc-500">Noch wurden keine öffentlichen Themen erstellt.</p>}
+                {state.topics.map((topic) => <a key={topic.id} href={`/#/forum?topic=${topic.id}`} className="group grid gap-3 border-b border-white/[.06] p-6 last:border-0 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div><h3 className="font-display text-lg font-bold transition group-hover:text-orange-400">{topic.title}</h3><p className="mt-2 text-xs text-zinc-600">{topic.sticky ? 'Angepinnt · ' : ''}{topic.views ?? 0} Aufrufe</p></div>
+                    <span className="text-xs text-zinc-500">{new Date(topic.lastReplyAt ?? topic.createdAt).toLocaleDateString('de-DE')}</span>
+                </a>)}
+            </div>
+        </div>
+    </section>;
+}
+
 function ClientPreview() {
     return <div className="relative min-h-[430px] lg:min-h-[560px]">
         <div className="absolute inset-[5%] rounded-full border border-orange-500/20" />
@@ -102,6 +135,8 @@ export default function Home() {
                 <a href="#download" className="absolute bottom-8 flex items-center gap-2 text-xs font-bold text-zinc-300">Mehr erfahren <FaArrowRight /></a>
             </article>)}</div>
         </section>
+
+        <ForumPreview />
 
         <section id="platform" className="border-y border-white/[.06] bg-[#0c0d11] py-24 lg:py-32">
             <div className="mx-auto max-w-7xl px-5 lg:px-10">
