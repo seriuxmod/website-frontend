@@ -12,6 +12,10 @@ import Terms from './pages/legal/Terms';
 import PlatformHub from './pages/platform/PlatformHub';
 import AuthCallback from './pages/platform/AuthCallback';
 import Profile from './pages/platform/Profile';
+import ForumIndex from './pages/forum/ForumIndex';
+import ForumBoard from './pages/forum/ForumBoard';
+import ForumTopic from './pages/forum/ForumTopic';
+import ForumAdmin from './pages/forum/ForumAdmin';
 
 export default function App() {
     useScrollToTop();
@@ -24,7 +28,10 @@ export default function App() {
                 <Route path="/privacy" element={<Privacy />} exact />
                 <Route path="/terms" element={<Terms />} exact />
                 <Route path="/clans" element={<PlatformHub type="clans" />} />
-                <Route path="/forum" element={<PlatformHub type="forum" />} />
+                <Route path="/forum" element={<ForumIndex />} />
+                <Route path="/forum/:forumId" element={<ForumBoard />} />
+                <Route path="/forum/topic/:topicId" element={<ForumTopic />} />
+                <Route path="/admin/forum" element={<ForumAdmin />} />
                 <Route path="/store" element={<PlatformHub type="store" />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />

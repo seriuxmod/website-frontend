@@ -1,5 +1,6 @@
 const AUTH_URL = 'https://auth.seriuxmod.net';
 const USER_PROFILE_URL = 'https://api.seriuxmod.net/api/v1/user/users/me';
+const USER_PERMISSIONS_URL = 'https://api.seriuxmod.net/api/v1/user/permissions/me';
 const CLIENT_ID = 'seriuxmod-website';
 const PROFILE_KEY = 'seriux_user_profile';
 const REFRESH_TOKEN_KEY = 'seriux_refresh_token';
@@ -17,6 +18,8 @@ const getIdentityToken = () => sessionStorage.getItem('seriux_identity_token');
 const buildUser = (username, playerId) => ({
     username: username || 'Minecraft Spieler',
     playerId,
+    permissions: [],
+    groups: [],
     avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId || username || 'Steve')}/64`
 });
 
@@ -131,6 +134,20 @@ export async function fetchAuthenticatedUser() {
         const username = profile.username || profile.minecraftUsername || profile.minecraftName || profile.name;
         const playerId = profile.playerId || profile.uniqueId || profile.uid || profile.id || tokenUser.playerId;
         const user = buildUser(username, playerId);
+        try {
+            const permissionResponse = await fetch(USER_PERMISSIONS_URL, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+            if (permissionResponse.ok) {
+                const permissionSnapshot = await permissionResponse.json();
+                user.permissions = permissionSnapshot.effectivePermissions ?? [];
+                user.groups = (permissionSnapshot.assignedGroups ?? [])
+                    .filter((assignment) => assignment.active)
+                    .map((assignment) => assignment.groupKey);
+            }
+        } catch {
+            // The identity remains usable if the permission service is temporarily unavailable.
+        }
         sessionStorage.setItem(PROFILE_KEY, JSON.stringify(user));
         return user;
     } catch {
@@ -139,6 +156,29 @@ export async function fetchAuthenticatedUser() {
 }
 
 export const isAuthenticated = () => Boolean(getAuthenticatedUser());
+export const isForumAdministrator = (user = getAuthenticatedUser()) =>
+    Boolean(user?.permissions?.includes('forum.admin'));
+
+export async function authenticatedFetch(input, init = {}) {
+    let accessToken = getAccessToken();
+    if (accessToken && accessTokenExpired(accessToken)) accessToken = await refreshAccessToken();
+
+    const request = (token) =>
+        fetch(input, {
+            ...init,
+            headers: {
+                ...(init.headers || {}),
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+            }
+        });
+
+    let response = await request(accessToken);
+    if (response.status === 401 && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+        accessToken = await refreshAccessToken();
+        if (accessToken) response = await request(accessToken);
+    }
+    return response;
+}
 
 export async function beginLogin(returnTo = window.location.pathname) {
     const verifier = base64Url(crypto.getRandomValues(new Uint8Array(48)));

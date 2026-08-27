@@ -5,11 +5,12 @@ import {
     FaChevronDown,
     FaMagnifyingGlass,
     FaRightToBracket,
+    FaShieldHalved,
     FaUser,
     FaXmark
 } from 'react-icons/fa6';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, logout } from '../lib/auth';
+import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator, logout } from '../lib/auth';
 
 const communityItems = [
     { label: 'Clans', description: 'Finde und verwalte deine Community', to: '/clans' },
@@ -110,7 +111,10 @@ export default function Navbar() {
                     <Link to="/" className={`nav-item ${location.pathname === '/' ? 'nav-item-active' : ''}`}>
                         SeriuxMod
                     </Link>
-                    <Link to="/forum" className={`nav-item ${location.pathname === '/forum' ? 'nav-item-active' : ''}`}>
+                    <Link
+                        to="/forum"
+                        className={`nav-item ${location.pathname.startsWith('/forum') ? 'nav-item-active' : ''}`}
+                    >
                         Forum
                     </Link>
                     <Link to="/store" className={`nav-item ${location.pathname === '/store' ? 'nav-item-active' : ''}`}>
@@ -193,6 +197,11 @@ export default function Navbar() {
                                 <Link to="/profile" className="profile-menu-item">
                                     <FaUser /> Mein Profil
                                 </Link>
+                                {isForumAdministrator(user) && (
+                                    <Link to="/admin/forum" className="profile-menu-item">
+                                        <FaShieldHalved /> Forum verwalten
+                                    </Link>
+                                )}
                                 <button
                                     type="button"
                                     onClick={signOut}
@@ -282,6 +291,11 @@ export default function Navbar() {
                             <Link className="mobile-nav-item" to="/profile">
                                 Mein Profil
                             </Link>
+                            {isForumAdministrator(user) && (
+                                <Link className="mobile-nav-item" to="/admin/forum">
+                                    Forum verwalten
+                                </Link>
+                            )}
                             <button
                                 type="button"
                                 onClick={signOut}

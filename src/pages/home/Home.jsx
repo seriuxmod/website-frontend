@@ -124,7 +124,12 @@ function ForumPreview() {
                     : Promise.reject()
             )
             .then(([tree, latest]) =>
-                setState({ loading: false, forums: tree.nodes ?? [], topics: latest.items ?? [], error: false })
+                setState({
+                    loading: false,
+                    forums: (tree.nodes ?? []).filter((node) => node.type === 'FORUM'),
+                    topics: latest.items ?? [],
+                    error: false
+                })
             )
             .catch((error) => {
                 if (error.name !== 'AbortError') setState({ loading: false, forums: [], topics: [], error: true });
@@ -153,7 +158,7 @@ function ForumPreview() {
                         {state.forums.map((forum) => (
                             <a
                                 key={forum.id}
-                                href={`/#/forum?forum=${forum.id}`}
+                                href={`/#/forum/${forum.id}`}
                                 className="rounded-2xl border border-white/[.07] bg-[#121318] p-6 transition hover:border-orange-500/30"
                             >
                                 <h3 className="font-display text-lg font-bold">{forum.title}</h3>
@@ -185,7 +190,7 @@ function ForumPreview() {
                     {state.topics.map((topic) => (
                         <a
                             key={topic.id}
-                            href={`/#/forum?topic=${topic.id}`}
+                            href={`/#/forum/topic/${topic.id}`}
                             className="group grid gap-3 border-b border-white/[.06] p-6 last:border-0 sm:grid-cols-[1fr_auto] sm:items-center"
                         >
                             <div>
