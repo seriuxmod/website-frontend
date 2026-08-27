@@ -76,7 +76,9 @@ export async function fetchAuthenticatedUser() {
         if (!response.ok) return tokenUser;
 
         const profile = await response.json();
-        const user = buildUser(profile.username, profile.playerId || profile.id || tokenUser.playerId);
+        const username = profile.username || profile.minecraftUsername || profile.minecraftName || profile.name;
+        const playerId = profile.playerId || profile.uniqueId || profile.uid || profile.id || tokenUser.playerId;
+        const user = buildUser(username, playerId);
         sessionStorage.setItem(PROFILE_KEY, JSON.stringify(user));
         return user;
     } catch {
