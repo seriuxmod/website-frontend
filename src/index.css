@@ -220,6 +220,12 @@
         border-color 0.2s ease,
         background 0.2s ease;
 }
+
+.client-detail-cut {
+    background: radial-gradient(circle at 50% 0%, rgba(249, 115, 22, 0.1), transparent 28rem), #090a0d;
+    clip-path: polygon(0 4rem, 42% 4rem, 50% 0, 58% 4rem, 100% 4rem, 100% 100%, 0 100%);
+}
+
 .profile-trigger:hover {
     border-color: rgba(249, 115, 22, 0.35);
     background: rgba(249, 115, 22, 0.08);

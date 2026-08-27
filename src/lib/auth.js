@@ -8,6 +8,7 @@ const base64Url = (bytes) =>
         .replaceAll('=', '');
 
 export const getAccessToken = () => sessionStorage.getItem('seriux_access_token');
+const getIdentityToken = () => sessionStorage.getItem('seriux_identity_token');
 
 const decodePayload = (token) => {
     try {
@@ -27,15 +28,26 @@ const decodePayload = (token) => {
 };
 
 export const getAuthenticatedUser = () => {
-    const token = getAccessToken();
-    const payload = token ? decodePayload(token) : null;
+    const accessToken = getAccessToken();
+    if (!accessToken) return null;
+    const accessPayload = decodePayload(accessToken) || {};
+    const identityPayload = decodePayload(getIdentityToken() || '') || {};
+    const payload = { ...accessPayload, ...identityPayload };
     if (!payload || (payload.exp && payload.exp * 1000 <= Date.now())) return null;
-    const username = payload.username || payload.preferred_username || payload.sub || 'Minecraft Spieler';
-    const playerId = payload.uid || payload.uniqueId || payload.sub;
+    const uuidPattern = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+    const username = [
+        payload.username,
+        payload.preferred_username,
+        payload.minecraft_username,
+        payload.minecraftName,
+        payload.gamertag,
+        payload.name
+    ].find((value) => typeof value === 'string' && value.trim() && !uuidPattern.test(value.trim()));
+    const playerId = payload.uid || payload.uniqueId || payload.playerId || payload.sub;
     return {
-        username,
+        username: username || 'Minecraft Spieler',
         playerId,
-        avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId || username)}/64`
+        avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId || username || 'Steve')}/64`
     };
 };
 
@@ -77,6 +89,7 @@ export async function completeLogin(code, state) {
     if (!response.ok || !payload.access_token)
         throw new Error(payload.error_description || 'Anmeldung fehlgeschlagen.');
     sessionStorage.setItem('seriux_access_token', payload.access_token);
+    if (payload.id_token) sessionStorage.setItem('seriux_identity_token', payload.id_token);
     sessionStorage.removeItem('seriux_pkce_verifier');
     sessionStorage.removeItem('seriux_oauth_state');
     return sessionStorage.getItem('seriux_return_to') || '/';
@@ -84,5 +97,6 @@ export async function completeLogin(code, state) {
 
 export function logout() {
     sessionStorage.removeItem('seriux_access_token');
+    sessionStorage.removeItem('seriux_identity_token');
     sessionStorage.removeItem('seriux_return_to');
 }
