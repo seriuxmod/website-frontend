@@ -19,6 +19,9 @@ import ForumAdmin from './pages/forum/ForumAdmin';
 import ForumAccount from './pages/forum/ForumAccount';
 import ForumUserProfile from './pages/forum/ForumUserProfile';
 import CommunityPage from './pages/community/CommunityPage';
+import StoreIndex from './pages/store/StoreIndex';
+import StoreCheckout from './pages/store/StoreCheckout';
+import StoreAccount from './pages/store/StoreAccount';
 
 export default function App() {
     useScrollToTop();
@@ -37,7 +40,9 @@ export default function App() {
                 <Route path="/forum/account" element={<ForumAccount />} />
                 <Route path="/forum/user/:userId" element={<ForumUserProfile />} />
                 <Route path="/admin/forum" element={<ForumAdmin />} />
-                <Route path="/store" element={<PlatformHub type="store" />} />
+                <Route path="/store" element={<StoreIndex />} />
+                <Route path="/store/checkout" element={<StoreCheckout />} />
+                <Route path="/store/account" element={<StoreAccount />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/community/:page" element={<CommunityPage />} />

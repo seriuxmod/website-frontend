@@ -15,6 +15,55 @@
     }
 }
 
+.store-hero {
+    background: radial-gradient(circle at 82% 12%, rgba(249, 115, 22, 0.2), transparent 32%),
+        linear-gradient(125deg, rgba(24, 26, 32, 0.98), rgba(12, 13, 17, 0.98));
+}
+
+.store-hero::after {
+    position: absolute;
+    right: -7rem;
+    top: -10rem;
+    width: 28rem;
+    height: 28rem;
+    content: '';
+    border: 5rem solid rgba(255, 255, 255, 0.022);
+    border-radius: 999px;
+}
+
+.store-trust-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 999px;
+    padding: 0.6rem 0.85rem;
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.store-trust-item svg {
+    color: rgb(251 146 60);
+}
+
+.store-category {
+    flex: 0 0 auto;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 999px;
+    padding: 0.7rem 1rem;
+    background: rgba(255, 255, 255, 0.025);
+    color: rgb(113 113 122);
+    font-size: 0.75rem;
+    font-weight: 700;
+    transition: 180ms ease;
+}
+
+.store-category:hover,
+.store-category-active {
+    border-color: rgba(249, 115, 22, 0.3);
+    background: rgba(249, 115, 22, 0.1);
+    color: rgb(253 186 116);
+}
+
 @layer components {
     .button-primary {
         @apply inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-5 py-4 text-sm font-bold text-white shadow-[0_12px_35px_rgba(249,115,22,.25)] transition hover:-translate-y-0.5;

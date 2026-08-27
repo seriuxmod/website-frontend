@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     FaArrowRightFromBracket,
+    FaBagShopping,
     FaBars,
     FaBell,
     FaChevronDown,
@@ -126,7 +127,10 @@ export default function Navbar() {
                     >
                         Forum
                     </Link>
-                    <Link to="/store" className={`nav-item ${location.pathname === '/store' ? 'nav-item-active' : ''}`}>
+                    <Link
+                        to="/store"
+                        className={`nav-item ${location.pathname.startsWith('/store') ? 'nav-item-active' : ''}`}
+                    >
                         Shop
                     </Link>
                     <div ref={communityRef} className="relative">
@@ -223,6 +227,9 @@ export default function Navbar() {
                                             </b>
                                         )}
                                     </span>
+                                </Link>
+                                <Link to="/store/account" className="profile-menu-item">
+                                    <FaBagShopping /> Meine Käufe
                                 </Link>
                                 {isForumAdministrator(user) && (
                                     <Link to="/admin/forum" className="profile-menu-item">
@@ -334,6 +341,9 @@ export default function Navbar() {
                                         {unreadForumNotifications}
                                     </b>
                                 )}
+                            </Link>
+                            <Link className="mobile-nav-item" to="/store/account">
+                                Meine Käufe
                             </Link>
                             {isForumAdministrator(user) && (
                                 <Link className="mobile-nav-item" to="/admin/forum">
