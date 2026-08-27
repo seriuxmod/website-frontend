@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FaArrowLeft, FaCheck, FaFloppyDisk, FaFolderPlus, FaGear, FaShieldHalved, FaTags } from 'react-icons/fa6';
+import {
+    FaArrowLeft,
+    FaCheck,
+    FaFloppyDisk,
+    FaFolderPlus,
+    FaGear,
+    FaShieldHalved,
+    FaTags,
+    FaTriangleExclamation
+} from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator } from '../../lib/auth';
 import { forumApi, getPermissionGroups } from '../../lib/forumApi';
-import { ForumError, ForumLoading, ForumShell } from './ForumComponents';
+import { ForumError, ForumLoading, ForumShell, Pagination, UserIdentity, formatDate } from './ForumComponents';
 
 const permissionFields = [
     ['view', 'Forum sehen'],
@@ -116,6 +125,7 @@ export default function ForumAdmin() {
         ['structure', FaFolderPlus, 'Struktur'],
         ['permissions', FaShieldHalved, 'Gruppenrechte'],
         ['labels', FaTags, 'Labels'],
+        ['reports', FaTriangleExclamation, 'Meldungen'],
         ['settings', FaGear, 'Einstellungen']
     ];
 
@@ -162,7 +172,109 @@ export default function ForumAdmin() {
             {!state.loading && !state.error && tab === 'settings' && (
                 <SettingsEditor initial={state.settings} onChanged={load} />
             )}
+            {!state.loading && !state.error && tab === 'reports' && <ReportsEditor />}
         </ForumShell>
+    );
+}
+
+function ReportsEditor() {
+    const [status, setStatus] = useState('OPEN');
+    const [page, setPage] = useState(0);
+    const [state, setState] = useState({ loading: true, response: null, error: '' });
+
+    const load = useCallback(async () => {
+        setState((current) => ({ ...current, loading: true, error: '' }));
+        try {
+            const response = await forumApi.admin.reports(page, 20, status);
+            setState({ loading: false, response, error: '' });
+        } catch (error) {
+            setState({ loading: false, response: null, error: error.message });
+        }
+    }, [page, status]);
+
+    useEffect(() => {
+        load();
+    }, [load]);
+
+    const update = async (report, nextStatus) => {
+        try {
+            await forumApi.admin.updateReport(report.id, nextStatus);
+            await load();
+        } catch (error) {
+            setState((current) => ({ ...current, error: error.message }));
+        }
+    };
+
+    return (
+        <section className="forum-panel overflow-hidden rounded-3xl">
+            <header className="flex flex-col justify-between gap-4 border-b border-white/[.06] p-6 sm:flex-row sm:items-end">
+                <div>
+                    <p className="eyebrow">MODERATION</p>
+                    <h2 className="mt-2 font-display text-2xl font-bold">Gemeldete Inhalte</h2>
+                    <p className="mt-2 text-sm text-zinc-500">Prüfe Meldungen und dokumentiere deren Bearbeitung.</p>
+                </div>
+                <label className="forum-label w-full sm:w-56">
+                    Status
+                    <select
+                        className="forum-input"
+                        value={status}
+                        onChange={(event) => {
+                            setStatus(event.target.value);
+                            setPage(0);
+                        }}
+                    >
+                        <option value="OPEN">Offen</option>
+                        <option value="CLOSED">Erledigt</option>
+                        <option value="">Alle</option>
+                    </select>
+                </label>
+            </header>
+            {state.loading && <div className="p-6"><ForumLoading label="Meldungen werden geladen …" /></div>}
+            {state.error && <div className="p-6"><ForumError message={state.error} retry={load} /></div>}
+            {!state.loading && !state.error && !(state.response?.items?.length > 0) && (
+                <p className="p-8 text-center text-sm text-zinc-600">Keine Meldungen mit diesem Status vorhanden.</p>
+            )}
+            {!state.loading && !state.error && (state.response?.items ?? []).map((report) => (
+                <article className="border-b border-white/[.05] p-6 last:border-0" key={report.id}>
+                    <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+                        <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600">
+                                <span className={`rounded-full px-2 py-1 font-semibold ${report.status === 'OPEN' ? 'bg-red-500/10 text-red-300' : 'bg-emerald-500/10 text-emerald-300'}`}>
+                                    {report.status === 'OPEN' ? 'OFFEN' : 'ERLEDIGT'}
+                                </span>
+                                <span>{report.targetType === 'POST' ? 'Beitrag' : 'Thema'}</span>
+                                <span>·</span>
+                                <span>{formatDate(report.createdAt)}</span>
+                            </div>
+                            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{report.reason}</p>
+                            <div className="mt-5 flex flex-wrap items-center gap-4">
+                                <UserIdentity playerId={report.reporterUserId} linked />
+                                <Link
+                                    className="text-sm font-semibold text-orange-300 hover:text-orange-200"
+                                    to={`/forum/topic/${report.topicId}${report.postId ? `#post-${report.postId}` : ''}`}
+                                >
+                                    Inhalt öffnen →
+                                </Link>
+                            </div>
+                        </div>
+                        <button
+                            className={report.status === 'OPEN' ? 'forum-button-primary' : 'forum-button-secondary'}
+                            onClick={() => update(report, report.status === 'OPEN' ? 'CLOSED' : 'OPEN')}
+                        >
+                            <FaCheck /> {report.status === 'OPEN' ? 'Als erledigt markieren' : 'Wieder öffnen'}
+                        </button>
+                    </div>
+                    {report.handledAt && (
+                        <p className="mt-4 text-xs text-zinc-700">Bearbeitet {formatDate(report.handledAt)}</p>
+                    )}
+                </article>
+            ))}
+            {state.response && (
+                <div className="border-t border-white/[.05] px-6">
+                    <Pagination page={state.response.page} size={state.response.size} total={state.response.total} onPage={setPage} />
+                </div>
+            )}
+        </section>
     );
 }
 

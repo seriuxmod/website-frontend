@@ -58,6 +58,16 @@ export const forumApi = {
         request(`/topics/${encodeURIComponent(topicId)}:${locked ? 'lock' : 'unlock'}`, { method: 'POST' }),
     stickTopic: (topicId, sticky) =>
         request(`/topics/${encodeURIComponent(topicId)}:${sticky ? 'stick' : 'unstick'}`, { method: 'POST' }),
+    moveTopic: (topicId, targetForumId) =>
+        request(`/topics/${encodeURIComponent(topicId)}:move`, {
+            method: 'POST',
+            body: JSON.stringify({ targetForumId })
+        }),
+    mergeTopic: (topicId, targetTopicId) =>
+        request(`/topics/${encodeURIComponent(topicId)}:merge`, {
+            method: 'POST',
+            body: JSON.stringify({ targetTopicId })
+        }),
     react: (postId, reactionId) =>
         request(`/posts/${encodeURIComponent(postId)}/reactions`, {
             method: 'POST',
@@ -107,7 +117,14 @@ export const forumApi = {
                 body: JSON.stringify(body)
             }),
         saveLabel: (labelId, body) =>
-            request(`/admin/labels/${encodeURIComponent(labelId)}`, { method: 'PUT', body: JSON.stringify(body) })
+            request(`/admin/labels/${encodeURIComponent(labelId)}`, { method: 'PUT', body: JSON.stringify(body) }),
+        reports: (page = 0, size = 20, status = '') =>
+            request(`/admin/reports?page=${page}&size=${size}${status ? `&status=${status}` : ''}`),
+        updateReport: (reportId, status) =>
+            request(`/admin/reports/${encodeURIComponent(reportId)}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status })
+            })
     }
 };
 

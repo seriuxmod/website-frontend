@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
     FaArrowLeft,
+    FaArrowRightArrowLeft,
     FaBell,
     FaBellSlash,
     FaLock,
+    FaCodeMerge,
     FaPen,
     FaReply,
     FaThumbsUp,
@@ -33,6 +35,7 @@ export default function ForumTopic() {
     const [reply, setReply] = useState('');
     const [replying, setReplying] = useState(false);
     const [editingPost, setEditingPost] = useState(null);
+    const [moderationAction, setModerationAction] = useState(null);
     const [error, setError] = useState('');
     const [state, setState] = useState({
         loading: true,
@@ -187,6 +190,16 @@ export default function ForumTopic() {
                         </button>
                     )}
                     {canModerate && (
+                        <button className="forum-action" onClick={() => setModerationAction('move')}>
+                            <FaArrowRightArrowLeft /> Verschieben
+                        </button>
+                    )}
+                    {canModerate && (
+                        <button className="forum-action" onClick={() => setModerationAction('merge')}>
+                            <FaCodeMerge /> Zusammenführen
+                        </button>
+                    )}
+                    {canModerate && (
                         <button
                             className="forum-action"
                             onClick={() => execute(() => forumApi.stickTopic(topicId, !topic.sticky))}
@@ -268,7 +281,102 @@ export default function ForumTopic() {
                     }}
                 />
             )}
+            {moderationAction && (
+                <TopicModerationDialog
+                    action={moderationAction}
+                    topic={topic}
+                    onClose={() => setModerationAction(null)}
+                    onMoved={(result) => {
+                        setModerationAction(null);
+                        navigate(`/forum/topic/${result.id}`, { replace: true });
+                    }}
+                    onError={setError}
+                />
+            )}
         </ForumShell>
+    );
+}
+
+function TopicModerationDialog({ action, topic, onClose, onMoved, onError }) {
+    const [tree, setTree] = useState([]);
+    const [targetId, setTargetId] = useState('');
+    const [saving, setSaving] = useState(false);
+    useEffect(() => {
+        if (action !== 'move') return;
+        forumApi
+            .tree()
+            .then((result) => {
+                const forums = (result.nodes ?? []).filter(
+                    (node) => node.type === 'FORUM' && node.id !== topic.forumId && !node.redirect
+                );
+                setTree(forums);
+                setTargetId(forums[0]?.id || '');
+            })
+            .catch((error) => onError(error.message));
+    }, [action, onError, topic.forumId]);
+
+    const submit = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        try {
+            const result =
+                action === 'move'
+                    ? await forumApi.moveTopic(topic.id, targetId)
+                    : await forumApi.mergeTopic(topic.id, targetId.trim());
+            onMoved(result);
+        } catch (error) {
+            onError(error.message);
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[80] grid place-items-center bg-black/80 p-4 backdrop-blur-sm" role="dialog">
+            <form className="forum-panel w-full max-w-lg rounded-3xl p-6 sm:p-8" onSubmit={submit}>
+                <p className="eyebrow">MODERATION</p>
+                <h2 className="mt-2 font-display text-2xl font-bold">
+                    {action === 'move' ? 'Thema verschieben' : 'Themen zusammenführen'}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-zinc-500">
+                    {action === 'move'
+                        ? 'Alle Beiträge dieses Themas werden in das ausgewählte Forum verschoben.'
+                        : 'Dieses Thema wird in das Zielthema übernommen und anschließend geschlossen.'}
+                </p>
+                <label className="forum-label mt-6">
+                    {action === 'move' ? 'Zielforum' : 'ID des Zielthemas'}
+                    {action === 'move' ? (
+                        <select
+                            className="forum-input"
+                            required
+                            value={targetId}
+                            onChange={(event) => setTargetId(event.target.value)}
+                        >
+                            {tree.map((forum) => (
+                                <option key={forum.id} value={forum.id}>
+                                    {forum.title}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <input
+                            className="forum-input font-mono"
+                            required
+                            value={targetId}
+                            onChange={(event) => setTargetId(event.target.value)}
+                            placeholder="z. B. 68b1…"
+                        />
+                    )}
+                </label>
+                <div className="mt-7 flex justify-end gap-3">
+                    <button type="button" className="forum-button-secondary" onClick={onClose}>
+                        Abbrechen
+                    </button>
+                    <button className="forum-button-primary" disabled={saving || !targetId}>
+                        {saving ? 'Wird ausgeführt …' : action === 'move' ? 'Verschieben' : 'Zusammenführen'}
+                    </button>
+                </div>
+            </form>
+        </div>
     );
 }
 
