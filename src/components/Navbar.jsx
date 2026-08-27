@@ -13,16 +13,7 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator, logout } from '../lib/auth';
 import { forumApi } from '../lib/forumApi';
-
-const communityItems = [
-    { label: 'Clans', description: 'Finde und verwalte deine Community', to: '/clans' },
-    {
-        label: 'Serverstatus',
-        description: 'Live-Status aller SeriuxMod-Dienste',
-        to: 'https://api.seriuxmod.net/api/v1/status/summary',
-        external: true
-    }
-];
+import { communityItems } from '../config/community';
 
 export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -141,7 +132,7 @@ export default function Navbar() {
                     <div ref={communityRef} className="relative">
                         <button
                             type="button"
-                            className={`nav-item flex items-center gap-2 ${communityOpen || location.pathname === '/clans' ? 'nav-item-active' : ''}`}
+                            className={`nav-item flex items-center gap-2 ${communityOpen || location.pathname.startsWith('/community/') ? 'nav-item-active' : ''}`}
                             onClick={() => setCommunityOpen((current) => !current)}
                             aria-expanded={communityOpen}
                         >
@@ -149,26 +140,33 @@ export default function Navbar() {
                             <FaChevronDown className={`text-[10px] transition ${communityOpen ? 'rotate-180' : ''}`} />
                         </button>
                         {communityOpen && (
-                            <div className="liquid-menu absolute left-1/2 top-full mt-3 w-72 -translate-x-1/2 rounded-2xl p-2">
-                                {communityItems.map((item) =>
-                                    item.external ? (
-                                        <a
-                                            key={item.label}
-                                            href={item.to}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="nav-dropdown-item"
-                                        >
-                                            <b>{item.label}</b>
-                                            <span>{item.description}</span>
-                                        </a>
-                                    ) : (
-                                        <Link key={item.label} to={item.to} className="nav-dropdown-item">
-                                            <b>{item.label}</b>
-                                            <span>{item.description}</span>
-                                        </Link>
-                                    )
-                                )}
+                            <div className="liquid-menu absolute left-1/2 top-full mt-3 w-[570px] -translate-x-1/2 rounded-2xl p-3">
+                                <div className="px-3 pb-3 pt-1">
+                                    <b className="block text-sm text-white">Community</b>
+                                    <span className="mt-1 block text-[11px] text-zinc-500">
+                                        Spieler verbinden & entdecken
+                                    </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1">
+                                    {communityItems.map((item) => {
+                                        const Icon = item.icon;
+                                        return (
+                                            <Link
+                                                key={item.slug}
+                                                to={`/community/${item.slug}`}
+                                                className="community-dropdown-item"
+                                            >
+                                                <span className="community-nav-icon">
+                                                    <Icon />
+                                                </span>
+                                                <span className="min-w-0">
+                                                    <b className="block">{item.label}</b>
+                                                    <small>{item.description}</small>
+                                                </span>
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -263,7 +261,7 @@ export default function Navbar() {
             </nav>
 
             <div
-                className={`pointer-events-auto fixed inset-0 z-[-1] bg-[#06070a]/75 px-3 pt-[98px] backdrop-blur-xl transition duration-300 lg:hidden ${mobileOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}
+                className={`pointer-events-auto fixed inset-0 z-[-1] overflow-y-auto bg-[#06070a]/75 px-3 pb-6 pt-[98px] backdrop-blur-xl transition duration-300 lg:hidden ${mobileOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}
                 onClick={() => setMobileOpen(false)}
             >
                 <div
@@ -295,17 +293,26 @@ export default function Navbar() {
                         <p className="px-4 pb-1 pt-4 text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-400">
                             Community
                         </p>
-                        <Link className="mobile-nav-item" to="/clans">
-                            Clans
-                        </Link>
-                        <a
-                            className="mobile-nav-item"
-                            href="https://api.seriuxmod.net/api/v1/status/summary"
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            Serverstatus
-                        </a>
+                        {communityItems.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <Link
+                                    className="mobile-nav-item flex items-center gap-3"
+                                    to={`/community/${item.slug}`}
+                                    key={item.slug}
+                                >
+                                    <span className="community-nav-icon">
+                                        <Icon />
+                                    </span>
+                                    <span>
+                                        <b className="block text-sm">{item.label}</b>
+                                        <small className="block text-[10px] font-normal text-zinc-600">
+                                            {item.description}
+                                        </small>
+                                    </span>
+                                </Link>
+                            );
+                        })}
                     </div>
                     {user ? (
                         <div className="mt-3 border-t border-white/[.07] pt-3">

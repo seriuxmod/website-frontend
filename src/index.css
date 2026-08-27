@@ -80,8 +80,12 @@
 .liquid-panel {
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.11);
-    background:
-        linear-gradient(120deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.025) 42%, rgba(255, 92, 20, 0.055)),
+    background: linear-gradient(
+            120deg,
+            rgba(255, 255, 255, 0.095),
+            rgba(255, 255, 255, 0.025) 42%,
+            rgba(255, 92, 20, 0.055)
+        ),
         rgba(13, 14, 18, 0.67);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -188,7 +192,25 @@
     @apply text-sm text-zinc-100;
 }
 .nav-dropdown-item span {
-    @apply mt-1 text-[11px] leading-5 text-zinc-500;
+    @apply text-[11px] leading-5 text-zinc-500;
+}
+.nav-dropdown-item small {
+    @apply mt-0.5 block truncate text-[10px] leading-4 text-zinc-600;
+}
+.community-nav-icon {
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/[.06] bg-white/[.035] text-sm text-zinc-400 transition;
+}
+.community-dropdown-item {
+    @apply flex items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-white/[.06];
+}
+.community-dropdown-item b {
+    @apply text-sm text-zinc-100;
+}
+.community-dropdown-item small {
+    @apply mt-0.5 block truncate text-[10px] leading-4 text-zinc-600;
+}
+.community-dropdown-item:hover .community-nav-icon {
+    @apply border-orange-500/20 bg-orange-500/10 text-orange-300;
 }
 .profile-menu-item {
     @apply flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold text-zinc-300 transition hover:bg-white/[.06] hover:text-white;
@@ -243,8 +265,7 @@
 }
 
 .forum-hero {
-    background:
-        radial-gradient(circle at 85% 15%, rgba(249, 115, 22, 0.2), transparent 24rem),
+    background: radial-gradient(circle at 85% 15%, rgba(249, 115, 22, 0.2), transparent 24rem),
         radial-gradient(circle at 8% 100%, rgba(251, 191, 36, 0.07), transparent 24rem),
         linear-gradient(135deg, #17191f, #0e0f13 65%);
 }
@@ -291,6 +312,22 @@
 .profile-trigger:hover {
     border-color: rgba(249, 115, 22, 0.35);
     background: rgba(249, 115, 22, 0.08);
+}
+
+.community-page-hero {
+    background: radial-gradient(circle at 86% 18%, rgba(249, 115, 22, 0.2), transparent 23rem),
+        radial-gradient(circle at 8% 100%, rgba(251, 191, 36, 0.06), transparent 24rem),
+        linear-gradient(135deg, #15171d, #0d0e12 68%);
+}
+.community-page-hero::after {
+    content: '';
+    position: absolute;
+    width: 28rem;
+    height: 28rem;
+    right: -13rem;
+    bottom: -17rem;
+    border: 5rem solid rgba(255, 255, 255, 0.022);
+    border-radius: 999px;
 }
 
 @media (prefers-reduced-motion: reduce) {
