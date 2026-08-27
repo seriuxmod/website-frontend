@@ -11,6 +11,7 @@ import Privacy from './pages/legal/Privacy';
 import Terms from './pages/legal/Terms';
 import PlatformHub from './pages/platform/PlatformHub';
 import AuthCallback from './pages/platform/AuthCallback';
+import Profile from './pages/platform/Profile';
 
 export default function App() {
     useScrollToTop();
@@ -26,6 +27,7 @@ export default function App() {
                 <Route path="/forum" element={<PlatformHub type="forum" />} />
                 <Route path="/store" element={<PlatformHub type="store" />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>
             <Footer />

@@ -1,11 +1,45 @@
 const AUTH_URL = 'https://auth.seriuxmod.net';
 const CLIENT_ID = 'seriuxmod-website';
 
-const base64Url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)))
-    .replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+const base64Url = (bytes) =>
+    btoa(String.fromCharCode(...new Uint8Array(bytes)))
+        .replaceAll('+', '-')
+        .replaceAll('/', '_')
+        .replaceAll('=', '');
 
 export const getAccessToken = () => sessionStorage.getItem('seriux_access_token');
-export const isAuthenticated = () => Boolean(getAccessToken());
+
+const decodePayload = (token) => {
+    try {
+        const value = token.split('.')[1].replaceAll('-', '+').replaceAll('_', '/');
+        const padded = value.padEnd(Math.ceil(value.length / 4) * 4, '=');
+        return JSON.parse(
+            decodeURIComponent(
+                Array.from(
+                    atob(padded),
+                    (character) => `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`
+                ).join('')
+            )
+        );
+    } catch {
+        return null;
+    }
+};
+
+export const getAuthenticatedUser = () => {
+    const token = getAccessToken();
+    const payload = token ? decodePayload(token) : null;
+    if (!payload || (payload.exp && payload.exp * 1000 <= Date.now())) return null;
+    const username = payload.username || payload.preferred_username || payload.sub || 'Minecraft Spieler';
+    const playerId = payload.uid || payload.uniqueId || payload.sub;
+    return {
+        username,
+        playerId,
+        avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId || username)}/64`
+    };
+};
+
+export const isAuthenticated = () => Boolean(getAuthenticatedUser());
 
 export async function beginLogin(returnTo = window.location.pathname) {
     const verifier = base64Url(crypto.getRandomValues(new Uint8Array(48)));
@@ -18,10 +52,10 @@ export async function beginLogin(returnTo = window.location.pathname) {
         response_type: 'code',
         client_id: CLIENT_ID,
         redirect_uri: `${window.location.origin}/auth/callback`,
-        scope: 'openid profile email read write',
+        scope: 'openid profile website',
         code_challenge: challenge,
         code_challenge_method: 'S256',
-        state,
+        state
     });
     window.location.assign(`${AUTH_URL}/oauth2/authorize?${params}`);
 }
@@ -36,11 +70,12 @@ export async function completeLogin(code, state) {
             client_id: CLIENT_ID,
             redirect_uri: `${window.location.origin}/auth/callback`,
             code,
-            code_verifier: sessionStorage.getItem('seriux_pkce_verifier') || '',
-        }),
+            code_verifier: sessionStorage.getItem('seriux_pkce_verifier') || ''
+        })
     });
     const payload = await response.json();
-    if (!response.ok || !payload.access_token) throw new Error(payload.error_description || 'Anmeldung fehlgeschlagen.');
+    if (!response.ok || !payload.access_token)
+        throw new Error(payload.error_description || 'Anmeldung fehlgeschlagen.');
     sessionStorage.setItem('seriux_access_token', payload.access_token);
     sessionStorage.removeItem('seriux_pkce_verifier');
     sessionStorage.removeItem('seriux_oauth_state');
