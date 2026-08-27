@@ -1,12 +1,43 @@
 import { useEffect, useState } from 'react';
-import { FaArrowRight, FaCheck, FaCloudArrowDown, FaLayerGroup, FaShieldHalved, FaStore, FaUsers, FaWindows } from 'react-icons/fa6';
+import { FaArrowRight, FaCheck, FaCloudArrowDown, FaComments, FaGamepad, FaLayerGroup, FaShieldHalved, FaStore, FaUserGroup, FaUsers, FaWindows } from 'react-icons/fa6';
 
-const API = 'https://api.seriuxmod.net';
+const API = 'https://api.seriuxmod.net/api/v1';
 
 const features = [
     [FaLayerGroup, 'Dein Spiel. Dein Setup.', 'Ein Client, der zu dir passt.', 'Performance-Module, HUD-Elemente und Quality-of-Life-Features in einem klaren Interface.'],
     [FaUsers, 'Gemeinsam spielen', 'Deine Community immer dabei.', 'Profile, Freunde und Social Features verbinden dich über Servergrenzen hinweg.'],
     [FaStore, 'Ausdruck ohne Grenzen', 'Mach deinen Look einzigartig.', 'Entdecke Cosmetics und synchronisiere deinen Auftritt über dein SeriuxMod-Konto.'],
+];
+
+const platformModules = [
+    {
+        icon: FaComments,
+        name: 'Forum & Content',
+        text: 'Diskussionen, News und Ideen aus der gesamten Community.',
+        capabilities: ['Foren & Topics', 'Posts & Reaktionen', 'Blog & News', 'Vorschläge & Votes', 'Support-Tickets'],
+        action: 'Community entdecken',
+    },
+    {
+        icon: FaUserGroup,
+        name: 'Social Hub',
+        text: 'Alles, was deine Freunde und Mitspieler zusammenbringt.',
+        capabilities: ['Freundesliste', 'Freundschaftsanfragen', 'Clans & Ränge', 'Partys & Einladungen', 'Clan-Statistiken'],
+        action: 'Social Hub öffnen',
+    },
+    {
+        icon: FaStore,
+        name: 'Store & Cosmetics',
+        text: 'Deine Sammlung, deine Credits und dein persönlicher Stil.',
+        capabilities: ['Cosmetics', 'Capes & Emotes', 'Extensions', 'Bestellungen', 'Credits & Freischaltungen'],
+        action: 'Store ansehen',
+    },
+    {
+        icon: FaShieldHalved,
+        name: 'Account & Sicherheit',
+        text: 'Eine Identität für Client, Website und Community.',
+        capabilities: ['Seriux-Profil', 'Minecraft-Verknüpfung', 'Gruppen & Rechte', 'Geräte & Sessions', 'Moderationshistorie'],
+        action: 'Account verwalten',
+    },
 ];
 
 function SystemStatus() {
@@ -66,6 +97,27 @@ export default function Home() {
                 <div className="mt-20"><small className="text-zinc-600">{eyebrow}</small><h3 className="mt-2 font-display text-2xl font-bold tracking-tight">{title}</h3><p className="mt-4 text-sm leading-7 text-zinc-500">{text}</p></div>
                 <a href="#download" className="absolute bottom-8 flex items-center gap-2 text-xs font-bold text-zinc-300">Mehr erfahren <FaArrowRight /></a>
             </article>)}</div>
+        </section>
+
+        <section id="platform" className="border-y border-white/[.06] bg-[#0c0d11] py-24 lg:py-32">
+            <div className="mx-auto max-w-7xl px-5 lg:px-10">
+                <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+                    <div className="max-w-2xl"><p className="eyebrow">DAS SERIUXMOD-ÖKOSYSTEM</p><h2 className="section-title">Eine Plattform für alles.</h2><p className="section-copy">Das Backend verbindet Community, Social Features, Store und deinen Minecraft-Account. Nach der Anmeldung stehen alle Module mit derselben Identität bereit.</p></div>
+                    <div className="flex items-center gap-3 rounded-2xl border border-white/[.07] bg-white/[.025] px-4 py-3 text-xs text-zinc-500"><i className="h-2 w-2 rounded-full bg-orange-500 shadow-[0_0_12px_#f97316]" /> API v1 verbunden</div>
+                </div>
+                <div className="mt-14 grid gap-5 md:grid-cols-2">
+                    {platformModules.map(({ icon: Icon, name, text, capabilities, action }, moduleIndex) => <article key={name} className="platform-card group relative overflow-hidden rounded-3xl border border-white/[.07] bg-[#121318] p-7 sm:p-9">
+                        <span className="absolute right-7 top-6 font-display text-5xl font-bold text-white/[.025]">0{moduleIndex + 1}</span>
+                        <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-orange-500/20 bg-orange-500/10 text-lg text-orange-400"><Icon /></div><div><h3 className="font-display text-2xl font-bold tracking-tight">{name}</h3><p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">{text}</p></div></div>
+                        <div className="mt-8 grid gap-2 sm:grid-cols-2">{capabilities.map((capability) => <span key={capability} className="flex items-center gap-2 rounded-xl border border-white/[.045] bg-black/15 px-3 py-2.5 text-xs text-zinc-400"><FaCheck className="text-[10px] text-orange-500" /> {capability}</span>)}</div>
+                        <a href="https://auth.seriuxmod.net" className="mt-7 inline-flex items-center gap-2 text-xs font-bold text-zinc-300 transition group-hover:text-orange-400">{action} <FaArrowRight /></a>
+                    </article>)}
+                </div>
+                <div className="mt-5 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+                    <div className="rounded-3xl border border-white/[.07] bg-gradient-to-br from-[#17191f] to-[#101115] p-7 sm:p-9"><div className="flex items-center gap-3"><FaGamepad className="text-xl text-orange-400" /><h3 className="font-display text-xl font-bold">Minecraft Client & Launcher</h3></div><p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-500">Module, Cosmetics und Account-Einstellungen werden zukünftig direkt mit dem Client synchronisiert. Die Microsoft-/Minecraft-Verknüpfung wird im nächsten Authserver-Schritt eingerichtet.</p></div>
+                    <a href={`${API}/status/summary`} target="_blank" rel="noreferrer" className="group rounded-3xl border border-emerald-400/10 bg-emerald-400/[.035] p-7 sm:p-9"><div className="flex items-center gap-3"><i className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,.09)]" /><h3 className="font-display text-xl font-bold">Live-Systemstatus</h3></div><p className="mt-4 text-sm leading-7 text-zinc-500">Verfügbarkeit aller SeriuxMod-Dienste in Echtzeit prüfen.</p><span className="mt-6 flex items-center gap-2 text-xs font-bold text-emerald-400">Status öffnen <FaArrowRight className="transition group-hover:translate-x-1" /></span></a>
+                </div>
+            </div>
         </section>
 
         <section id="community" className="bg-gradient-to-br from-orange-500 to-[#e33d0b] py-24 text-[#251007]">

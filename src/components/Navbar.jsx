@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const items = [
     ['Features', 'features'],
+    ['Plattform', 'platform'],
     ['Community', 'community'],
     ['Status', 'status'],
     ['Download', 'download'],
@@ -35,7 +36,7 @@ export default function Navbar() {
     const goTo = (target) => {
         setOpen(false);
         if (target === 'status') {
-            window.open('https://api.seriuxmod.net/status', '_blank', 'noopener,noreferrer');
+            window.open('https://api.seriuxmod.net/api/v1/status/summary', '_blank', 'noopener,noreferrer');
             return;
         }
         const scroll = () => document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });

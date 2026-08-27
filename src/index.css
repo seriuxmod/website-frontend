@@ -23,6 +23,9 @@
 .scene { background: linear-gradient(#2d3547 0 58%, #172019 58%); }
 .scene::after { content: ''; position: absolute; inset: 58% 0 0; background: linear-gradient(rgba(38,58,43,.8), #101711); }
 .mountain { clip-path: polygon(0 100%, 24% 40%, 38% 70%, 60% 15%, 100% 100%); }
+[id] { scroll-margin-top: 100px; }
+.platform-card::after { content: ''; position: absolute; width: 220px; height: 220px; right: -120px; bottom: -140px; border-radius: 999px; background: rgba(249,115,22,.09); filter: blur(28px); transition: .45s ease; pointer-events: none; }
+.platform-card:hover::after { right: -80px; bottom: -100px; background: rgba(249,115,22,.15); }
 
 .liquid-nav,
 .liquid-panel {
