@@ -2,6 +2,8 @@ const AUTH_URL = 'https://auth.seriuxmod.net';
 const USER_PROFILE_URL = 'https://api.seriuxmod.net/api/v1/user/users/me';
 const CLIENT_ID = 'seriuxmod-website';
 const PROFILE_KEY = 'seriux_user_profile';
+const REFRESH_TOKEN_KEY = 'seriux_refresh_token';
+let refreshRequest = null;
 
 const base64Url = (bytes) =>
     btoa(String.fromCharCode(...new Uint8Array(bytes)))
@@ -44,13 +46,24 @@ const decodePayload = (token) => {
     }
 };
 
+const accessTokenExpired = (token) => {
+    const payload = decodePayload(token || '');
+    return !payload || (payload.exp && payload.exp * 1000 <= Date.now());
+};
+
+const storeTokens = (payload) => {
+    sessionStorage.setItem('seriux_access_token', payload.access_token);
+    if (payload.id_token) sessionStorage.setItem('seriux_identity_token', payload.id_token);
+    if (payload.refresh_token) sessionStorage.setItem(REFRESH_TOKEN_KEY, payload.refresh_token);
+};
+
 export const getAuthenticatedUser = () => {
     const accessToken = getAccessToken();
     if (!accessToken) return null;
     const accessPayload = decodePayload(accessToken) || {};
+    if (accessTokenExpired(accessToken)) return null;
     const identityPayload = decodePayload(getIdentityToken() || '') || {};
     const payload = { ...accessPayload, ...identityPayload };
-    if (!payload || (payload.exp && payload.exp * 1000 <= Date.now())) return null;
     const uuidPattern = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
     const username = [
         payload.username,
@@ -64,15 +77,54 @@ export const getAuthenticatedUser = () => {
     return getCachedProfile(playerId) || buildUser(username, playerId);
 };
 
+async function refreshAccessToken() {
+    if (refreshRequest) return refreshRequest;
+    const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!refreshToken) return null;
+
+    refreshRequest = (async () => {
+        try {
+            const response = await fetch(`${AUTH_URL}/oauth2/token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    grant_type: 'refresh_token',
+                    client_id: CLIENT_ID,
+                    refresh_token: refreshToken
+                })
+            });
+            const payload = await response.json();
+            if (!response.ok || !payload.access_token) throw new Error('Token refresh failed');
+            storeTokens(payload);
+            return payload.access_token;
+        } catch {
+            logout();
+            return null;
+        } finally {
+            refreshRequest = null;
+        }
+    })();
+    return refreshRequest;
+}
+
 export async function fetchAuthenticatedUser() {
-    const tokenUser = getAuthenticatedUser();
-    const accessToken = getAccessToken();
+    let accessToken = getAccessToken();
+    if (!accessToken || accessTokenExpired(accessToken)) accessToken = await refreshAccessToken();
+    let tokenUser = getAuthenticatedUser();
     if (!tokenUser || !accessToken) return null;
 
     try {
-        const response = await fetch(USER_PROFILE_URL, {
+        let response = await fetch(USER_PROFILE_URL, {
             headers: { Authorization: `Bearer ${accessToken}` }
         });
+        if (response.status === 401) {
+            accessToken = await refreshAccessToken();
+            if (!accessToken) return null;
+            tokenUser = getAuthenticatedUser();
+            response = await fetch(USER_PROFILE_URL, {
+                headers: { Authorization: `Bearer ${accessToken}` }
+            });
+        }
         if (!response.ok) return tokenUser;
 
         const profile = await response.json();
@@ -123,8 +175,7 @@ export async function completeLogin(code, state) {
     const payload = await response.json();
     if (!response.ok || !payload.access_token)
         throw new Error(payload.error_description || 'Anmeldung fehlgeschlagen.');
-    sessionStorage.setItem('seriux_access_token', payload.access_token);
-    if (payload.id_token) sessionStorage.setItem('seriux_identity_token', payload.id_token);
+    storeTokens(payload);
     sessionStorage.removeItem('seriux_pkce_verifier');
     sessionStorage.removeItem('seriux_oauth_state');
     return sessionStorage.getItem('seriux_return_to') || '/';
@@ -133,6 +184,7 @@ export async function completeLogin(code, state) {
 export function logout() {
     sessionStorage.removeItem('seriux_access_token');
     sessionStorage.removeItem('seriux_identity_token');
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     sessionStorage.removeItem('seriux_return_to');
     sessionStorage.removeItem(PROFILE_KEY);
 }

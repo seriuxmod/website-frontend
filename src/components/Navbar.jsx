@@ -40,11 +40,9 @@ export default function Navbar() {
         setProfileOpen(false);
         const tokenUser = getAuthenticatedUser();
         setUser(tokenUser);
-        if (tokenUser) {
-            fetchAuthenticatedUser().then((profile) => {
-                if (active) setUser(profile);
-            });
-        }
+        fetchAuthenticatedUser().then((profile) => {
+            if (active) setUser(profile);
+        });
         return () => {
             active = false;
         };
