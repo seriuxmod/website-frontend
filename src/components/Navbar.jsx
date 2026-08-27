@@ -12,7 +12,14 @@ import {
     FaXmark
 } from 'react-icons/fa6';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator, logout } from '../lib/auth';
+import {
+    beginLogin,
+    fetchAuthenticatedUser,
+    getAuthenticatedUser,
+    isForumAdministrator,
+    isStoreAdministrator,
+    logout
+} from '../lib/auth';
 import { forumApi } from '../lib/forumApi';
 import { communityItems } from '../config/community';
 
@@ -236,6 +243,11 @@ export default function Navbar() {
                                         <FaShieldHalved /> Forum verwalten
                                     </Link>
                                 )}
+                                {isStoreAdministrator(user) && (
+                                    <Link to="/admin/store" className="profile-menu-item">
+                                        <FaShieldHalved /> Shop verwalten
+                                    </Link>
+                                )}
                                 <button
                                     type="button"
                                     onClick={signOut}
@@ -348,6 +360,11 @@ export default function Navbar() {
                             {isForumAdministrator(user) && (
                                 <Link className="mobile-nav-item" to="/admin/forum">
                                     Forum verwalten
+                                </Link>
+                            )}
+                            {isStoreAdministrator(user) && (
+                                <Link className="mobile-nav-item" to="/admin/store">
+                                    Shop verwalten
                                 </Link>
                             )}
                             <button

@@ -38,7 +38,77 @@ export const storeApi = {
         request('/payments', { method: 'POST', body: JSON.stringify({ orderId, gatewayId }) }, true),
     payments: (page = 0, size = 20) => request(`/payments?page=${page}&size=${size}`, {}, true),
     entitlements: () => request('/entitlements', {}, true),
-    credits: () => request('/me/credits', {}, true)
+    credits: () => request('/me/credits', {}, true),
+    admin: {
+        overview: () => request('/admin/overview', {}, true),
+        categories: () => request('/admin/categories', {}, true),
+        saveCategory: (id, body) =>
+            request(
+                id ? `/admin/categories/${encodeURIComponent(id)}` : '/admin/categories',
+                {
+                    method: id ? 'PUT' : 'POST',
+                    body: JSON.stringify(body)
+                },
+                true
+            ),
+        deleteCategory: (id) => request(`/admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
+        fields: () => request('/admin/fields', {}, true),
+        saveField: (id, body) =>
+            request(
+                id ? `/admin/fields/${encodeURIComponent(id)}` : '/admin/fields',
+                {
+                    method: id ? 'PUT' : 'POST',
+                    body: JSON.stringify(body)
+                },
+                true
+            ),
+        deleteField: (id) => request(`/admin/fields/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
+        products: () => request('/admin/products', {}, true),
+        saveProduct: (id, body) =>
+            request(
+                id ? `/admin/products/${encodeURIComponent(id)}` : '/admin/products',
+                {
+                    method: id ? 'PUT' : 'POST',
+                    body: JSON.stringify(body)
+                },
+                true
+            ),
+        deleteProduct: (id) => request(`/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
+        coupons: () => request('/admin/coupons', {}, true),
+        saveCoupon: (id, body) =>
+            request(
+                id ? `/admin/coupons/${encodeURIComponent(id)}` : '/admin/coupons',
+                {
+                    method: id ? 'PUT' : 'POST',
+                    body: JSON.stringify(body)
+                },
+                true
+            ),
+        deleteCoupon: (id) => request(`/admin/coupons/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
+        orders: (page = 0, status = '') =>
+            request(
+                `/admin/orders?page=${page}&size=25${status ? `&status=${encodeURIComponent(status)}` : ''}`,
+                {},
+                true
+            ),
+        payments: (page = 0, status = '') =>
+            request(
+                `/admin/payments?page=${page}&size=25${status ? `&status=${encodeURIComponent(status)}` : ''}`,
+                {},
+                true
+            ),
+        customers: (page = 0) => request(`/admin/customers?page=${page}&size=25`, {}, true),
+        adjustCredits: (id, deltaCents) =>
+            request(
+                `/admin/customers/${encodeURIComponent(id)}/credits`,
+                {
+                    method: 'POST',
+                    body: JSON.stringify({ deltaCents })
+                },
+                true
+            ),
+        entitlements: (page = 0) => request(`/admin/entitlements?page=${page}&size=25`, {}, true)
+    }
 };
 
 export const formatStorePrice = (cents, currency = 'EUR') =>

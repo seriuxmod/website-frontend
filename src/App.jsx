@@ -22,6 +22,7 @@ import CommunityPage from './pages/community/CommunityPage';
 import StoreIndex from './pages/store/StoreIndex';
 import StoreCheckout from './pages/store/StoreCheckout';
 import StoreAccount from './pages/store/StoreAccount';
+import StoreAdmin from './pages/store/StoreAdmin';
 
 export default function App() {
     useScrollToTop();
@@ -43,6 +44,7 @@ export default function App() {
                 <Route path="/store" element={<StoreIndex />} />
                 <Route path="/store/checkout" element={<StoreCheckout />} />
                 <Route path="/store/account" element={<StoreAccount />} />
+                <Route path="/admin/store" element={<StoreAdmin />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/community/:page" element={<CommunityPage />} />

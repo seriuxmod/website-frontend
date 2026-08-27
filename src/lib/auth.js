@@ -159,6 +159,9 @@ export const isAuthenticated = () => Boolean(getAuthenticatedUser());
 export const isForumAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('forum.admin'));
 
+export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
+    Boolean(user?.permissions?.includes('store.admin'));
+
 export async function authenticatedFetch(input, init = {}) {
     let accessToken = getAccessToken();
     if (accessToken && accessTokenExpired(accessToken)) accessToken = await refreshAccessToken();
