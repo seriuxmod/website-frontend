@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
     FaArrowRightFromBracket,
     FaBars,
+    FaBell,
     FaChevronDown,
     FaMagnifyingGlass,
     FaRightToBracket,
@@ -11,6 +12,7 @@ import {
 } from 'react-icons/fa6';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator, logout } from '../lib/auth';
+import { forumApi } from '../lib/forumApi';
 
 const communityItems = [
     { label: 'Clans', description: 'Finde und verwalte deine Community', to: '/clans' },
@@ -28,6 +30,7 @@ export default function Navbar() {
     const [profileOpen, setProfileOpen] = useState(false);
     const [search, setSearch] = useState('');
     const [user, setUser] = useState(() => getAuthenticatedUser());
+    const [unreadForumNotifications, setUnreadForumNotifications] = useState(0);
     const location = useLocation();
     const navigate = useNavigate();
     const searchRef = useRef(null);
@@ -48,6 +51,21 @@ export default function Navbar() {
             active = false;
         };
     }, [location.pathname]);
+
+    useEffect(() => {
+        let active = true;
+        if (!user) {
+            setUnreadForumNotifications(0);
+            return undefined;
+        }
+        forumApi
+            .unreadCount()
+            .then((result) => active && setUnreadForumNotifications(result.unread ?? 0))
+            .catch(() => active && setUnreadForumNotifications(0));
+        return () => {
+            active = false;
+        };
+    }, [location.pathname, user?.playerId]);
 
     useEffect(() => {
         const onPointerDown = (event) => {
@@ -197,6 +215,17 @@ export default function Navbar() {
                                 <Link to="/profile" className="profile-menu-item">
                                     <FaUser /> Mein Profil
                                 </Link>
+                                <Link to="/forum/account" className="profile-menu-item">
+                                    <FaBell />
+                                    <span className="flex min-w-0 flex-1 items-center justify-between gap-3">
+                                        Mein Forum
+                                        {unreadForumNotifications > 0 && (
+                                            <b className="grid min-w-5 place-items-center rounded-full bg-orange-500 px-1.5 py-0.5 text-[10px] text-white">
+                                                {unreadForumNotifications > 99 ? '99+' : unreadForumNotifications}
+                                            </b>
+                                        )}
+                                    </span>
+                                </Link>
                                 {isForumAdministrator(user) && (
                                     <Link to="/admin/forum" className="profile-menu-item">
                                         <FaShieldHalved /> Forum verwalten
@@ -290,6 +319,14 @@ export default function Navbar() {
                             </div>
                             <Link className="mobile-nav-item" to="/profile">
                                 Mein Profil
+                            </Link>
+                            <Link className="mobile-nav-item flex items-center justify-between" to="/forum/account">
+                                Mein Forum
+                                {unreadForumNotifications > 0 && (
+                                    <b className="rounded-full bg-orange-500 px-2 py-0.5 text-xs text-white">
+                                        {unreadForumNotifications}
+                                    </b>
+                                )}
                             </Link>
                             {isForumAdministrator(user) && (
                                 <Link className="mobile-nav-item" to="/admin/forum">

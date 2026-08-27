@@ -1,5 +1,5 @@
-import { FaArrowRightFromBracket, FaUser } from 'react-icons/fa6';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { FaArrowRightFromBracket, FaComments, FaUser } from 'react-icons/fa6';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { getAuthenticatedUser, logout } from '../../lib/auth';
 
 export default function Profile() {
@@ -33,6 +33,14 @@ export default function Profile() {
                     <button type="button" onClick={signOut} className="button-secondary">
                         <FaArrowRightFromBracket /> Abmelden
                     </button>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                    <Link className="forum-button-primary" to={`/forum/user/${user.playerId}`}>
+                        <FaComments /> Öffentliches Forum-Profil
+                    </Link>
+                    <Link className="forum-button-secondary" to="/forum/account">
+                        Forum-Einstellungen
+                    </Link>
                 </div>
             </section>
         </main>

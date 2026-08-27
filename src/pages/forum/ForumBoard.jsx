@@ -14,12 +14,12 @@ import {
     formatDate
 } from './ForumComponents';
 
-const PAGE_SIZE = 20;
-
 export default function ForumBoard() {
     const { forumId } = useParams();
     const navigate = useNavigate();
     const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(20);
+    const [labelId, setLabelId] = useState('');
     const [user, setUser] = useState(() => getAuthenticatedUser());
     const [composerOpen, setComposerOpen] = useState(false);
     const [state, setState] = useState({ loading: true, forum: null, topics: null, labels: [], error: '' });
@@ -29,14 +29,14 @@ export default function ForumBoard() {
         try {
             const [forum, topics, labels] = await Promise.all([
                 forumApi.forum(forumId),
-                forumApi.topics(forumId, page, PAGE_SIZE),
+                forumApi.topics(forumId, page, pageSize, labelId),
                 forumApi.labels(forumId)
             ]);
             setState({ loading: false, forum, topics, labels, error: '' });
         } catch (error) {
             setState({ loading: false, forum: null, topics: null, labels: [], error: error.message });
         }
-    }, [forumId, page]);
+    }, [forumId, labelId, page, pageSize]);
 
     useEffect(() => {
         load();
@@ -44,6 +44,13 @@ export default function ForumBoard() {
     useEffect(() => {
         fetchAuthenticatedUser().then(setUser);
     }, []);
+    useEffect(() => {
+        if (!user) return;
+        forumApi
+            .preferences()
+            .then((preferences) => setPageSize(preferences.topicsPerPage || 20))
+            .catch(() => {});
+    }, [user?.playerId]);
 
     if (state.loading && !state.forum)
         return (
@@ -85,6 +92,31 @@ export default function ForumBoard() {
                 </>
             }
         >
+            {state.labels.length > 0 && (
+                <div className="mb-5 flex flex-wrap items-center gap-2">
+                    <button
+                        className={`forum-filter-chip ${labelId === '' ? 'forum-filter-chip-active' : ''}`}
+                        onClick={() => {
+                            setLabelId('');
+                            setPage(0);
+                        }}
+                    >
+                        Alle Themen
+                    </button>
+                    {state.labels.map((label) => (
+                        <button
+                            className={`forum-filter-chip ${labelId === label.id ? 'forum-filter-chip-active' : ''}`}
+                            key={label.id}
+                            onClick={() => {
+                                setLabelId(label.id);
+                                setPage(0);
+                            }}
+                        >
+                            {label.name}
+                        </button>
+                    ))}
+                </div>
+            )}
             <section className="forum-panel overflow-hidden rounded-3xl">
                 <header className="grid gap-4 border-b border-white/[.06] p-6 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div className="flex items-center gap-4">
@@ -113,6 +145,11 @@ export default function ForumBoard() {
                         <UserIdentity playerId={topic.creatorUserId} compact />
                         <span className="min-w-0 flex-1">
                             <TopicFlags topic={topic} />
+                            {topic.labelId && (
+                                <span className="mt-2 inline-flex rounded-full bg-orange-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-300">
+                                    {state.labels.find((label) => label.id === topic.labelId)?.name || topic.labelId}
+                                </span>
+                            )}
                             <b className="mt-2 block truncate font-display text-lg transition group-hover:text-orange-400">
                                 {topic.title}
                             </b>

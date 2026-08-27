@@ -14,45 +14,54 @@ export function ForumShell({
     description,
     breadcrumbs = [],
     actions,
-    children
+    children,
+    showHero = true
 }) {
     return (
         <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-32 text-white sm:px-6 sm:pt-36">
             <div className="mx-auto max-w-7xl">
-                <nav className="mb-8 flex flex-wrap items-center gap-2 text-xs text-zinc-600" aria-label="Breadcrumb">
-                    <Link className="transition hover:text-orange-400" to="/forum">
-                        Forum
-                    </Link>
-                    {breadcrumbs.map((item) => (
-                        <span className="flex items-center gap-2" key={item.label}>
-                            <span>/</span>
-                            {item.to ? (
-                                <Link className="transition hover:text-orange-400" to={item.to}>
-                                    {item.label}
-                                </Link>
-                            ) : (
-                                <span className="text-zinc-400">{item.label}</span>
-                            )}
-                        </span>
-                    ))}
-                </nav>
-                <section className="forum-hero relative overflow-hidden rounded-[32px] border border-white/[.08] px-6 py-10 sm:px-10 sm:py-12">
-                    <div className="relative z-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
-                        <div className="max-w-3xl">
-                            <p className="eyebrow">{eyebrow}</p>
-                            <h1 className="mt-3 font-display text-4xl font-bold tracking-[-.05em] sm:text-6xl">
-                                {title}
-                            </h1>
-                            {description && (
-                                <p className="mt-5 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">
-                                    {description}
-                                </p>
-                            )}
+                <div className={showHero ? '' : 'mb-5 flex flex-wrap items-center justify-between gap-4'}>
+                    <nav
+                        className={`${showHero ? 'mb-8' : ''} flex flex-wrap items-center gap-2 text-xs text-zinc-600`}
+                        aria-label="Breadcrumb"
+                    >
+                        <Link className="transition hover:text-orange-400" to="/forum">
+                            Forum
+                        </Link>
+                        {breadcrumbs.map((item) => (
+                            <span className="flex items-center gap-2" key={item.label}>
+                                <span>/</span>
+                                {item.to ? (
+                                    <Link className="transition hover:text-orange-400" to={item.to}>
+                                        {item.label}
+                                    </Link>
+                                ) : (
+                                    <span className="text-zinc-400">{item.label}</span>
+                                )}
+                            </span>
+                        ))}
+                    </nav>
+                    {!showHero && actions && <div className="flex flex-wrap gap-3">{actions}</div>}
+                </div>
+                {showHero ? (
+                    <section className="forum-hero relative overflow-hidden rounded-[32px] border border-white/[.08] px-6 py-10 sm:px-10 sm:py-12">
+                        <div className="relative z-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+                            <div className="max-w-3xl">
+                                <p className="eyebrow">{eyebrow}</p>
+                                <h1 className="mt-3 font-display text-4xl font-bold tracking-[-.05em] sm:text-6xl">
+                                    {title}
+                                </h1>
+                                {description && (
+                                    <p className="mt-5 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">
+                                        {description}
+                                    </p>
+                                )}
+                            </div>
+                            {actions && <div className="flex flex-wrap gap-3">{actions}</div>}
                         </div>
-                        {actions && <div className="flex flex-wrap gap-3">{actions}</div>}
-                    </div>
-                </section>
-                <div className="mt-8">{children}</div>
+                    </section>
+                ) : null}
+                <div className={showHero ? 'mt-8' : ''}>{children}</div>
             </div>
         </main>
     );
@@ -69,7 +78,7 @@ export function ForumIcon({ node, className = '' }) {
     return <Icon className={className} />;
 }
 
-export function UserIdentity({ playerId, compact = false }) {
+export function UserIdentity({ playerId, compact = false, linked = false }) {
     const [profile, setProfile] = useState(null);
     useEffect(() => {
         let active = true;
@@ -78,7 +87,7 @@ export function UserIdentity({ playerId, compact = false }) {
             active = false;
         };
     }, [playerId]);
-    return (
+    const identity = (
         <div className="flex min-w-0 items-center gap-3">
             <img
                 className={`${compact ? 'h-8 w-8 rounded-lg' : 'h-11 w-11 rounded-xl'} bg-black/30 [image-rendering:pixelated]`}
@@ -90,6 +99,13 @@ export function UserIdentity({ playerId, compact = false }) {
                 {!compact && <span className="text-[11px] text-zinc-600">Minecraft-Spieler</span>}
             </div>
         </div>
+    );
+    return linked && playerId ? (
+        <Link className="rounded-xl transition hover:opacity-80" to={`/forum/user/${encodeURIComponent(playerId)}`}>
+            {identity}
+        </Link>
+    ) : (
+        identity
     );
 }
 

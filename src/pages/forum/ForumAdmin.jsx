@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FaArrowLeft, FaCheck, FaFloppyDisk, FaFolderPlus, FaGear, FaShieldHalved } from 'react-icons/fa6';
+import { FaArrowLeft, FaCheck, FaFloppyDisk, FaFolderPlus, FaGear, FaShieldHalved, FaTags } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator } from '../../lib/auth';
 import { forumApi, getPermissionGroups } from '../../lib/forumApi';
@@ -42,19 +42,45 @@ export default function ForumAdmin() {
     const [user, setUser] = useState(() => getAuthenticatedUser());
     const [checking, setChecking] = useState(true);
     const [tab, setTab] = useState('structure');
-    const [state, setState] = useState({ loading: true, nodes: [], groups: [], settings: null, error: '' });
+    const [state, setState] = useState({
+        loading: true,
+        nodes: [],
+        groups: [],
+        settings: null,
+        labels: [],
+        labelTypes: [],
+        error: ''
+    });
 
     const load = useCallback(async () => {
         setState((current) => ({ ...current, loading: true, error: '' }));
         try {
-            const [nodes, groups, settings] = await Promise.all([
+            const [nodes, groups, settings, labels, labelTypes] = await Promise.all([
                 forumApi.admin.nodes(),
                 getPermissionGroups(),
-                forumApi.admin.settings()
+                forumApi.admin.settings(),
+                forumApi.admin.labels(),
+                forumApi.admin.labelTypes()
             ]);
-            setState({ loading: false, nodes: nodes.nodes ?? [], groups, settings, error: '' });
+            setState({
+                loading: false,
+                nodes: nodes.nodes ?? [],
+                groups,
+                settings,
+                labels,
+                labelTypes,
+                error: ''
+            });
         } catch (error) {
-            setState({ loading: false, nodes: [], groups: [], settings: null, error: error.message });
+            setState({
+                loading: false,
+                nodes: [],
+                groups: [],
+                settings: null,
+                labels: [],
+                labelTypes: [],
+                error: error.message
+            });
         }
     }, []);
 
@@ -89,6 +115,7 @@ export default function ForumAdmin() {
     const tabs = [
         ['structure', FaFolderPlus, 'Struktur'],
         ['permissions', FaShieldHalved, 'Gruppenrechte'],
+        ['labels', FaTags, 'Labels'],
         ['settings', FaGear, 'Einstellungen']
     ];
 
@@ -122,6 +149,15 @@ export default function ForumAdmin() {
             )}
             {!state.loading && !state.error && tab === 'permissions' && (
                 <PermissionEditor nodes={state.nodes} groups={state.groups} />
+            )}
+            {!state.loading && !state.error && tab === 'labels' && (
+                <LabelsEditor
+                    nodes={state.nodes}
+                    groups={state.groups}
+                    labels={state.labels}
+                    labelTypes={state.labelTypes}
+                    onChanged={load}
+                />
             )}
             {!state.loading && !state.error && tab === 'settings' && (
                 <SettingsEditor initial={state.settings} onChanged={load} />
@@ -414,6 +450,241 @@ function PermissionEditor({ nodes, groups }) {
             </div>
             {message && <p className="border-t border-white/[.05] p-5 text-sm text-zinc-400">{message}</p>}
         </section>
+    );
+}
+
+function LabelsEditor({ nodes, groups, labels, labelTypes, onChanged }) {
+    const [selectedTypeId, setSelectedTypeId] = useState('new');
+    const [selectedLabelId, setSelectedLabelId] = useState('new');
+    const selectedType = labelTypes.find((type) => type.id === selectedTypeId);
+    const selectedLabel = labels.find((label) => label.id === selectedLabelId);
+    const [typeForm, setTypeForm] = useState({ name: '', htmlTemplate: '{x}', deleted: false });
+    const [labelForm, setLabelForm] = useState({
+        name: '',
+        labelTypeId: '',
+        forumIds: [],
+        groupIds: [],
+        deleted: false
+    });
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState('');
+    const forums = nodes.filter((node) => node.type === 'FORUM' && !node.deleted);
+
+    useEffect(() => {
+        setTypeForm(
+            selectedType
+                ? {
+                      name: selectedType.name || '',
+                      htmlTemplate: selectedType.htmlTemplate || '{x}',
+                      deleted: Boolean(selectedType.deleted)
+                  }
+                : { name: '', htmlTemplate: '{x}', deleted: false }
+        );
+        setMessage('');
+    }, [selectedType]);
+
+    useEffect(() => {
+        setLabelForm(
+            selectedLabel
+                ? {
+                      name: selectedLabel.name || '',
+                      labelTypeId: selectedLabel.labelTypeId || '',
+                      forumIds: selectedLabel.forumIds ?? [],
+                      groupIds: selectedLabel.groupIds ?? [],
+                      deleted: Boolean(selectedLabel.deleted)
+                  }
+                : { name: '', labelTypeId: labelTypes[0]?.id || '', forumIds: [], groupIds: [], deleted: false }
+        );
+        setMessage('');
+    }, [labelTypes, selectedLabel]);
+
+    const saveType = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        setMessage('');
+        try {
+            await forumApi.admin.saveLabelType(selectedType?.id || `type-${crypto.randomUUID()}`, typeForm);
+            setSelectedTypeId('new');
+            setMessage('Label-Typ gespeichert.');
+            await onChanged();
+        } catch (error) {
+            setMessage(error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const saveLabel = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        setMessage('');
+        try {
+            await forumApi.admin.saveLabel(selectedLabel?.id || `label-${crypto.randomUUID()}`, labelForm);
+            setSelectedLabelId('new');
+            setMessage('Topic-Label gespeichert.');
+            await onChanged();
+        } catch (error) {
+            setMessage(error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="grid gap-7 xl:grid-cols-2">
+            <form className="forum-panel rounded-3xl p-6" onSubmit={saveType}>
+                <p className="eyebrow">DARSTELLUNG</p>
+                <h2 className="mt-2 font-display text-2xl font-bold">Label-Typen</h2>
+                <label className="forum-label mt-6">
+                    Typ auswählen
+                    <select
+                        className="forum-input"
+                        value={selectedTypeId}
+                        onChange={(event) => setSelectedTypeId(event.target.value)}
+                    >
+                        <option value="new">Neuen Typ anlegen</option>
+                        {labelTypes.map((type) => (
+                            <option value={type.id} key={type.id}>
+                                {type.name}
+                                {type.deleted ? ' (gelöscht)' : ''}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <label className="forum-label mt-5">
+                    Name
+                    <input
+                        className="forum-input"
+                        required
+                        maxLength={64}
+                        value={typeForm.name}
+                        onChange={(event) => setTypeForm({ ...typeForm, name: event.target.value })}
+                    />
+                </label>
+                <label className="forum-label mt-5">
+                    HTML-Vorlage <span className="font-normal normal-case text-zinc-700">(mit {'{x}'})</span>
+                    <input
+                        className="forum-input font-mono"
+                        required
+                        value={typeForm.htmlTemplate}
+                        onChange={(event) => setTypeForm({ ...typeForm, htmlTemplate: event.target.value })}
+                    />
+                </label>
+                {selectedType && (
+                    <Toggle
+                        checked={typeForm.deleted}
+                        onChange={(value) => setTypeForm({ ...typeForm, deleted: value })}
+                        label="Typ deaktivieren"
+                    />
+                )}
+                <button className="forum-button-primary mt-6" disabled={saving}>
+                    <FaFloppyDisk /> Typ speichern
+                </button>
+            </form>
+
+            <form className="forum-panel rounded-3xl p-6" onSubmit={saveLabel}>
+                <p className="eyebrow">THEMEN-SORTIERUNG</p>
+                <h2 className="mt-2 font-display text-2xl font-bold">Topic-Labels</h2>
+                <label className="forum-label mt-6">
+                    Label auswählen
+                    <select
+                        className="forum-input"
+                        value={selectedLabelId}
+                        onChange={(event) => setSelectedLabelId(event.target.value)}
+                    >
+                        <option value="new">Neues Label anlegen</option>
+                        {labels.map((label) => (
+                            <option value={label.id} key={label.id}>
+                                {label.name}
+                                {label.deleted ? ' (gelöscht)' : ''}
+                            </option>
+                        ))}
+                    </select>
+                </label>
+                <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                    <label className="forum-label">
+                        Name
+                        <input
+                            className="forum-input"
+                            required
+                            maxLength={32}
+                            value={labelForm.name}
+                            onChange={(event) => setLabelForm({ ...labelForm, name: event.target.value })}
+                        />
+                    </label>
+                    <label className="forum-label">
+                        Label-Typ
+                        <select
+                            className="forum-input"
+                            required
+                            value={labelForm.labelTypeId}
+                            onChange={(event) => setLabelForm({ ...labelForm, labelTypeId: event.target.value })}
+                        >
+                            <option value="">Bitte wählen</option>
+                            {labelTypes
+                                .filter((type) => !type.deleted)
+                                .map((type) => (
+                                    <option value={type.id} key={type.id}>
+                                        {type.name}
+                                    </option>
+                                ))}
+                        </select>
+                    </label>
+                </div>
+                <SelectionGrid
+                    title="In diesen Foren verwendbar"
+                    items={forums.map((forum) => [forum.id, forum.title])}
+                    selected={labelForm.forumIds}
+                    onChange={(forumIds) => setLabelForm({ ...labelForm, forumIds })}
+                />
+                <SelectionGrid
+                    title="Auf diese Gruppen begrenzen"
+                    hint="Keine Auswahl bedeutet: alle Gruppen"
+                    items={groups.map((group) => [group.key || group.id, group.displayName || group.name || group.key])}
+                    selected={labelForm.groupIds}
+                    onChange={(groupIds) => setLabelForm({ ...labelForm, groupIds })}
+                />
+                {selectedLabel && (
+                    <Toggle
+                        checked={labelForm.deleted}
+                        onChange={(value) => setLabelForm({ ...labelForm, deleted: value })}
+                        label="Label deaktivieren"
+                    />
+                )}
+                <button className="forum-button-primary mt-6" disabled={saving || !labelForm.labelTypeId}>
+                    <FaFloppyDisk /> Label speichern
+                </button>
+            </form>
+            {message && <p className="text-sm text-zinc-400 xl:col-span-2">{message}</p>}
+        </div>
+    );
+}
+
+function SelectionGrid({ title, hint, items, selected, onChange }) {
+    const toggle = (id) =>
+        onChange(selected.includes(id) ? selected.filter((value) => value !== id) : [...selected, id]);
+    return (
+        <fieldset className="mt-6">
+            <legend className="forum-label">
+                {title} {hint && <span className="font-normal normal-case text-zinc-700">({hint})</span>}
+            </legend>
+            <div className="mt-3 grid max-h-48 gap-2 overflow-y-auto rounded-2xl border border-white/[.06] bg-black/15 p-3 sm:grid-cols-2">
+                {items.map(([id, label]) => (
+                    <label
+                        className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 text-sm text-zinc-400 hover:bg-white/[.035]"
+                        key={id}
+                    >
+                        <input
+                            className="accent-orange-500"
+                            type="checkbox"
+                            checked={selected.includes(id)}
+                            onChange={() => toggle(id)}
+                        />
+                        <span className="truncate">{label}</span>
+                    </label>
+                ))}
+            </div>
+        </fieldset>
     );
 }
 

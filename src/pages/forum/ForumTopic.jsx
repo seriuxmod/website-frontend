@@ -24,12 +24,11 @@ import {
     formatDate
 } from './ForumComponents';
 
-const PAGE_SIZE = 20;
-
 export default function ForumTopic() {
     const { topicId } = useParams();
     const navigate = useNavigate();
     const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(20);
     const [user, setUser] = useState(() => getAuthenticatedUser());
     const [reply, setReply] = useState('');
     const [replying, setReplying] = useState(false);
@@ -50,7 +49,7 @@ export default function ForumTopic() {
             const topic = await forumApi.topic(topicId, page === 0);
             const [forum, posts] = await Promise.all([
                 forumApi.forum(topic.forumId),
-                forumApi.posts(topicId, page, PAGE_SIZE)
+                forumApi.posts(topicId, page, pageSize)
             ]);
             let following = false;
             if (getAuthenticatedUser()) {
@@ -60,6 +59,7 @@ export default function ForumTopic() {
                     /* optional state */
                 }
             }
+            if (getAuthenticatedUser()) forumApi.markTopicRead(topicId).catch(() => {});
             setState({ loading: false, topic, forum, posts, following, error: '' });
         } catch (reason) {
             setState({
@@ -71,7 +71,7 @@ export default function ForumTopic() {
                 error: reason.message
             });
         }
-    }, [page, topicId]);
+    }, [page, pageSize, topicId]);
 
     useEffect(() => {
         load();
@@ -79,6 +79,13 @@ export default function ForumTopic() {
     useEffect(() => {
         fetchAuthenticatedUser().then(setUser);
     }, []);
+    useEffect(() => {
+        if (!user) return;
+        forumApi
+            .preferences()
+            .then((preferences) => setPageSize(preferences.postsPerPage || 20))
+            .catch(() => {});
+    }, [user?.playerId]);
 
     const execute = async (action) => {
         setError('');
@@ -288,7 +295,7 @@ function PostCard({ post, user, forum, onEdit, onChanged, onError }) {
         <article id={`post-${post.id}`} className="forum-panel overflow-hidden rounded-3xl">
             <div className="grid md:grid-cols-[210px_minmax(0,1fr)]">
                 <aside className="border-b border-white/[.06] bg-black/15 p-6 md:border-b-0 md:border-r">
-                    <UserIdentity playerId={post.creatorUserId} />
+                    <UserIdentity playerId={post.creatorUserId} linked />
                     <span className="mt-5 block text-[11px] text-zinc-700">Beitrag #{post.postNumber}</span>
                 </aside>
                 <div className="min-w-0 p-6 sm:p-8">

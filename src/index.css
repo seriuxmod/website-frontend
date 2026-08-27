@@ -234,6 +234,12 @@
     .forum-admin-list-item small {
         @apply mb-1 block text-[9px] font-bold uppercase tracking-[.15em] text-zinc-700;
     }
+    .forum-filter-chip {
+        @apply inline-flex items-center rounded-full border border-white/[.07] bg-white/[.025] px-3.5 py-2 text-xs font-bold text-zinc-500 transition hover:border-orange-500/25 hover:text-zinc-200;
+    }
+    .forum-filter-chip-active {
+        @apply border-orange-500/30 bg-orange-500/10 text-orange-300;
+    }
 }
 
 .forum-hero {

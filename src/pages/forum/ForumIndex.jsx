@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FaArrowRight, FaComments, FaGear, FaMagnifyingGlass, FaMessage, FaUserGroup } from 'react-icons/fa6';
+import { FaArrowRight, FaBell, FaComments, FaGear, FaMagnifyingGlass, FaMessage, FaUserGroup } from 'react-icons/fa6';
 import { Link, useSearchParams } from 'react-router-dom';
 import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator } from '../../lib/auth';
 import { forumApi } from '../../lib/forumApi';
@@ -76,6 +76,11 @@ export default function ForumIndex() {
                     <FaGear /> Administration
                 </Link>
             )}
+            {user && (
+                <Link className="forum-button-secondary" to="/forum/account">
+                    <FaBell /> Mein Forum
+                </Link>
+            )}
             {!user && (
                 <button className="forum-button-primary" onClick={() => beginLogin('/forum')}>
                     <FaUserGroup /> Anmelden
@@ -89,7 +94,9 @@ export default function ForumIndex() {
             title={search ? `Suche: ${search}` : 'SeriuxMod Forum'}
             description="Neuigkeiten, Hilfe und Gespräche aus der gesamten SeriuxMod-Community. Lesen ist öffentlich, zum Schreiben meldest du dich mit deinem Minecraft-Konto an."
             actions={actions}
+            showHero={false}
         >
+            <h1 className="sr-only">SeriuxMod Forum</h1>
             <form onSubmit={submitSearch} className="forum-panel mb-7 flex h-14 items-center rounded-2xl px-5">
                 <FaMagnifyingGlass className="text-zinc-600" />
                 <input

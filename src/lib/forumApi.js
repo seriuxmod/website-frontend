@@ -28,8 +28,10 @@ export const forumApi = {
     tree: () => request('/tree'),
     latest: (page = 0, size = 10) => request(`/latest?page=${page}&size=${size}`),
     forum: (forumId) => request(`/forums/${encodeURIComponent(forumId)}`),
-    topics: (forumId, page = 0, size = 20) =>
-        request(`/forums/${encodeURIComponent(forumId)}/topics?page=${page}&size=${size}`),
+    topics: (forumId, page = 0, size = 20, labelId = '') =>
+        request(
+            `/forums/${encodeURIComponent(forumId)}/topics?page=${page}&size=${size}${labelId ? `&labelId=${encodeURIComponent(labelId)}` : ''}`
+        ),
     topic: (topicId, incrementViews = true) =>
         request(`/topics/${encodeURIComponent(topicId)}?incrementViews=${incrementViews}`),
     posts: (topicId, page = 0, size = 20) =>
@@ -66,7 +68,19 @@ export const forumApi = {
             method: 'DELETE'
         }),
     toggleFollow: (topicId) => request(`/topics/${encodeURIComponent(topicId)}/follow`, { method: 'POST' }),
-    following: () => request('/me/following'),
+    following: (page = 0, size = 20) => request(`/me/following?page=${page}&size=${size}`),
+    unfollowAll: () => request('/me/following', { method: 'DELETE' }),
+    markTopicRead: (topicId) => request(`/topics/${encodeURIComponent(topicId)}:read`, { method: 'POST' }),
+    preferences: () => request('/me/preferences'),
+    updatePreferences: (body) => request('/me/preferences', { method: 'PATCH', body: JSON.stringify(body) }),
+    notifications: (page = 0, size = 20, unreadOnly = false) =>
+        request(`/me/notifications?page=${page}&size=${size}&unreadOnly=${unreadOnly}`),
+    unreadCount: () => request('/me/notifications/unread-count'),
+    markNotificationRead: (notificationId) =>
+        request(`/me/notifications/${encodeURIComponent(notificationId)}:read`, { method: 'POST' }),
+    markAllNotificationsRead: () => request('/me/notifications:read-all', { method: 'POST' }),
+    userProfile: (userId, recentLimit = 8) =>
+        request(`/public/users/${encodeURIComponent(userId)}/profile?recentLimit=${recentLimit}`),
     report: (body) => request('/reports', { method: 'POST', body: JSON.stringify(body) }),
     admin: {
         nodes: () => request('/admin/nodes'),
@@ -87,6 +101,11 @@ export const forumApi = {
         saveSettings: (body) => request('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
         labels: () => request('/admin/labels'),
         labelTypes: () => request('/admin/labels/types'),
+        saveLabelType: (typeId, body) =>
+            request(`/admin/labels/types/${encodeURIComponent(typeId)}`, {
+                method: 'PUT',
+                body: JSON.stringify(body)
+            }),
         saveLabel: (labelId, body) =>
             request(`/admin/labels/${encodeURIComponent(labelId)}`, { method: 'PUT', body: JSON.stringify(body) })
     }
