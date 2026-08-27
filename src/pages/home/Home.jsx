@@ -45,7 +45,7 @@ function ClientPreview() {
 }
 
 export default function Home() {
-    return <main className="overflow-hidden bg-[#090a0d] text-white">
+    return <main id="top" className="overflow-hidden bg-[#090a0d] text-white">
         <section className="mx-auto grid min-h-[760px] max-w-7xl items-center gap-14 px-5 py-20 lg:grid-cols-2 lg:px-10 lg:py-28">
             <div>
                 <SystemStatus />
