@@ -61,15 +61,18 @@ function SystemStatus() {
 }
 
 function ForumPreview() {
-    const [state, setState] = useState({ loading: true, topics: [], error: false });
+    const [state, setState] = useState({ loading: true, forums: [], topics: [], error: false });
 
     useEffect(() => {
         const controller = new AbortController();
-        fetch(`${API}/forum/forum/latest?size=6`, { signal: controller.signal })
-            .then((response) => response.ok ? response.json() : Promise.reject())
-            .then((payload) => setState({ loading: false, topics: payload.items ?? [], error: false }))
+        Promise.all([
+            fetch(`${API}/forum/tree`, { signal: controller.signal }),
+            fetch(`${API}/forum/latest?size=6`, { signal: controller.signal }),
+        ])
+            .then((responses) => responses.every((response) => response.ok) ? Promise.all(responses.map((response) => response.json())) : Promise.reject())
+            .then(([tree, latest]) => setState({ loading: false, forums: tree.nodes ?? [], topics: latest.items ?? [], error: false }))
             .catch((error) => {
-                if (error.name !== 'AbortError') setState({ loading: false, topics: [], error: true });
+                if (error.name !== 'AbortError') setState({ loading: false, forums: [], topics: [], error: true });
             });
         return () => controller.abort();
     }, []);
@@ -80,10 +83,14 @@ function ForumPreview() {
                 <div><p className="eyebrow">AUS DER COMMUNITY</p><h2 className="section-title">Aktuelle Themen.</h2><p className="section-copy">Das Forum ist für alle lesbar. Zum Schreiben und Bearbeiten meldest du dich mit deinem Minecraft-Konto an.</p></div>
                 <a href="/#/forum" className="button-secondary">Alle Foren öffnen <FaArrowRight /></a>
             </div>
-            <div className="mt-12 overflow-hidden rounded-3xl border border-white/[.07] bg-[#121318]">
+            {!state.loading && !state.error && state.forums.length > 0 && <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {state.forums.map((forum) => <a key={forum.id} href={`/#/forum?forum=${forum.id}`} className="rounded-2xl border border-white/[.07] bg-[#121318] p-6 transition hover:border-orange-500/30"><h3 className="font-display text-lg font-bold">{forum.title}</h3><p className="mt-2 text-sm leading-6 text-zinc-500">{forum.description || 'Community-Forum'}</p><span className="mt-5 block text-xs text-orange-400">{forum.topics ?? 0} Themen · {forum.posts ?? 0} Beiträge</span></a>)}
+            </div>}
+            <div className={`${state.forums.length > 0 ? 'mt-5' : 'mt-12'} overflow-hidden rounded-3xl border border-white/[.07] bg-[#121318]`}>
                 {state.loading && <p className="p-8 text-sm text-zinc-500">Themen werden geladen …</p>}
                 {state.error && <p className="p-8 text-sm text-amber-400">Das Forum ist momentan nicht erreichbar.</p>}
-                {!state.loading && !state.error && state.topics.length === 0 && <p className="p-8 text-sm text-zinc-500">Noch wurden keine öffentlichen Themen erstellt.</p>}
+                {!state.loading && !state.error && state.forums.length === 0 && state.topics.length === 0 && <p className="p-8 text-sm text-zinc-500">Noch wurden keine öffentlichen Foren oder Themen erstellt.</p>}
+                {!state.loading && !state.error && state.forums.length > 0 && state.topics.length === 0 && <p className="p-8 text-sm text-zinc-500">In diesen Foren wurden noch keine Themen erstellt.</p>}
                 {state.topics.map((topic) => <a key={topic.id} href={`/#/forum?topic=${topic.id}`} className="group grid gap-3 border-b border-white/[.06] p-6 last:border-0 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div><h3 className="font-display text-lg font-bold transition group-hover:text-orange-400">{topic.title}</h3><p className="mt-2 text-xs text-zinc-600">{topic.sticky ? 'Angepinnt · ' : ''}{topic.views ?? 0} Aufrufe</p></div>
                     <span className="text-xs text-zinc-500">{new Date(topic.lastReplyAt ?? topic.createdAt).toLocaleDateString('de-DE')}</span>

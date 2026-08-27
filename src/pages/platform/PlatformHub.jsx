@@ -5,7 +5,7 @@ import { beginLogin, getAccessToken, isAuthenticated, logout } from '../../lib/a
 const API = 'https://api.seriuxmod.net/api/v1';
 const configs = {
     clans: { icon: FaCrown, eyebrow: 'SOCIAL SERVICE', title: 'Clans', copy: 'Baue deine eigene Community auf, verwalte Mitglieder, Ränge, Einladungen und gemeinsame Statistiken.', endpoint: '/social/clans/invites', features: ['Clan erstellen und verwalten', 'Mitglieder & individuelle Ränge', 'Einladungen und Beitrittsanfragen', 'Gemeinsame Clan-Statistiken'] },
-    forum: { icon: FaComments, eyebrow: 'FORUM SERVICE', title: 'Forum', copy: 'Diskutiere Updates, teile Ideen und finde Themen aus der gesamten SeriuxMod-Community.', endpoint: '/forum/forum/latest', features: ['Foren, Topics und Beiträge', 'Reaktionen und Themen-Follows', 'Vorschläge mit Voting', 'News und Blog-Artikel'] },
+    forum: { icon: FaComments, eyebrow: 'FORUM SERVICE', title: 'Forum', copy: 'Diskutiere Updates, teile Ideen und finde Themen aus der gesamten SeriuxMod-Community.', endpoint: '/forum/latest', features: ['Foren, Topics und Beiträge', 'Reaktionen und Themen-Follows', 'Vorschläge mit Voting', 'News und Blog-Artikel'] },
     store: { icon: FaStore, eyebrow: 'STORE SERVICE', title: 'Store', copy: 'Entdecke Cosmetics, Erweiterungen und Freischaltungen für deinen persönlichen SeriuxMod-Auftritt.', endpoint: '/store/store/products', features: ['Cosmetics, Capes und Emotes', 'Extensions und Produktkategorien', 'Bestellungen und Zahlungen', 'Credits und Freischaltungen'] },
 };
 
