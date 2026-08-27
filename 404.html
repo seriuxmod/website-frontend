@@ -70,18 +70,9 @@
         </div>
 
         <script type="text/javascript">
-            // JavaScript to handle 404 redirection for React Hash Router
             (function () {
-                // Extract the current path from the URL
-                var currentPath = window.location.pathname;
-
-                // Strip leading slash if it exists
-                currentPath = currentPath.replace(/^\/+/, '');
-
-                // Redirect to Hash Router equivalent
-                var redirectTo = '/' + '#' + currentPath;
-
-                // Redirect with the hash path
+                var route = window.location.pathname.replace(/^\/+/, '');
+                var redirectTo = '/#/' + route + window.location.search;
                 window.location.replace(redirectTo);
             })();
         </script>
