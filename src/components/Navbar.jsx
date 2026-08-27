@@ -4,8 +4,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const items = [
     ['Features', 'features'],
-    ['Plattform', 'platform'],
-    ['Community', 'community'],
+    ['Clans', '/clans'],
+    ['Forum', '/forum'],
+    ['Store', '/store'],
     ['Status', 'status'],
     ['Download', 'download'],
 ];
@@ -35,6 +36,10 @@ export default function Navbar() {
 
     const goTo = (target) => {
         setOpen(false);
+        if (target.startsWith('/')) {
+            navigate(target);
+            return;
+        }
         if (target === 'status') {
             window.open('https://api.seriuxmod.net/api/v1/status/summary', '_blank', 'noopener,noreferrer');
             return;

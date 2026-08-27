@@ -1,0 +1,53 @@
+const AUTH_URL = 'https://auth.seriuxmod.net';
+const CLIENT_ID = 'seriuxmod-website';
+
+const base64Url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)))
+    .replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+
+export const getAccessToken = () => sessionStorage.getItem('seriux_access_token');
+export const isAuthenticated = () => Boolean(getAccessToken());
+
+export async function beginLogin(returnTo = window.location.pathname) {
+    const verifier = base64Url(crypto.getRandomValues(new Uint8Array(48)));
+    const challenge = base64Url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('seriux_pkce_verifier', verifier);
+    sessionStorage.setItem('seriux_oauth_state', state);
+    sessionStorage.setItem('seriux_return_to', returnTo);
+    const params = new URLSearchParams({
+        response_type: 'code',
+        client_id: CLIENT_ID,
+        redirect_uri: `${window.location.origin}/auth/callback`,
+        scope: 'openid profile email read write',
+        code_challenge: challenge,
+        code_challenge_method: 'S256',
+        state,
+    });
+    window.location.assign(`${AUTH_URL}/oauth2/authorize?${params}`);
+}
+
+export async function completeLogin(code, state) {
+    if (!code || state !== sessionStorage.getItem('seriux_oauth_state')) throw new Error('Ungültige Login-Antwort.');
+    const response = await fetch(`${AUTH_URL}/oauth2/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            grant_type: 'authorization_code',
+            client_id: CLIENT_ID,
+            redirect_uri: `${window.location.origin}/auth/callback`,
+            code,
+            code_verifier: sessionStorage.getItem('seriux_pkce_verifier') || '',
+        }),
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.access_token) throw new Error(payload.error_description || 'Anmeldung fehlgeschlagen.');
+    sessionStorage.setItem('seriux_access_token', payload.access_token);
+    sessionStorage.removeItem('seriux_pkce_verifier');
+    sessionStorage.removeItem('seriux_oauth_state');
+    return sessionStorage.getItem('seriux_return_to') || '/';
+}
+
+export function logout() {
+    sessionStorage.removeItem('seriux_access_token');
+    sessionStorage.removeItem('seriux_return_to');
+}

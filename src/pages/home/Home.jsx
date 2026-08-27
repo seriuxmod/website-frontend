@@ -16,6 +16,7 @@ const platformModules = [
         text: 'Diskussionen, News und Ideen aus der gesamten Community.',
         capabilities: ['Foren & Topics', 'Posts & Reaktionen', 'Blog & News', 'Vorschläge & Votes', 'Support-Tickets'],
         action: 'Community entdecken',
+        href: '/forum',
     },
     {
         icon: FaUserGroup,
@@ -23,6 +24,7 @@ const platformModules = [
         text: 'Alles, was deine Freunde und Mitspieler zusammenbringt.',
         capabilities: ['Freundesliste', 'Freundschaftsanfragen', 'Clans & Ränge', 'Partys & Einladungen', 'Clan-Statistiken'],
         action: 'Social Hub öffnen',
+        href: '/clans',
     },
     {
         icon: FaStore,
@@ -30,6 +32,7 @@ const platformModules = [
         text: 'Deine Sammlung, deine Credits und dein persönlicher Stil.',
         capabilities: ['Cosmetics', 'Capes & Emotes', 'Extensions', 'Bestellungen', 'Credits & Freischaltungen'],
         action: 'Store ansehen',
+        href: '/store',
     },
     {
         icon: FaShieldHalved,
@@ -37,6 +40,7 @@ const platformModules = [
         text: 'Eine Identität für Client, Website und Community.',
         capabilities: ['Seriux-Profil', 'Minecraft-Verknüpfung', 'Gruppen & Rechte', 'Geräte & Sessions', 'Moderationshistorie'],
         action: 'Account verwalten',
+        href: 'https://auth.seriuxmod.net',
     },
 ];
 
@@ -106,11 +110,11 @@ export default function Home() {
                     <div className="flex items-center gap-3 rounded-2xl border border-white/[.07] bg-white/[.025] px-4 py-3 text-xs text-zinc-500"><i className="h-2 w-2 rounded-full bg-orange-500 shadow-[0_0_12px_#f97316]" /> API v1 verbunden</div>
                 </div>
                 <div className="mt-14 grid gap-5 md:grid-cols-2">
-                    {platformModules.map(({ icon: Icon, name, text, capabilities, action }, moduleIndex) => <article key={name} className="platform-card group relative overflow-hidden rounded-3xl border border-white/[.07] bg-[#121318] p-7 sm:p-9">
+                    {platformModules.map(({ icon: Icon, name, text, capabilities, action, href }, moduleIndex) => <article key={name} className="platform-card group relative overflow-hidden rounded-3xl border border-white/[.07] bg-[#121318] p-7 sm:p-9">
                         <span className="absolute right-7 top-6 font-display text-5xl font-bold text-white/[.025]">0{moduleIndex + 1}</span>
                         <div className="flex items-start gap-4"><div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-orange-500/20 bg-orange-500/10 text-lg text-orange-400"><Icon /></div><div><h3 className="font-display text-2xl font-bold tracking-tight">{name}</h3><p className="mt-2 max-w-md text-sm leading-6 text-zinc-500">{text}</p></div></div>
                         <div className="mt-8 grid gap-2 sm:grid-cols-2">{capabilities.map((capability) => <span key={capability} className="flex items-center gap-2 rounded-xl border border-white/[.045] bg-black/15 px-3 py-2.5 text-xs text-zinc-400"><FaCheck className="text-[10px] text-orange-500" /> {capability}</span>)}</div>
-                        <a href="https://auth.seriuxmod.net" className="mt-7 inline-flex items-center gap-2 text-xs font-bold text-zinc-300 transition group-hover:text-orange-400">{action} <FaArrowRight /></a>
+                        <a href={href} className="mt-7 inline-flex items-center gap-2 text-xs font-bold text-zinc-300 transition group-hover:text-orange-400">{action} <FaArrowRight /></a>
                     </article>)}
                 </div>
                 <div className="mt-5 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
