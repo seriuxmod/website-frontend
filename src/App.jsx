@@ -13,7 +13,7 @@ import Terms from './pages/legal/Terms';
 export default function App() {
     useScrollToTop();
     return (
-        <div className="min-h-screen w-screen pt-[var(--navbar-height)]">
+        <div className="min-h-screen bg-[#090a0d]">
             <Navbar />
             <Routes>
                 <Route path="/" element={<Home />} exact />

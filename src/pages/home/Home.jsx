@@ -1,13 +1,80 @@
-import Header from './Header';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { FaArrowRight, FaCheck, FaCloudArrowDown, FaLayerGroup, FaShieldHalved, FaStore, FaUsers, FaWindows } from 'react-icons/fa6';
+
+const API = 'https://api.seriuxmod.net';
+
+const features = [
+    [FaLayerGroup, 'Dein Spiel. Dein Setup.', 'Ein Client, der zu dir passt.', 'Performance-Module, HUD-Elemente und Quality-of-Life-Features in einem klaren Interface.'],
+    [FaUsers, 'Gemeinsam spielen', 'Deine Community immer dabei.', 'Profile, Freunde und Social Features verbinden dich über Servergrenzen hinweg.'],
+    [FaStore, 'Ausdruck ohne Grenzen', 'Mach deinen Look einzigartig.', 'Entdecke Cosmetics und synchronisiere deinen Auftritt über dein SeriuxMod-Konto.'],
+];
+
+function SystemStatus() {
+    const [online, setOnline] = useState(null);
+    useEffect(() => {
+        const controller = new AbortController();
+        fetch(`${API}/status/summary`, { signal: controller.signal })
+            .then((response) => response.ok ? response.json() : Promise.reject())
+            .then((data) => {
+                const core = data.services?.filter((service) => service.group === 'seriuxmod') ?? [];
+                setOnline(core.length > 0 && core.every((service) => service.state === 'UP'));
+            })
+            .catch(() => setOnline(false));
+        return () => controller.abort();
+    }, []);
+    return <a href={`${API}/status`} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-3 py-2 text-xs text-zinc-400"><i className={`h-2 w-2 rounded-full ${online === false ? 'bg-amber-400' : 'bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]'}`} />{online ? 'Alle Kernsysteme online' : 'Systemstatus ansehen'}</a>;
+}
+
+function ClientPreview() {
+    return <div className="relative min-h-[430px] lg:min-h-[560px]">
+        <div className="absolute inset-[5%] rounded-full border border-orange-500/20" />
+        <div className="absolute left-1/2 top-1/2 w-[115%] -translate-x-1/2 -translate-y-1/2 rotate-12 rounded-[50%] border border-orange-500/10 py-32" />
+        <div className="absolute left-1/2 top-1/2 w-full -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl border border-white/10 bg-[#111318] shadow-[0_50px_100px_rgba(0,0,0,.6),0_0_80px_rgba(255,90,22,.12)] lg:-rotate-2">
+            <div className="flex h-11 items-center gap-1.5 border-b border-white/5 bg-white/[.025] px-4"><i className="h-2 w-2 rounded-full bg-orange-500" /><i className="h-2 w-2 rounded-full bg-zinc-700" /><i className="h-2 w-2 rounded-full bg-zinc-700" /><span className="ml-auto text-[8px] font-bold tracking-[.24em] text-zinc-600">SERIUX CLIENT</span></div>
+            <div className="scene relative h-[320px] overflow-hidden">
+                <div className="absolute right-16 top-12 h-14 w-14 rounded bg-orange-400 shadow-[0_0_55px_#ff5a16]" />
+                <div className="mountain absolute bottom-[35%] left-[-5%] h-1/2 w-3/4 bg-[#1a2028]" />
+                <div className="mountain absolute bottom-[35%] left-[38%] h-[38%] w-3/4 bg-[#10151b]" />
+                <div className="absolute left-5 top-5 z-10 rounded-xl border border-white/10 bg-black/60 px-4 py-3 backdrop-blur"><span className="text-[9px] tracking-widest text-zinc-500">FPS</span><b className="ml-4 text-orange-400">248</b></div>
+                <div className="absolute bottom-5 right-5 z-10 flex items-center gap-3 rounded-xl border border-white/10 bg-black/60 px-4 py-3 backdrop-blur"><i className="h-2 w-2 rounded-full bg-emerald-400" /><span><small className="block text-[8px] tracking-widest text-zinc-500">SERVER</small><b className="text-sm">Online</b></span></div>
+            </div>
+        </div>
+        <div className="absolute bottom-8 left-[-2%] z-20 hidden items-center gap-3 rounded-xl border border-white/10 bg-[#111318]/90 px-4 py-3 shadow-2xl backdrop-blur sm:flex"><FaLayerGroup className="text-xl text-orange-500" /><span><b className="block text-sm">42 Module</b><small className="text-[9px] text-zinc-500">Alles unter Kontrolle</small></span></div>
+        <div className="absolute right-[-2%] top-16 z-20 hidden items-center gap-3 rounded-xl border border-white/10 bg-[#111318]/90 px-4 py-3 shadow-2xl backdrop-blur sm:flex"><FaShieldHalved className="text-xl text-orange-500" /><span><b className="block text-sm">Sicher verbunden</b><small className="text-[9px] text-zinc-500">Seriux Account</small></span></div>
+    </div>;
+}
 
 export default function Home() {
-    useState(() => {
-        document.title = 'SeriuxMod | Home';
-    }, []);
-    return (
-        <div className="flex min-h-screen w-screen flex-col items-center justify-start">
-            <Header />
-        </div>
-    );
+    return <main className="overflow-hidden bg-[#090a0d] text-white">
+        <section className="mx-auto grid min-h-[760px] max-w-7xl items-center gap-14 px-5 py-20 lg:grid-cols-2 lg:px-10 lg:py-28">
+            <div>
+                <SystemStatus />
+                <p className="mt-8 text-xs font-extrabold tracking-[.18em] text-orange-400">DEIN MINECRAFT. NEU GEDACHT.</p>
+                <h1 className="mt-4 font-display text-5xl font-bold leading-[.98] tracking-[-.055em] sm:text-7xl">Mehr als spielen.<br /><span className="bg-gradient-to-r from-orange-500 to-amber-300 bg-clip-text text-transparent">Erlebe Minecraft.</span></h1>
+                <p className="mt-7 max-w-xl text-base leading-8 text-zinc-400">SeriuxMod verbindet Performance, Individualität und Community in einem modernen Minecraft Client – gemacht für dein nächstes Abenteuer.</p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row"><a href="#download" className="button-primary"><FaWindows /> Für Windows herunterladen</a><a href="#features" className="button-secondary">Features entdecken <FaArrowRight /></a></div>
+                <div className="mt-7 flex flex-wrap gap-5 text-xs text-zinc-600">{['Kostenlos', 'Sicher', 'Community-first'].map((item) => <span className="flex items-center gap-1.5" key={item}><FaCheck className="text-orange-500" />{item}</span>)}</div>
+            </div>
+            <ClientPreview />
+        </section>
+
+        <section id="features" className="mx-auto max-w-7xl px-5 py-24 lg:px-10 lg:py-32">
+            <div className="max-w-2xl"><p className="eyebrow">ALLES, WAS DU BRAUCHST</p><h2 className="section-title">Gebaut für dein bestes Spiel.</h2><p className="section-copy">Leistungsstarke Werkzeuge, klares Design und eine Plattform, die mit dir wächst.</p></div>
+            <div className="mt-14 grid gap-5 lg:grid-cols-3">{features.map(([Icon, eyebrow, title, text]) => <article key={title} className="group relative min-h-[370px] overflow-hidden rounded-3xl border border-white/[.07] bg-gradient-to-br from-[#16181d] to-[#0e0f12] p-8">
+                <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-orange-500/10 blur-3xl transition group-hover:bg-orange-500/20" />
+                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-orange-500/10 text-xl text-orange-500"><Icon /></div>
+                <div className="mt-20"><small className="text-zinc-600">{eyebrow}</small><h3 className="mt-2 font-display text-2xl font-bold tracking-tight">{title}</h3><p className="mt-4 text-sm leading-7 text-zinc-500">{text}</p></div>
+                <a href="#download" className="absolute bottom-8 flex items-center gap-2 text-xs font-bold text-zinc-300">Mehr erfahren <FaArrowRight /></a>
+            </article>)}</div>
+        </section>
+
+        <section id="community" className="bg-gradient-to-br from-orange-500 to-[#e33d0b] py-24 text-[#251007]">
+            <div className="mx-auto grid max-w-7xl items-center gap-16 px-5 lg:grid-cols-2 lg:px-10">
+                <div><p className="text-xs font-extrabold tracking-[.18em] text-orange-950/70">EINE PLATTFORM. EINE IDENTITÄT.</p><h2 className="mt-4 font-display text-4xl font-bold leading-tight tracking-[-.045em] sm:text-6xl">Deine Welt hört nicht am Serverrand auf.</h2><p className="mt-6 max-w-xl leading-8 text-orange-950/70">Account, Freunde und Einstellungen an einem Ort. Forum, Social Hub und Store bilden ein gemeinsames Erlebnis auf dem SeriuxMod-Backend.</p><a href="https://auth.seriuxmod.net" className="mt-8 inline-flex items-center gap-3 rounded-xl bg-white px-5 py-4 text-sm font-bold shadow-xl">Account erstellen <FaArrowRight /></a></div>
+                <div className="relative mx-auto w-full max-w-lg rounded-3xl border border-white/20 bg-[#101115] p-8 text-white shadow-[0_35px_80px_rgba(78,15,0,.35)]"><div className="flex items-center gap-5"><img className="h-24 w-24 rounded-2xl object-contain" src="/logo.png" alt="SeriuxMod Fuchs" /><div><small className="text-[10px] tracking-[.18em] text-orange-400">SERIUX PROFILE</small><h3 className="mt-2 font-display text-2xl font-bold">Willkommen zurück.</h3><p className="mt-2 text-xs text-zinc-500">Dein Account. Dein Netzwerk. Dein Client.</p></div></div><span className="mt-7 flex items-center gap-2 text-[10px] text-emerald-400"><i className="h-2 w-2 rounded-full bg-emerald-400" /> ONLINE</span></div>
+            </div>
+        </section>
+
+        <section id="download" className="mx-auto max-w-7xl px-5 py-24 lg:px-10"><div className="relative flex flex-col items-start justify-between gap-10 overflow-hidden rounded-3xl border border-white/10 bg-[#131419] p-8 sm:p-14 lg:flex-row lg:items-center"><div className="absolute -right-24 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl" /><div className="relative max-w-2xl"><p className="eyebrow">BEREIT, WENN DU ES BIST</p><h2 className="mt-3 font-display text-4xl font-bold tracking-tight">Dein nächstes Abenteuer startet hier.</h2><p className="mt-4 text-sm leading-7 text-zinc-500">Der SeriuxMod Client befindet sich im Aufbau. Sichere dir schon jetzt deinen Account und sei beim Launch dabei.</p></div><a href="https://auth.seriuxmod.net" className="button-primary relative shrink-0"><FaCloudArrowDown /> Zugang sichern</a></div></section>
+    </main>;
 }

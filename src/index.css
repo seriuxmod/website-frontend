@@ -1,92 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-
-:root {
-    --accent-color: #f8ab1b;
-    --background-color-primary: #111111;
-    --background-color-secondary: #000000;
-    --text-color-primary: white;
-    --text-color-secondary: silver;
-    --navbar-height: 60px;
-
-    --scroll-button-bg: #111111;
-    --scroll-button-bg-hover: #121212;
-    --scroll-button-text: var(--accent-color);
-    --scroll-button-shadow-color: var(--accent-color);
-    --scroll-button-ring-color: var(--accent-color);
-    --scroll-button-size: 50px;
-    --scroll-button-border-radius: 50%;
-    --scroll-button-position: 1rem;
-    --scroll-button-transition: 0.3s;
-
-    --scrollbar-thumb-color: var(--accent-color);
-    --scrollbar-thumb-hover-color: #ffae00;
-    --scrollbar-track-color: #333333;
-    --scrollbar-border-color: #000000;
-    --scrollbar-width: 12px;
-    --scrollbar-height: 12px;
-    --scrollbar-border-width: 3px;
-    --scrollbar-border-radius: 6px;
-}
-
-.scale-90 {
-    transform: scale(0.9);
-}
-
-.inter-normal {
-    font-family: 'Inter', sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 400;
-    font-style: normal;
-}
-
-.inter-bold {
-    font-family: 'Inter', sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 700;
-    font-style: normal;
-}
-
-* {
-    font-family: 'Inter', sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 400;
-
-    margin: 0;
-    padding: 0;
-
-    box-sizing: border-box;
-
-    text-decoration: none;
-    list-style: none;
-
-    scroll-behavior: smooth;
-}
-
-html {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-track-color);
-}
-
-::-webkit-scrollbar {
-    width: var(--scrollbar-width);
-    height: var(--scrollbar-height);
-}
-
-::-webkit-scrollbar-thumb {
-    background-color: var(--scrollbar-thumb-color);
-    border-radius: var(--scrollbar-border-radius);
-    border: var(--scrollbar-border-width) solid var(--scrollbar-border-color);
-}
-
-::-webkit-scrollbar-track {
-    background-color: var(--scrollbar-track-color);
-    border-radius: var(--scrollbar-border-radius);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background-color: var(--scrollbar-thumb-hover-color);
-}
-
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    html { scroll-behavior: smooth; }
+    body { @apply m-0 min-w-[320px] bg-[#090a0d] font-sans antialiased; }
+    * { box-sizing: border-box; }
+}
+
+@layer components {
+    .button-primary { @apply inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 px-5 py-4 text-sm font-bold text-white shadow-[0_12px_35px_rgba(249,115,22,.25)] transition hover:-translate-y-0.5; }
+    .button-secondary { @apply inline-flex items-center justify-center gap-3 rounded-xl px-5 py-4 text-sm font-bold text-zinc-300 transition hover:text-white; }
+    .eyebrow { @apply text-xs font-extrabold tracking-[.18em] text-orange-400; }
+    .section-title { @apply mt-3 font-display text-4xl font-bold leading-tight tracking-[-.045em] sm:text-6xl; }
+    .section-copy { @apply mt-5 text-sm leading-7 text-zinc-500 sm:text-base; }
+    .footer-links { @apply flex flex-col items-start gap-3 text-xs text-zinc-600; }
+    .footer-links b { @apply mb-2 text-zinc-200; }
+    .footer-links a { @apply flex items-center gap-2 transition hover:text-orange-400; }
+}
+
+.scene { background: linear-gradient(#2d3547 0 58%, #172019 58%); }
+.scene::after { content: ''; position: absolute; inset: 58% 0 0; background: linear-gradient(rgba(38,58,43,.8), #101711); }
+.mountain { clip-path: polygon(0 100%, 24% 40%, 38% 70%, 60% 15%, 100% 100%); }
