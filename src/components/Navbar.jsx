@@ -9,7 +9,7 @@ import {
     FaXmark
 } from 'react-icons/fa6';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { beginLogin, getAuthenticatedUser, logout } from '../lib/auth';
+import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, logout } from '../lib/auth';
 
 const communityItems = [
     { label: 'Clans', description: 'Finde und verwalte deine Community', to: '/clans' },
@@ -34,10 +34,20 @@ export default function Navbar() {
     const profileRef = useRef(null);
 
     useEffect(() => {
+        let active = true;
         setMobileOpen(false);
         setCommunityOpen(false);
         setProfileOpen(false);
-        setUser(getAuthenticatedUser());
+        const tokenUser = getAuthenticatedUser();
+        setUser(tokenUser);
+        if (tokenUser) {
+            fetchAuthenticatedUser().then((profile) => {
+                if (active) setUser(profile);
+            });
+        }
+        return () => {
+            active = false;
+        };
     }, [location.pathname]);
 
     useEffect(() => {

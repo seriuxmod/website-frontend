@@ -1,5 +1,7 @@
 const AUTH_URL = 'https://auth.seriuxmod.net';
+const USER_PROFILE_URL = 'https://api.seriuxmod.net/api/v1/user/users/me';
 const CLIENT_ID = 'seriuxmod-website';
+const PROFILE_KEY = 'seriux_user_profile';
 
 const base64Url = (bytes) =>
     btoa(String.fromCharCode(...new Uint8Array(bytes)))
@@ -9,6 +11,21 @@ const base64Url = (bytes) =>
 
 export const getAccessToken = () => sessionStorage.getItem('seriux_access_token');
 const getIdentityToken = () => sessionStorage.getItem('seriux_identity_token');
+
+const buildUser = (username, playerId) => ({
+    username: username || 'Minecraft Spieler',
+    playerId,
+    avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId || username || 'Steve')}/64`
+});
+
+const getCachedProfile = (playerId) => {
+    try {
+        const profile = JSON.parse(sessionStorage.getItem(PROFILE_KEY) || 'null');
+        return profile?.playerId === playerId && profile?.username ? profile : null;
+    } catch {
+        return null;
+    }
+};
 
 const decodePayload = (token) => {
     try {
@@ -44,12 +61,28 @@ export const getAuthenticatedUser = () => {
         payload.name
     ].find((value) => typeof value === 'string' && value.trim() && !uuidPattern.test(value.trim()));
     const playerId = payload.uid || payload.uniqueId || payload.playerId || payload.sub;
-    return {
-        username: username || 'Minecraft Spieler',
-        playerId,
-        avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId || username || 'Steve')}/64`
-    };
+    return getCachedProfile(playerId) || buildUser(username, playerId);
 };
+
+export async function fetchAuthenticatedUser() {
+    const tokenUser = getAuthenticatedUser();
+    const accessToken = getAccessToken();
+    if (!tokenUser || !accessToken) return null;
+
+    try {
+        const response = await fetch(USER_PROFILE_URL, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+        });
+        if (!response.ok) return tokenUser;
+
+        const profile = await response.json();
+        const user = buildUser(profile.username, profile.playerId || profile.id || tokenUser.playerId);
+        sessionStorage.setItem(PROFILE_KEY, JSON.stringify(user));
+        return user;
+    } catch {
+        return tokenUser;
+    }
+}
 
 export const isAuthenticated = () => Boolean(getAuthenticatedUser());
 
@@ -99,4 +132,5 @@ export function logout() {
     sessionStorage.removeItem('seriux_access_token');
     sessionStorage.removeItem('seriux_identity_token');
     sessionStorage.removeItem('seriux_return_to');
+    sessionStorage.removeItem(PROFILE_KEY);
 }
