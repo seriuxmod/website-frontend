@@ -130,18 +130,24 @@ export const forumApi = {
 
 export async function getPublicUser(playerId) {
     if (!playerId)
-        return { playerId: '', username: 'Unbekannter Spieler', avatarUrl: 'https://mc-heads.net/avatar/Steve/64' };
+        return {
+            playerId: '',
+            username: 'Unbekannter Spieler',
+            rank: null,
+            avatarUrl: 'https://mc-heads.net/avatar/Steve/128'
+        };
     if (profileCache.has(playerId)) return profileCache.get(playerId);
     const pending = fetch(`${API}/user/public/users/${encodeURIComponent(playerId)}`)
         .then((response) => (response.ok ? response.json() : Promise.reject()))
         .then((profile) => ({
             ...profile,
-            avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(profile.playerId || playerId)}/64`
+            avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(profile.playerId || playerId)}/128`
         }))
         .catch(() => ({
             playerId,
             username: `${playerId.slice(0, 8)}…`,
-            avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId)}/64`
+            rank: null,
+            avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId)}/128`
         }));
     profileCache.set(playerId, pending);
     return pending;

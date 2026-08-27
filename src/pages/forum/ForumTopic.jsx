@@ -401,10 +401,10 @@ function PostCard({ post, user, forum, onEdit, onChanged, onError }) {
     };
     return (
         <article id={`post-${post.id}`} className="forum-panel overflow-hidden rounded-3xl">
-            <div className="grid md:grid-cols-[210px_minmax(0,1fr)]">
-                <aside className="border-b border-white/[.06] bg-black/15 p-6 md:border-b-0 md:border-r">
-                    <UserIdentity playerId={post.creatorUserId} linked />
-                    <span className="mt-5 block text-[11px] text-zinc-700">Beitrag #{post.postNumber}</span>
+            <div className="grid md:grid-cols-[230px_minmax(0,1fr)]">
+                <aside className="border-b border-white/[.06] bg-black/15 p-6 text-center md:border-b-0 md:border-r md:py-8">
+                    <UserIdentity playerId={post.creatorUserId} linked author />
+                    <span className="mt-6 block text-[11px] text-zinc-700">Beitrag #{post.postNumber}</span>
                 </aside>
                 <div className="min-w-0 p-6 sm:p-8">
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[.055] pb-4">

@@ -78,7 +78,10 @@ export function ForumIcon({ node, className = '' }) {
     return <Icon className={className} />;
 }
 
-export function UserIdentity({ playerId, compact = false, linked = false }) {
+const rankColor = (color) =>
+    Number.isInteger(color) ? `#${(color >>> 0).toString(16).padStart(6, '0').slice(-6)}` : '#fb923c';
+
+export function UserIdentity({ playerId, compact = false, linked = false, author = false }) {
     const [profile, setProfile] = useState(null);
     useEffect(() => {
         let active = true;
@@ -87,7 +90,31 @@ export function UserIdentity({ playerId, compact = false, linked = false }) {
             active = false;
         };
     }, [playerId]);
-    const identity = (
+    const identity = author ? (
+        <div className="flex min-w-0 flex-col items-center text-center">
+            <img
+                className="h-24 w-24 rounded-[22px] bg-black/30 shadow-[0_16px_35px_rgba(0,0,0,.3)] [image-rendering:pixelated]"
+                src={profile?.avatarUrl || `https://mc-heads.net/avatar/${encodeURIComponent(playerId || 'Steve')}/128`}
+                alt={profile?.username ? `Minecraft-Kopf von ${profile.username}` : 'Minecraft-Kopf'}
+            />
+            <b className="mt-4 block max-w-full truncate text-base text-zinc-100">
+                {profile?.username || 'Spieler wird geladen …'}
+            </b>
+            <span
+                className="mt-2 inline-flex min-h-7 items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold"
+                style={{
+                    borderColor: `${rankColor(profile?.rank?.color)}55`,
+                    backgroundColor: `${rankColor(profile?.rank?.color)}14`,
+                    color: rankColor(profile?.rank?.color)
+                }}
+            >
+                {profile?.rank?.badgeUrl && (
+                    <img className="h-4 w-4 object-contain" src={profile.rank.badgeUrl} alt="" />
+                )}
+                {profile?.rank?.displayName || (profile ? 'Spieler' : 'Rang wird geladen …')}
+            </span>
+        </div>
+    ) : (
         <div className="flex min-w-0 items-center gap-3">
             <img
                 className={`${compact ? 'h-8 w-8 rounded-lg' : 'h-11 w-11 rounded-xl'} bg-black/30 [image-rendering:pixelated]`}
@@ -96,12 +123,17 @@ export function UserIdentity({ playerId, compact = false, linked = false }) {
             />
             <div className="min-w-0">
                 <b className="block truncate text-sm text-zinc-100">{profile?.username || 'Spieler wird geladen …'}</b>
-                {!compact && <span className="text-[11px] text-zinc-600">Minecraft-Spieler</span>}
+                {!compact && (
+                    <span className="text-[11px] text-zinc-600">{profile?.rank?.displayName || 'Spieler'}</span>
+                )}
             </div>
         </div>
     );
     return linked && playerId ? (
-        <Link className="rounded-xl transition hover:opacity-80" to={`/forum/user/${encodeURIComponent(playerId)}`}>
+        <Link
+            className="block rounded-xl transition hover:opacity-80"
+            to={`/forum/user/${encodeURIComponent(playerId)}`}
+        >
             {identity}
         </Link>
     ) : (
