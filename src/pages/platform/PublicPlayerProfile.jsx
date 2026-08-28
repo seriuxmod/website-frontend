@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    FaArrowUpRightFromSquare,
     FaCalendarDays,
     FaCheck,
     FaClock,
@@ -9,7 +8,6 @@ import {
     FaHeart,
     FaLink,
     FaMessage,
-    FaRegBell,
     FaShieldHalved,
     FaUserCheck
 } from 'react-icons/fa6';
@@ -111,9 +109,7 @@ export default function PublicPlayerProfile() {
     const stats = [
         [FaComments, 'Themen', forum?.topicsCreated ?? 0],
         [FaMessage, 'Beiträge', forum?.postsCreated ?? 0],
-        [FaHeart, 'Erhaltene Reaktionen', forum?.reactionsReceived ?? 0],
-        [FaRegBell, 'Gefolgte Themen', forum?.followedTopics ?? 0],
-        [FaUserCheck, 'Vergebene Reaktionen', forum?.reactionsGiven ?? 0]
+        [FaHeart, 'Reaktionen', forum?.reactionsReceived ?? 0]
     ];
 
     const copyValue = async (value, type) => {
@@ -240,130 +236,79 @@ export default function PublicPlayerProfile() {
                 </div>
             </section>
 
-            <section className="mx-auto grid max-w-[1180px] gap-6 px-4 sm:px-6 lg:grid-cols-[330px_minmax(0,1fr)]">
-                <aside className="space-y-6 lg:sticky lg:top-28 lg:self-start">
+            <section className="mx-auto mt-8 grid max-w-6xl gap-6 px-5 lg:grid-cols-[320px_1fr]">
+                <aside className="space-y-6">
                     <div className="forum-panel overflow-hidden rounded-3xl p-6">
                         <div className="flex items-center gap-4">
                             <img
-                                className="h-16 w-16 rounded-2xl border border-white/[.08] bg-black/30 [image-rendering:pixelated]"
+                                className="h-16 w-16 rounded-2xl bg-black/30 [image-rendering:pixelated]"
                                 src={playerAvatar(profile.playerId, 128)}
-                                alt={`Kopf von ${profile.username}`}
+                                alt=""
                             />
                             <div className="min-w-0">
-                                <small className="text-[9px] font-extrabold uppercase tracking-[.15em] text-zinc-600">
+                                <small className="text-[10px] font-extrabold uppercase tracking-[.15em] text-zinc-600">
                                     Minecraft-Spieler
                                 </small>
                                 <b className="mt-1 block truncate font-display text-xl">{profile.username}</b>
                             </div>
                         </div>
-                        <dl className="mt-6 divide-y divide-white/[.055] border-y border-white/[.055]">
-                            <div className="flex items-center justify-between gap-4 py-4">
-                                <dt className="text-xs text-zinc-600">Rang</dt>
-                                <dd className="text-xs font-bold" style={{ color }}>
-                                    {profile.rank?.displayName || 'User'}
-                                </dd>
-                            </div>
-                            <div className="flex items-center justify-between gap-4 py-4">
-                                <dt className="text-xs text-zinc-600">Status</dt>
-                                <dd className="inline-flex items-center gap-2 text-xs font-bold text-emerald-400">
-                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Verifiziert
-                                </dd>
-                            </div>
-                            <div className="flex items-center justify-between gap-4 py-4">
-                                <dt className="text-xs text-zinc-600">Profil</dt>
-                                <dd className="text-xs font-bold text-zinc-300">Öffentlich</dd>
-                            </div>
-                        </dl>
-                        <p className="mt-5 text-xs leading-6 text-zinc-600">
-                            Dieses Profil ist eindeutig mit der Minecraft-UUID des Spielers verbunden.
+                        <p className="mt-5 text-sm leading-7 text-zinc-500">
+                            Verifiziert über den SeriuxMod Launcher und eindeutig mit dieser Minecraft-UUID verbunden.
                         </p>
                     </div>
-
                     <div className="forum-panel rounded-3xl p-6">
                         <h2 className="font-display text-lg font-bold">Profil teilen</h2>
-                        <button
-                            type="button"
-                            onClick={() => copyValue(profileUrl, 'sidebar')}
-                            className="mt-4 flex w-full items-center gap-3 rounded-xl border border-white/[.06] bg-black/20 px-4 py-3 text-left transition hover:border-orange-500/20 hover:bg-orange-500/[.04]"
-                        >
-                            <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-zinc-500">
-                                seriuxmod.net/@{profile.username}
-                            </span>
-                            {copied === 'sidebar' ? (
-                                <FaCheck className="text-emerald-400" />
-                            ) : (
-                                <FaCopy className="text-zinc-600" />
-                            )}
-                        </button>
+                        <div className="mt-4 break-all rounded-xl border border-white/[.06] bg-black/20 px-4 py-3 font-mono text-[10px] text-zinc-500">
+                            seriuxmod.net/@{profile.username}
+                        </div>
                     </div>
                 </aside>
 
-                <div className="min-w-0 space-y-6">
-                    <section className="forum-panel rounded-3xl p-6 sm:p-7">
-                        <div className="flex items-end justify-between gap-4">
+                <div className="space-y-6">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        {stats.map(([Icon, label, value]) => (
+                            <div className="forum-panel rounded-3xl p-6" key={label}>
+                                <Icon className="text-orange-400" />
+                                <b className="mt-5 block font-display text-4xl">{value}</b>
+                                <span className="mt-1 block text-xs text-zinc-600">{label} im Forum</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    <section className="forum-panel overflow-hidden rounded-3xl">
+                        <header className="flex items-center justify-between gap-4 border-b border-white/[.06] p-6">
                             <div>
                                 <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-orange-400">
                                     Community
                                 </p>
-                                <h2 className="mt-2 font-display text-2xl font-bold">Profilstatistiken</h2>
-                            </div>
-                            <span className="hidden text-[10px] text-zinc-600 sm:block">Öffentliche Aktivität</span>
-                        </div>
-                        <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-                            {stats.map(([Icon, label, value]) => (
-                                <div className="rounded-2xl border border-white/[.06] bg-black/20 p-4" key={label}>
-                                    <Icon className="text-sm text-orange-400" />
-                                    <b className="mt-5 block font-display text-3xl">{value}</b>
-                                    <span className="mt-1 block text-[10px] leading-4 text-zinc-600">{label}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-
-                    <section className="forum-panel overflow-hidden rounded-3xl">
-                        <header className="flex items-center justify-between gap-4 border-b border-white/[.06] p-6 sm:p-7">
-                            <div>
-                                <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-orange-400">
-                                    Aktivität
-                                </p>
                                 <h2 className="mt-2 font-display text-2xl font-bold">Letzte Beiträge</h2>
                             </div>
                             <Link to={`/forum/user/${profile.playerId}`} className="forum-button-secondary">
-                                Alle ansehen <FaArrowUpRightFromSquare />
+                                Forum-Profil
                             </Link>
                         </header>
-                        {recentPosts.length === 0 ? (
+                        {(forum?.recentPosts ?? []).length === 0 ? (
                             <p className="p-8 text-sm text-zinc-500">
                                 Noch keine öffentlichen Forenbeiträge vorhanden.
                             </p>
                         ) : (
-                            <div>
-                                {recentPosts.map((post) => (
-                                    <Link
-                                        key={post.postId}
-                                        to={`/forum/topic/${post.topicId}#post-${post.postId}`}
-                                        className="group grid gap-4 border-b border-white/[.055] p-6 transition last:border-0 hover:bg-white/[.025] sm:grid-cols-[44px_minmax(0,1fr)_auto] sm:items-start sm:p-7"
-                                    >
-                                        <span className="grid h-11 w-11 place-items-center rounded-xl border border-white/[.06] bg-black/20 font-mono text-[10px] text-zinc-600 transition group-hover:border-orange-500/20 group-hover:text-orange-400">
-                                            #{post.postNumber}
+                            forum.recentPosts.map((post) => (
+                                <Link
+                                    key={post.postId}
+                                    to={`/forum/topic/${post.topicId}#post-${post.postId}`}
+                                    className="block border-b border-white/[.055] p-6 transition last:border-0 hover:bg-white/[.025]"
+                                >
+                                    <div className="flex items-center justify-between gap-4">
+                                        <b className="truncate font-display text-lg">{post.topicTitle}</b>
+                                        <span className="shrink-0 text-[10px] text-zinc-600">
+                                            {post.reactions} Reaktionen
                                         </span>
-                                        <span className="min-w-0">
-                                            <b className="block truncate font-display text-base transition group-hover:text-orange-300">
-                                                {post.topicTitle}
-                                            </b>
-                                            <span className="mt-2 line-clamp-2 block text-sm leading-6 text-zinc-500">
-                                                {post.contentPreview}
-                                            </span>
-                                            <span className="mt-3 flex items-center gap-2 text-[10px] text-zinc-700">
-                                                <FaClock /> {formatActivityDate(post.createdAt)}
-                                            </span>
-                                        </span>
-                                        <span className="inline-flex items-center gap-2 text-[10px] text-zinc-600">
-                                            <FaHeart /> {post.reactions}
-                                        </span>
-                                    </Link>
-                                ))}
-                            </div>
+                                    </div>
+                                    <p className="mt-3 line-clamp-2 text-sm leading-7 text-zinc-500">
+                                        {post.contentPreview}
+                                    </p>
+                                </Link>
+                            ))
                         )}
                     </section>
                 </div>
