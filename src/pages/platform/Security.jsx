@@ -45,7 +45,7 @@ export default function Security() {
                 eyebrow="SERIUX-ID"
                 title="Sicherheit"
                 description="Melde dich an, um deine Zugangsdaten und Geräte zu verwalten."
-                breadcrumbs={[{ label: 'Sicherheit' }]}
+                rootBreadcrumb={{ label: 'Sicherheit' }}
             >
                 <Link className="forum-button-primary" to="/">
                     Zur Startseite
@@ -70,7 +70,8 @@ export default function Security() {
             eyebrow="SERIUX-ID"
             title="Sicherheit"
             description="Verwalte dein Web-Passwort, die Zwei-Faktor-Anmeldung und alle aktiven Launcher- und Browser-Sitzungen."
-            breadcrumbs={[{ label: 'Mein Konto' }, { label: 'Sicherheit' }]}
+            rootBreadcrumb={{ label: 'Mein Konto' }}
+            breadcrumbs={[{ label: 'Sicherheit' }]}
         >
             {message && (
                 <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/[.07] px-5 py-4 text-sm text-emerald-300">

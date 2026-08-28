@@ -132,7 +132,8 @@ export default function StoreAdmin() {
             eyebrow="STORE ADMINISTRATION"
             title="Shop verwalten"
             description="Pflege Kategorien, Produkte und Coupons und kontrolliere Bestellungen, Zahlungen und Freischaltungen."
-            breadcrumbs={[{ label: 'Shop-Administration' }]}
+            rootBreadcrumb={{ label: 'Administration', to: '/admin' }}
+            breadcrumbs={[{ label: 'Shop' }]}
             actions={
                 <div className="flex flex-wrap gap-2">
                     <Link className="forum-button-secondary" to="/admin">

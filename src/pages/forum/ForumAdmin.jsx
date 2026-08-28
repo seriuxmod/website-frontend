@@ -134,7 +134,8 @@ export default function ForumAdmin() {
             eyebrow="ADMINISTRATION"
             title="Forum verwalten"
             description="Erstelle Kategorien und Foren, ordne Benutzergruppen zu und passe globale Forum-Einstellungen an."
-            breadcrumbs={[{ label: 'Administration' }]}
+            rootBreadcrumb={{ label: 'Administration', to: '/admin' }}
+            breadcrumbs={[{ label: 'Forum' }]}
             actions={
                 <div className="flex flex-wrap gap-2">
                     <Link className="forum-button-secondary" to="/admin">

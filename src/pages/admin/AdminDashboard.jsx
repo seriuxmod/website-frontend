@@ -33,12 +33,10 @@ export default function AdminDashboard() {
             }
             if (isStoreAdministrator(profile)) {
                 tasks.push(
-                    storeApi.admin
-                        .overview()
-                        .then((overview) => ({
-                            products: overview.products ?? overview.productCount ?? 0,
-                            orders: overview.orders ?? overview.orderCount ?? 0
-                        }))
+                    storeApi.admin.overview().then((overview) => ({
+                        products: overview.products ?? overview.productCount ?? 0,
+                        orders: overview.orders ?? overview.orderCount ?? 0
+                    }))
                 );
             }
             const settled = await Promise.allSettled(tasks);
@@ -73,7 +71,7 @@ export default function AdminDashboard() {
             eyebrow="TEAM PORTAL"
             title="Administration"
             description="Die zentrale Arbeitsfläche für Inhalte, Community und Verkauf. Alle Änderungen greifen direkt auf die produktiven Backends zu."
-            breadcrumbs={[{ label: 'Administration' }]}
+            rootBreadcrumb={{ label: 'Administration' }}
         >
             <section className="forum-panel mb-6 grid gap-5 rounded-3xl p-6 sm:grid-cols-[auto_1fr] sm:items-center sm:p-8">
                 <span className="grid h-14 w-14 place-items-center rounded-2xl bg-orange-500/10 text-xl text-orange-300">

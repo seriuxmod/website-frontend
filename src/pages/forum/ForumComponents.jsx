@@ -12,6 +12,7 @@ export function ForumShell({
     eyebrow = 'SERIUXMOD COMMUNITY',
     title,
     description,
+    rootBreadcrumb = { label: 'Forum', to: '/forum' },
     breadcrumbs = [],
     actions,
     children,
@@ -25,9 +26,13 @@ export function ForumShell({
                         className={`${showHero ? 'mb-8' : ''} flex flex-wrap items-center gap-2 text-xs text-zinc-600`}
                         aria-label="Breadcrumb"
                     >
-                        <Link className="transition hover:text-orange-400" to="/forum">
-                            Forum
-                        </Link>
+                        {rootBreadcrumb?.to ? (
+                            <Link className="transition hover:text-orange-400" to={rootBreadcrumb.to}>
+                                {rootBreadcrumb.label}
+                            </Link>
+                        ) : (
+                            <span className="text-zinc-400">{rootBreadcrumb?.label}</span>
+                        )}
                         {breadcrumbs.map((item) => (
                             <span className="flex items-center gap-2" key={item.label}>
                                 <span>/</span>
