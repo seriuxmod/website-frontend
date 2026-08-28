@@ -21,5 +21,5 @@ export function playerAvatar(playerId, size = 96) {
 }
 
 export function playerBody(username) {
-    return `https://minotar.net/armor/body/${encodeURIComponent(username || 'Steve')}/250.png`;
+    return `https://nmsr.nickac.dev/fullbody/${encodeURIComponent(username || 'Steve')}`;
 }
