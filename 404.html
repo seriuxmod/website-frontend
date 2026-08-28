@@ -71,9 +71,8 @@
 
         <script type="text/javascript">
             (function () {
-                var route = window.location.pathname.replace(/^\/+/, '');
-                var redirectTo = '/#/' + route + window.location.search;
-                window.location.replace(redirectTo);
+                var route = window.location.pathname + window.location.search + window.location.hash;
+                window.location.replace('/?spa=' + encodeURIComponent(route));
             })();
         </script>
     </body>
