@@ -98,15 +98,15 @@ function SystemStatus() {
         return () => controller.abort();
     }, []);
     return (
-        <a
-            href={`${API}/status`}
+        <Link
+            to="/status"
             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-3 py-2 text-xs text-zinc-400"
         >
             <i
                 className={`h-2 w-2 rounded-full ${online === false ? 'bg-amber-400' : 'bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]'}`}
             />
             {online ? 'Alle Kernsysteme online' : 'Systemstatus ansehen'}
-        </a>
+        </Link>
     );
 }
 
@@ -374,10 +374,8 @@ export default function Home() {
                                 eingerichtet.
                             </p>
                         </div>
-                        <a
-                            href={`${API}/status/summary`}
-                            target="_blank"
-                            rel="noreferrer"
+                        <Link
+                            to="/status"
                             className="group rounded-3xl border border-emerald-400/10 bg-emerald-400/[.035] p-7 sm:p-9"
                         >
                             <div className="flex items-center gap-3">
@@ -390,7 +388,7 @@ export default function Home() {
                             <span className="mt-6 flex items-center gap-2 text-xs font-bold text-emerald-400">
                                 Status öffnen <FaArrowRight className="transition group-hover:translate-x-1" />
                             </span>
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </section>

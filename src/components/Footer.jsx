@@ -19,7 +19,7 @@ export default function Footer() {
                     <a href="/#features">Features</a>
                     <a href="/#platform">Ökosystem</a>
                     <a href="/#download">Download</a>
-                    <a href="https://api.seriuxmod.net/api/v1/status/summary">Systemstatus</a>
+                    <Link to="/status">Systemstatus</Link>
                 </div>
                 <div className="footer-links">
                     <b>Community</b>

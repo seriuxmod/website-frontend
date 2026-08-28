@@ -26,6 +26,7 @@ import StoreAccount from './pages/store/StoreAccount';
 import StoreAdmin from './pages/store/StoreAdmin';
 import Security from './pages/platform/Security';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import SystemStatus from './pages/status/SystemStatus';
 
 export default function App() {
     useScrollToTop();
@@ -50,6 +51,7 @@ export default function App() {
                 <Route path="/admin/store" element={<StoreAdmin />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/account/security" element={<Security />} />
+                <Route path="/status" element={<SystemStatus />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/:profileSlug" element={<PublicPlayerProfile />} />
