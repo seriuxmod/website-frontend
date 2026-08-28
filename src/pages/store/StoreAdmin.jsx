@@ -134,9 +134,14 @@ export default function StoreAdmin() {
             description="Pflege Kategorien, Produkte und Coupons und kontrolliere Bestellungen, Zahlungen und Freischaltungen."
             breadcrumbs={[{ label: 'Shop-Administration' }]}
             actions={
-                <Link className="forum-button-secondary" to="/store">
-                    <FaArrowLeft /> Shop öffnen
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                    <Link className="forum-button-secondary" to="/admin">
+                        <FaArrowLeft /> Admin-Zentrale
+                    </Link>
+                    <Link className="forum-button-secondary" to="/store">
+                        Shop öffnen
+                    </Link>
+                </div>
             }
         >
             {state.overview && <Overview data={state.overview} />}

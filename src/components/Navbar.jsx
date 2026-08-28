@@ -6,6 +6,7 @@ import {
     FaBell,
     FaChevronDown,
     FaRightToBracket,
+    FaKey,
     FaShieldHalved,
     FaUser,
     FaXmark
@@ -218,14 +219,12 @@ export default function Navbar() {
                                 <Link to="/store/account" className="profile-menu-item">
                                     <FaBagShopping /> Meine Käufe
                                 </Link>
-                                {isForumAdministrator(user) && (
-                                    <Link to="/admin/forum" className="profile-menu-item">
-                                        <FaShieldHalved /> Forum verwalten
-                                    </Link>
-                                )}
-                                {isStoreAdministrator(user) && (
-                                    <Link to="/admin/store" className="profile-menu-item">
-                                        <FaShieldHalved /> Shop verwalten
+                                <Link to="/account/security" className="profile-menu-item">
+                                    <FaKey /> Sicherheit
+                                </Link>
+                                {(isForumAdministrator(user) || isStoreAdministrator(user)) && (
+                                    <Link to="/admin" className="profile-menu-item">
+                                        <FaShieldHalved /> Administration
                                     </Link>
                                 )}
                                 <button
@@ -326,14 +325,12 @@ export default function Navbar() {
                             <Link className="mobile-nav-item" to="/store/account">
                                 Meine Käufe
                             </Link>
-                            {isForumAdministrator(user) && (
-                                <Link className="mobile-nav-item" to="/admin/forum">
-                                    Forum verwalten
-                                </Link>
-                            )}
-                            {isStoreAdministrator(user) && (
-                                <Link className="mobile-nav-item" to="/admin/store">
-                                    Shop verwalten
+                            <Link className="mobile-nav-item" to="/account/security">
+                                Sicherheit
+                            </Link>
+                            {(isForumAdministrator(user) || isStoreAdministrator(user)) && (
+                                <Link className="mobile-nav-item" to="/admin">
+                                    Administration
                                 </Link>
                             )}
                             <button

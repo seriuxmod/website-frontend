@@ -136,9 +136,14 @@ export default function ForumAdmin() {
             description="Erstelle Kategorien und Foren, ordne Benutzergruppen zu und passe globale Forum-Einstellungen an."
             breadcrumbs={[{ label: 'Administration' }]}
             actions={
-                <Link className="forum-button-secondary" to="/forum">
-                    <FaArrowLeft /> Forum öffnen
-                </Link>
+                <div className="flex flex-wrap gap-2">
+                    <Link className="forum-button-secondary" to="/admin">
+                        <FaArrowLeft /> Admin-Zentrale
+                    </Link>
+                    <Link className="forum-button-secondary" to="/forum">
+                        Forum öffnen
+                    </Link>
+                </div>
             }
         >
             <div className="mb-7 flex flex-wrap gap-2 rounded-2xl border border-white/[.06] bg-white/[.025] p-2">
@@ -229,49 +234,68 @@ function ReportsEditor() {
                     </select>
                 </label>
             </header>
-            {state.loading && <div className="p-6"><ForumLoading label="Meldungen werden geladen …" /></div>}
-            {state.error && <div className="p-6"><ForumError message={state.error} retry={load} /></div>}
+            {state.loading && (
+                <div className="p-6">
+                    <ForumLoading label="Meldungen werden geladen …" />
+                </div>
+            )}
+            {state.error && (
+                <div className="p-6">
+                    <ForumError message={state.error} retry={load} />
+                </div>
+            )}
             {!state.loading && !state.error && !(state.response?.items?.length > 0) && (
                 <p className="p-8 text-center text-sm text-zinc-600">Keine Meldungen mit diesem Status vorhanden.</p>
             )}
-            {!state.loading && !state.error && (state.response?.items ?? []).map((report) => (
-                <article className="border-b border-white/[.05] p-6 last:border-0" key={report.id}>
-                    <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
-                        <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600">
-                                <span className={`rounded-full px-2 py-1 font-semibold ${report.status === 'OPEN' ? 'bg-red-500/10 text-red-300' : 'bg-emerald-500/10 text-emerald-300'}`}>
-                                    {report.status === 'OPEN' ? 'OFFEN' : 'ERLEDIGT'}
-                                </span>
-                                <span>{report.targetType === 'POST' ? 'Beitrag' : 'Thema'}</span>
-                                <span>·</span>
-                                <span>{formatDate(report.createdAt)}</span>
+            {!state.loading &&
+                !state.error &&
+                (state.response?.items ?? []).map((report) => (
+                    <article className="border-b border-white/[.05] p-6 last:border-0" key={report.id}>
+                        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+                            <div className="min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-600">
+                                    <span
+                                        className={`rounded-full px-2 py-1 font-semibold ${report.status === 'OPEN' ? 'bg-red-500/10 text-red-300' : 'bg-emerald-500/10 text-emerald-300'}`}
+                                    >
+                                        {report.status === 'OPEN' ? 'OFFEN' : 'ERLEDIGT'}
+                                    </span>
+                                    <span>{report.targetType === 'POST' ? 'Beitrag' : 'Thema'}</span>
+                                    <span>·</span>
+                                    <span>{formatDate(report.createdAt)}</span>
+                                </div>
+                                <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-300">
+                                    {report.reason}
+                                </p>
+                                <div className="mt-5 flex flex-wrap items-center gap-4">
+                                    <UserIdentity playerId={report.reporterUserId} linked />
+                                    <Link
+                                        className="text-sm font-semibold text-orange-300 hover:text-orange-200"
+                                        to={`/forum/topic/${report.topicId}${report.postId ? `#post-${report.postId}` : ''}`}
+                                    >
+                                        Inhalt öffnen →
+                                    </Link>
+                                </div>
                             </div>
-                            <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-zinc-300">{report.reason}</p>
-                            <div className="mt-5 flex flex-wrap items-center gap-4">
-                                <UserIdentity playerId={report.reporterUserId} linked />
-                                <Link
-                                    className="text-sm font-semibold text-orange-300 hover:text-orange-200"
-                                    to={`/forum/topic/${report.topicId}${report.postId ? `#post-${report.postId}` : ''}`}
-                                >
-                                    Inhalt öffnen →
-                                </Link>
-                            </div>
+                            <button
+                                className={report.status === 'OPEN' ? 'forum-button-primary' : 'forum-button-secondary'}
+                                onClick={() => update(report, report.status === 'OPEN' ? 'CLOSED' : 'OPEN')}
+                            >
+                                <FaCheck /> {report.status === 'OPEN' ? 'Als erledigt markieren' : 'Wieder öffnen'}
+                            </button>
                         </div>
-                        <button
-                            className={report.status === 'OPEN' ? 'forum-button-primary' : 'forum-button-secondary'}
-                            onClick={() => update(report, report.status === 'OPEN' ? 'CLOSED' : 'OPEN')}
-                        >
-                            <FaCheck /> {report.status === 'OPEN' ? 'Als erledigt markieren' : 'Wieder öffnen'}
-                        </button>
-                    </div>
-                    {report.handledAt && (
-                        <p className="mt-4 text-xs text-zinc-700">Bearbeitet {formatDate(report.handledAt)}</p>
-                    )}
-                </article>
-            ))}
+                        {report.handledAt && (
+                            <p className="mt-4 text-xs text-zinc-700">Bearbeitet {formatDate(report.handledAt)}</p>
+                        )}
+                    </article>
+                ))}
             {state.response && (
                 <div className="border-t border-white/[.05] px-6">
-                    <Pagination page={state.response.page} size={state.response.size} total={state.response.total} onPage={setPage} />
+                    <Pagination
+                        page={state.response.page}
+                        size={state.response.size}
+                        total={state.response.total}
+                        onPage={setPage}
+                    />
                 </div>
             )}
         </section>
