@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FaArrowRight, FaBoxOpen, FaCartShopping, FaMinus, FaPlus, FaTrash, FaXmark } from 'react-icons/fa6';
-import { Link } from 'react-router-dom';
-import { useSearchParams } from 'react-router-dom';
+import {
+    FaArrowRight,
+    FaBagShopping,
+    FaBoxOpen,
+    FaCartShopping,
+    FaMagnifyingGlass,
+    FaMinus,
+    FaPlus,
+    FaTrash,
+    FaXmark
+} from 'react-icons/fa6';
+import { Link, useSearchParams } from 'react-router-dom';
 import useStoreCart from '../../hooks/useStoreCart';
+import { isAuthenticated } from '../../lib/auth';
 import { formatStorePrice, storeApi } from '../../lib/storeApi';
 
 export default function StoreIndex() {
@@ -11,6 +21,7 @@ export default function StoreIndex() {
     const [cartOpen, setCartOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [searchParams, setSearchParams] = useSearchParams();
+    const [search, setSearch] = useState(searchParams.get('q') ?? '');
     const cart = useStoreCart();
     const query = (searchParams.get('q') ?? '').trim().toLocaleLowerCase('de-DE');
 
@@ -33,9 +44,7 @@ export default function StoreIndex() {
         };
     }, []);
 
-    useEffect(() => {
-        if (searchParams.get('cart') === 'open') setCartOpen(true);
-    }, [searchParams]);
+    useEffect(() => setSearch(searchParams.get('q') ?? ''), [searchParams]);
 
     const categoryNames = useMemo(
         () => new Map(state.categories.map((item) => [item.id, item.name])),
@@ -56,21 +65,50 @@ export default function StoreIndex() {
         [cart.items, state.products]
     );
     const total = cartProducts.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0);
+    const submitSearch = (event) => {
+        event.preventDefault();
+        const next = new URLSearchParams(searchParams);
+        if (search.trim()) next.set('q', search.trim());
+        else next.delete('q');
+        setSearchParams(next);
+    };
 
     return (
-        <main className="min-h-screen bg-[#090a0d] pb-24 pt-48 text-white sm:pt-52">
+        <main className="min-h-screen bg-[#090a0d] pb-24 pt-32 text-white sm:pt-36">
             <section className="mx-auto max-w-7xl px-4 sm:px-6">
-                <div className="flex flex-wrap items-end justify-between gap-5">
+                <div className="store-catalog-header">
                     <div>
-                        <p className="eyebrow">SERIUXMOD STORE</p>
-                        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">Produkte entdecken</h1>
-                        {query && (
-                            <p className="mt-2 text-sm text-zinc-500">
-                                Ergebnisse für <span className="text-orange-300">„{searchParams.get('q')}“</span>
-                            </p>
-                        )}
+                        <h1 className="font-display text-4xl font-bold tracking-tight">Shop</h1>
+                        <p className="mt-2 max-w-sm text-sm leading-6 text-zinc-400">
+                            Mach deinen Minecraft-Client einzigartig mit Cosmetics, Pets, Emotes und mehr.
+                        </p>
                     </div>
-                    <div className="flex max-w-full gap-2 overflow-x-auto pb-2">
+                    <div className="flex w-full flex-wrap items-center justify-end gap-3 lg:w-auto">
+                        <form className="store-catalog-search" onSubmit={submitSearch}>
+                            <FaMagnifyingGlass aria-hidden="true" />
+                            <input
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                placeholder="Produkte suchen ..."
+                                aria-label="Produkte durchsuchen"
+                            />
+                            <button type="button" onClick={() => setCategory('')}>
+                                <FaBoxOpen /> Alle Produkte
+                            </button>
+                        </form>
+                        {isAuthenticated() && (
+                            <Link className="store-header-action hidden xl:inline-flex" to="/store/account">
+                                <FaBagShopping /> Meine Käufe
+                            </Link>
+                        )}
+                        <button className="store-header-cart" type="button" onClick={() => setCartOpen(true)}>
+                            <FaCartShopping /> Warenkorb <b>{cart.count}</b>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="store-category-bar mt-5">
+                    <div className="flex max-w-full gap-2 overflow-x-auto">
                         <button
                             className={`store-category ${category === '' ? 'store-category-active' : ''}`}
                             onClick={() => setCategory('')}
@@ -88,6 +126,23 @@ export default function StoreIndex() {
                         ))}
                     </div>
                 </div>
+
+                {query && (
+                    <div className="mt-6 flex items-center justify-between gap-4 text-sm text-zinc-500">
+                        <p>
+                            Ergebnisse für <span className="text-orange-300">„{searchParams.get('q')}“</span>
+                        </p>
+                        <button
+                            className="text-xs font-bold text-zinc-400 transition hover:text-white"
+                            onClick={() => {
+                                setSearch('');
+                                setSearchParams({});
+                            }}
+                        >
+                            Suche löschen
+                        </button>
+                    </div>
+                )}
 
                 {state.loading ? (
                     <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -143,14 +198,7 @@ export default function StoreIndex() {
                     total={total}
                     currency={state.config?.currency || 'EUR'}
                     cart={cart}
-                    onClose={() => {
-                        setCartOpen(false);
-                        if (searchParams.has('cart')) {
-                            const next = new URLSearchParams(searchParams);
-                            next.delete('cart');
-                            setSearchParams(next, { replace: true });
-                        }
-                    }}
+                    onClose={() => setCartOpen(false)}
                 />
             )}
         </main>

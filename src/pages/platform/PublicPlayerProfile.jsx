@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaCalendarDays, FaCheck, FaComments, FaCopy, FaHeart, FaMessage, FaShieldHalved } from 'react-icons/fa6';
 import { Link, useParams } from 'react-router-dom';
 import { forumApi } from '../../lib/forumApi';
@@ -21,6 +21,7 @@ export default function PublicPlayerProfile() {
     const [state, setState] = useState({ loading: true, profile: null, forum: null, error: '' });
     const [copied, setCopied] = useState('');
     const currentUser = getAuthenticatedUser();
+    const identityRef = useRef(null);
 
     const load = useCallback(
         async (signal) => {
@@ -48,6 +49,32 @@ export default function PublicPlayerProfile() {
         load(controller.signal);
         return () => controller.abort();
     }, [load]);
+
+    useEffect(() => {
+        if (!state.profile || !identityRef.current) return undefined;
+        const profile = state.profile;
+        const publish = (visible) =>
+            window.dispatchEvent(
+                new CustomEvent('seriux-profile-context', {
+                    detail: {
+                        visible,
+                        username: profile.username,
+                        playerId: profile.playerId,
+                        avatarUrl: playerAvatar(profile.playerId, 96),
+                        rank: profile.rank?.displayName || 'User'
+                    }
+                })
+            );
+        const observer = new IntersectionObserver(
+            ([entry]) => publish(!entry.isIntersecting && entry.boundingClientRect.bottom < 120),
+            { rootMargin: '-110px 0px 0px 0px', threshold: 0 }
+        );
+        observer.observe(identityRef.current);
+        return () => {
+            observer.disconnect();
+            window.dispatchEvent(new CustomEvent('seriux-profile-context', { detail: null }));
+        };
+    }, [state.profile]);
 
     const isOwnProfile = useMemo(
         () => currentUser?.playerId && currentUser.playerId === state.profile?.playerId,
@@ -122,7 +149,10 @@ export default function PublicPlayerProfile() {
                                 </span>
                             )}
                         </div>
-                        <h1 className="truncate font-display text-5xl font-bold tracking-[-.055em] sm:text-7xl">
+                        <h1
+                            ref={identityRef}
+                            className="truncate font-display text-5xl font-bold tracking-[-.055em] sm:text-7xl"
+                        >
                             {profile.username}
                         </h1>
                         <button

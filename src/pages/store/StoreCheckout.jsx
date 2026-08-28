@@ -101,7 +101,7 @@ export default function StoreCheckout() {
     };
 
     return (
-        <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-48 text-white sm:px-6 sm:pt-52">
+        <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-32 text-white sm:px-6 sm:pt-36">
             <div className="mx-auto max-w-6xl">
                 <Link
                     className="inline-flex items-center gap-2 text-sm text-zinc-500 transition hover:text-orange-300"

@@ -52,7 +52,7 @@ export default function StoreAccount() {
 
     if (!user)
         return (
-            <main className="grid min-h-screen place-items-center bg-[#090a0d] px-4 pt-44 text-white">
+            <main className="grid min-h-screen place-items-center bg-[#090a0d] px-4 pt-24 text-white">
                 <div className="forum-panel max-w-lg rounded-3xl p-8 text-center">
                     <FaBagShopping className="mx-auto text-4xl text-orange-400" />
                     <h1 className="mt-5 font-display text-3xl font-bold">Deine Käufe</h1>
@@ -67,7 +67,7 @@ export default function StoreAccount() {
         );
 
     return (
-        <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-48 text-white sm:px-6 sm:pt-52">
+        <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-32 text-white sm:px-6 sm:pt-36">
             <div className="mx-auto max-w-7xl">
                 <div className="flex flex-wrap items-end justify-between gap-6">
                     <div>

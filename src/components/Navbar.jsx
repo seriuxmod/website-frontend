@@ -5,6 +5,7 @@ import {
     FaBars,
     FaBell,
     FaChevronDown,
+    FaCopy,
     FaRightToBracket,
     FaKey,
     FaShieldHalved,
@@ -23,7 +24,6 @@ import {
 import { forumApi } from '../lib/forumApi';
 import { communityItems } from '../config/community';
 import PlayerSearch from './PlayerSearch';
-import StoreSubNavbar from './StoreSubNavbar';
 
 export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -31,6 +31,7 @@ export default function Navbar() {
     const [profileOpen, setProfileOpen] = useState(false);
     const [user, setUser] = useState(() => getAuthenticatedUser());
     const [unreadForumNotifications, setUnreadForumNotifications] = useState(0);
+    const [profileContext, setProfileContext] = useState(null);
     const location = useLocation();
     const navigate = useNavigate();
     const searchRef = useRef(null);
@@ -50,6 +51,13 @@ export default function Navbar() {
         return () => {
             active = false;
         };
+    }, [location.pathname]);
+
+    useEffect(() => {
+        setProfileContext(null);
+        const updateProfileContext = (event) => setProfileContext(event.detail);
+        window.addEventListener('seriux-profile-context', updateProfileContext);
+        return () => window.removeEventListener('seriux-profile-context', updateProfileContext);
     }, [location.pathname]);
 
     useEffect(() => {
@@ -259,7 +267,28 @@ export default function Navbar() {
                 </button>
             </nav>
 
-            {location.pathname.startsWith('/store') && <StoreSubNavbar />}
+            {profileContext?.visible && (
+                <div className="profile-context-bar pointer-events-auto mx-auto max-w-[1500px]">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <img
+                            className="h-9 w-9 rounded-lg bg-black/30 [image-rendering:pixelated]"
+                            src={profileContext.avatarUrl}
+                            alt=""
+                        />
+                        <b className="truncate font-display text-base text-white">{profileContext.username}</b>
+                        <button
+                            type="button"
+                            className="profile-context-uuid hidden sm:inline-flex"
+                            onClick={() => navigator.clipboard.writeText(profileContext.playerId)}
+                            title="UUID kopieren"
+                        >
+                            <span>{profileContext.playerId}</span>
+                            <FaCopy />
+                        </button>
+                    </div>
+                    <span className="profile-context-rank">{profileContext.rank}</span>
+                </div>
+            )}
 
             <div
                 className={`pointer-events-auto fixed inset-0 z-[-1] overflow-y-auto bg-[#06070a]/75 px-3 pb-6 pt-[98px] backdrop-blur-xl transition duration-300 lg:hidden ${mobileOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}
