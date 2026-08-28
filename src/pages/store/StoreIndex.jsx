@@ -83,7 +83,7 @@ export default function StoreIndex() {
                             Mach deinen Minecraft-Client einzigartig mit Cosmetics, Pets, Emotes und mehr.
                         </p>
                     </div>
-                    <div className="flex w-full flex-wrap items-center justify-end gap-3 lg:w-auto">
+                    <div className="flex w-full flex-wrap items-center justify-end gap-3 lg:w-auto lg:flex-nowrap">
                         <form className="store-catalog-search" onSubmit={submitSearch}>
                             <FaMagnifyingGlass aria-hidden="true" />
                             <input
