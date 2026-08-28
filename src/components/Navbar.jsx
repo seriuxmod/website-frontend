@@ -12,7 +12,7 @@ import {
     FaUser,
     FaXmark
 } from 'react-icons/fa6';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
     beginLogin,
     fetchAuthenticatedUser,
@@ -33,7 +33,6 @@ export default function Navbar() {
     const [unreadForumNotifications, setUnreadForumNotifications] = useState(0);
     const [profileContext, setProfileContext] = useState(null);
     const location = useLocation();
-    const navigate = useNavigate();
     const searchRef = useRef(null);
     const communityRef = useRef(null);
     const profileRef = useRef(null);
@@ -107,10 +106,8 @@ export default function Navbar() {
     }, [mobileOpen]);
 
     const signOut = () => {
-        logout();
-        setUser(null);
         setProfileOpen(false);
-        navigate('/');
+        logout(location.pathname);
     };
 
     return (

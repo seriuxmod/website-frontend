@@ -60,6 +60,16 @@ const storeTokens = (payload) => {
     if (payload.refresh_token) sessionStorage.setItem(REFRESH_TOKEN_KEY, payload.refresh_token);
 };
 
+const clearLocalSession = () => {
+    sessionStorage.removeItem('seriux_access_token');
+    sessionStorage.removeItem('seriux_identity_token');
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem('seriux_return_to');
+    sessionStorage.removeItem('seriux_pkce_verifier');
+    sessionStorage.removeItem('seriux_oauth_state');
+    sessionStorage.removeItem(PROFILE_KEY);
+};
+
 export const getAuthenticatedUser = () => {
     const accessToken = getAccessToken();
     if (!accessToken) return null;
@@ -101,7 +111,7 @@ async function refreshAccessToken() {
             storeTokens(payload);
             return payload.access_token;
         } catch {
-            logout();
+            clearLocalSession();
             return null;
         } finally {
             refreshRequest = null;
@@ -224,10 +234,11 @@ export async function completeLogin(code, state) {
     return sessionStorage.getItem('seriux_return_to') || '/';
 }
 
-export function logout() {
-    sessionStorage.removeItem('seriux_access_token');
-    sessionStorage.removeItem('seriux_identity_token');
-    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
-    sessionStorage.removeItem('seriux_return_to');
-    sessionStorage.removeItem(PROFILE_KEY);
+export function logout(returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+    clearLocalSession();
+
+    const target = new URL(returnTo || '/', window.location.origin);
+    const safeTarget = target.origin === window.location.origin ? target.href : `${window.location.origin}/`;
+    const params = new URLSearchParams({ redirect: safeTarget });
+    window.location.assign(`${AUTH_URL}/logout?${params}`);
 }
