@@ -573,6 +573,23 @@
     border-radius: 999px;
 }
 
+.status-flow-line {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 9 13;
+    filter: drop-shadow(0 0 5px currentColor);
+    animation: status-flow-travel 2.4s linear infinite;
+}
+
+@keyframes status-flow-travel {
+    to {
+        stroke-dashoffset: -44;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     html {
         scroll-behavior: auto;

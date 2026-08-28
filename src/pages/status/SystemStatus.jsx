@@ -4,12 +4,16 @@ import {
     FaCheck,
     FaCircleExclamation,
     FaClock,
+    FaHeartCrack,
+    FaSeedling,
+    FaSpinner,
     FaTriangleExclamation,
-    FaWifi
+    FaUser
 } from 'react-icons/fa6';
 
 const STATUS_API = 'https://api.seriuxmod.net/api/v1/status/summary';
 const REFRESH_INTERVAL = 30_000;
+const HIGH_PING_THRESHOLD_MS = 500;
 
 const excludedMonitorIds = new Set(['seriuxmod-homepage', 'gcore-api', 'nexus', 'docker-registry', 'docker-swarm-api']);
 
@@ -31,16 +35,28 @@ const groupPresentation = {
 const groupStates = {
     operational: {
         label: 'Operational',
+        icon: FaSeedling,
+        iconClass: '',
         circle: 'border-emerald-400/70 bg-emerald-400/[.08] text-emerald-300 shadow-[0_0_45px_rgba(52,211,153,.14)]'
     },
     degraded: {
         label: 'Beeinträchtigt',
+        icon: FaSpinner,
+        iconClass: 'animate-spin [animation-duration:1.8s]',
         circle: 'border-amber-400/70 bg-amber-400/[.08] text-amber-300 shadow-[0_0_45px_rgba(251,191,36,.14)]'
     },
     outage: {
         label: 'Nicht erreichbar',
+        icon: FaHeartCrack,
+        iconClass: '',
         circle: 'border-red-500/70 bg-red-500/[.08] text-red-300 shadow-[0_0_45px_rgba(239,68,68,.14)]'
     }
+};
+
+const flowLineClasses = {
+    operational: 'text-emerald-400',
+    degraded: 'text-amber-400',
+    outage: 'text-red-400'
 };
 
 const overallContent = {
@@ -138,8 +154,15 @@ export default function SystemStatus() {
             .map(([name, group]) => {
                 const { services } = group;
                 const onlineServices = services.filter((service) => service.state === 'UP').length;
+                const hasHighPing = services.some(
+                    (service) => service.state === 'UP' && Number(service.responseTimeMs) >= HIGH_PING_THRESHOLD_MS
+                );
                 const status =
-                    onlineServices === services.length ? 'operational' : onlineServices === 0 ? 'outage' : 'degraded';
+                    onlineServices === 0
+                        ? 'outage'
+                        : onlineServices < services.length || hasHighPing
+                          ? 'degraded'
+                          : 'operational';
                 const averagePing = Math.round(
                     services.reduce((total, service) => total + (Number(service.responseTimeMs) || 0), 0) /
                         services.length
@@ -237,6 +260,8 @@ export default function SystemStatus() {
                                 ))}
                             </div>
                         </section>
+
+                        <ConnectionFlow groups={groups} />
                     </>
                 )}
             </div>
@@ -246,6 +271,7 @@ export default function SystemStatus() {
 
 function ServiceGroup({ group }) {
     const visual = groupStates[group.status];
+    const StatusIcon = visual.icon;
 
     return (
         <article className="flex min-h-56 flex-col items-center rounded-3xl border border-white/[.07] bg-[#111218] px-4 py-5 text-center shadow-[0_18px_45px_rgba(0,0,0,.18)]">
@@ -255,7 +281,7 @@ function ServiceGroup({ group }) {
                 aria-label={`${group.name}: ${visual.label}`}
                 title={visual.label}
             >
-                <FaWifi className="text-2xl" aria-hidden="true" />
+                <StatusIcon className={`text-2xl ${visual.iconClass}`} aria-hidden="true" />
             </div>
             <p className="mt-4 font-display text-2xl font-bold tracking-[-.04em] text-white">
                 {group.averagePing} <span className="text-sm text-zinc-500">ms</span>
@@ -268,6 +294,133 @@ function ServiceGroup({ group }) {
                 <span className="truncate font-bold text-zinc-400">{visual.label}</span>
             </div>
         </article>
+    );
+}
+
+function ConnectionFlow({ groups }) {
+    const groupsByName = Object.fromEntries(groups.map((group) => [group.name, group]));
+    const statusFor = (name) => groupsByName[name]?.status ?? 'outage';
+    const connections = [
+        { path: 'M 180 165 H 240', status: statusFor('DNS Auflösung') },
+        { path: 'M 400 165 H 470', status: statusFor('API Gateway') },
+        { path: 'M 630 165 H 710', status: statusFor('API Gateway'), arrow: false },
+        { path: 'M 710 165 V 55', status: statusFor('API Gateway'), arrow: false },
+        { path: 'M 710 165 V 385', status: statusFor('API Gateway'), arrow: false },
+        { path: 'M 710 55 H 790', status: statusFor('CDN') },
+        { path: 'M 710 165 H 790', status: statusFor('Database') },
+        { path: 'M 710 275 H 790', status: statusFor('Payment Gateway') },
+        { path: 'M 710 385 H 790', status: statusFor('Notification Service') }
+    ];
+
+    return (
+        <section className="mt-8 overflow-hidden rounded-[30px] border border-white/[.07] bg-[#111218] p-5 shadow-[0_22px_65px_rgba(0,0,0,.2)] sm:p-7">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <p className="eyebrow">LIVE CONNECTION</p>
+                    <h2 className="mt-2 font-display text-xl font-bold sm:text-2xl">Connection Flow</h2>
+                </div>
+                <p className="text-[10px] text-zinc-600">Animierte Route durch die SeriuxMod-Infrastruktur</p>
+            </div>
+
+            <div className="mt-6 overflow-x-auto pb-2">
+                <div className="relative h-[440px] min-w-[900px] overflow-hidden rounded-2xl border border-white/[.05] bg-[#0b0c10]">
+                    <svg
+                        aria-hidden="true"
+                        className="absolute inset-0 h-full w-full"
+                        preserveAspectRatio="none"
+                        viewBox="0 0 1000 440"
+                    >
+                        <defs>
+                            <marker
+                                id="status-arrow-operational"
+                                markerHeight="8"
+                                markerWidth="8"
+                                orient="auto"
+                                refX="7"
+                                refY="4"
+                            >
+                                <path d="M0,0 L8,4 L0,8 Z" fill="#34d399" />
+                            </marker>
+                            <marker
+                                id="status-arrow-degraded"
+                                markerHeight="8"
+                                markerWidth="8"
+                                orient="auto"
+                                refX="7"
+                                refY="4"
+                            >
+                                <path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24" />
+                            </marker>
+                            <marker
+                                id="status-arrow-outage"
+                                markerHeight="8"
+                                markerWidth="8"
+                                orient="auto"
+                                refX="7"
+                                refY="4"
+                            >
+                                <path d="M0,0 L8,4 L0,8 Z" fill="#f87171" />
+                            </marker>
+                        </defs>
+                        {connections.map((connection, index) => (
+                            <path
+                                className={`status-flow-line ${flowLineClasses[connection.status]}`}
+                                d={connection.path}
+                                key={connection.path}
+                                markerEnd={
+                                    connection.arrow === false ? undefined : `url(#status-arrow-${connection.status})`
+                                }
+                                style={{ animationDelay: `${index * -0.22}s` }}
+                            />
+                        ))}
+                    </svg>
+
+                    <FlowNode className="left-[2%] top-[37.5%]" label="You" origin />
+                    <FlowNode
+                        className="left-[24%] top-[37.5%]"
+                        label="DNS Auflösung"
+                        status={statusFor('DNS Auflösung')}
+                    />
+                    <FlowNode
+                        className="left-[47%] top-[37.5%]"
+                        label="API Gateway"
+                        status={statusFor('API Gateway')}
+                    />
+                    <FlowNode className="left-[79%] top-[12.5%]" label="CDN" status={statusFor('CDN')} />
+                    <FlowNode className="left-[79%] top-[37.5%]" label="Database" status={statusFor('Database')} />
+                    <FlowNode
+                        className="left-[79%] top-[62.5%]"
+                        label="Payment Gateway"
+                        status={statusFor('Payment Gateway')}
+                    />
+                    <FlowNode
+                        className="left-[79%] top-[87.5%]"
+                        label="Notification Service"
+                        status={statusFor('Notification Service')}
+                    />
+                </div>
+            </div>
+        </section>
+    );
+}
+
+function FlowNode({ className, label, origin = false, status = 'operational' }) {
+    const visual = groupStates[status];
+    const StatusIcon = origin ? FaUser : visual.icon;
+
+    return (
+        <div
+            className={`absolute z-10 flex min-h-16 w-[16%] -translate-y-1/2 items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur ${
+                origin
+                    ? 'border-orange-400/35 bg-orange-500/[.08] text-orange-300 shadow-[0_0_35px_rgba(249,115,22,.1)]'
+                    : visual.circle
+            } ${className}`}
+        >
+            <span className="border-current/25 grid h-9 w-9 shrink-0 place-items-center rounded-full border bg-black/20">
+                <StatusIcon className={origin ? 'text-sm' : `text-sm ${visual.iconClass}`} aria-hidden="true" />
+            </span>
+            <span className="min-w-0 text-xs font-bold leading-4 text-zinc-100">{label}</span>
+        </div>
     );
 }
 
