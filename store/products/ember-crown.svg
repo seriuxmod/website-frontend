@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs><radialGradient id="g"><stop stop-color="#7b2700"/><stop offset="1" stop-color="#090a0d"/></radialGradient></defs>
+  <rect width="1200" height="720" fill="url(#g)"/>
+  <path d="m270 220 145 120 185-205 185 205 145-120-80 300H350Z" fill="#ff7a18" stroke="#ffd36a" stroke-width="18" stroke-linejoin="round"/>
+  <path d="M355 520h490v70H355Z" fill="#ba3507"/><circle cx="600" cy="425" r="38" fill="#fff1a5"/>
+  <text x="64" y="646" fill="white" font-family="Arial,sans-serif" font-size="54" font-weight="800">EMBER CROWN</text>
+</svg>
