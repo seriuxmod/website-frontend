@@ -23,6 +23,7 @@ import {
 import { forumApi } from '../lib/forumApi';
 import { communityItems } from '../config/community';
 import PlayerSearch from './PlayerSearch';
+import StoreSubNavbar from './StoreSubNavbar';
 
 export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -257,6 +258,8 @@ export default function Navbar() {
                     {mobileOpen ? <FaXmark /> : <FaBars />}
                 </button>
             </nav>
+
+            {location.pathname.startsWith('/store') && <StoreSubNavbar />}
 
             <div
                 className={`pointer-events-auto fixed inset-0 z-[-1] overflow-y-auto bg-[#06070a]/75 px-3 pb-6 pt-[98px] backdrop-blur-xl transition duration-300 lg:hidden ${mobileOpen ? 'visible opacity-100' : 'invisible opacity-0'}`}

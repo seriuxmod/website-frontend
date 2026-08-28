@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs><radialGradient id="g"><stop stop-color="#ff7a18"/><stop offset="1" stop-color="#090a0d"/></radialGradient></defs>
+  <rect width="1200" height="720" fill="#0b0c10"/><circle cx="600" cy="350" r="330" fill="url(#g)" opacity=".34"/>
+  <path d="M565 466C430 510 257 454 190 278c126 7 238 55 340 150-35-83-35-162 5-236 44 99 54 190 30 274Zm70 0c135 44 308-12 375-188-126 7-238 55-340 150 35-83 35-162-5-236-44 99-54 190-30 274Z" fill="#ff6a00" stroke="#ffc14d" stroke-width="15"/>
+  <circle cx="600" cy="456" r="36" fill="#ffe1a1"/>
+  <text x="64" y="646" fill="white" font-family="Arial,sans-serif" font-size="54" font-weight="800">INFERNO WINGS</text>
+</svg>

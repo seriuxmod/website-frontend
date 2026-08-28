@@ -1,19 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-    FaArrowRight,
-    FaBagShopping,
-    FaBoxOpen,
-    FaCartShopping,
-    FaCheck,
-    FaMinus,
-    FaPlus,
-    FaShieldHalved,
-    FaTrash,
-    FaXmark
-} from 'react-icons/fa6';
+import { FaArrowRight, FaBoxOpen, FaCartShopping, FaMinus, FaPlus, FaTrash, FaXmark } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import useStoreCart from '../../hooks/useStoreCart';
-import { isAuthenticated } from '../../lib/auth';
 import { formatStorePrice, storeApi } from '../../lib/storeApi';
 
 export default function StoreIndex() {
@@ -21,7 +10,9 @@ export default function StoreIndex() {
     const [category, setCategory] = useState('');
     const [cartOpen, setCartOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
     const cart = useStoreCart();
+    const query = (searchParams.get('q') ?? '').trim().toLocaleLowerCase('de-DE');
 
     useEffect(() => {
         let active = true;
@@ -42,7 +33,21 @@ export default function StoreIndex() {
         };
     }, []);
 
-    const products = category ? state.products.filter((product) => product.categoryId === category) : state.products;
+    useEffect(() => {
+        if (searchParams.get('cart') === 'open') setCartOpen(true);
+    }, [searchParams]);
+
+    const categoryNames = useMemo(
+        () => new Map(state.categories.map((item) => [item.id, item.name])),
+        [state.categories]
+    );
+    const products = state.products.filter((product) => {
+        if (category && product.categoryId !== category) return false;
+        if (!query) return true;
+        return [product.name, product.description, categoryNames.get(product.categoryId)]
+            .filter(Boolean)
+            .some((value) => value.toLocaleLowerCase('de-DE').includes(query));
+    });
     const cartProducts = useMemo(
         () =>
             cart.items
@@ -53,55 +58,17 @@ export default function StoreIndex() {
     const total = cartProducts.reduce((sum, item) => sum + item.product.priceCents * item.quantity, 0);
 
     return (
-        <main className="min-h-screen bg-[#090a0d] pb-24 pt-32 text-white sm:pt-36">
+        <main className="min-h-screen bg-[#090a0d] pb-24 pt-48 text-white sm:pt-52">
             <section className="mx-auto max-w-7xl px-4 sm:px-6">
-                <div className="store-hero relative overflow-hidden rounded-[34px] border border-white/[.08] px-6 py-12 sm:px-10 lg:px-14 lg:py-16">
-                    <div className="relative z-10 grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
-                        <div className="max-w-3xl">
-                            <p className="eyebrow">SERIUXMOD STORE</p>
-                            <h1 className="mt-4 font-display text-5xl font-bold tracking-[-.055em] sm:text-7xl">
-                                Dein Client. Dein Stil.
-                            </h1>
-                            <p className="mt-6 max-w-2xl text-sm leading-7 text-zinc-400 sm:text-base">
-                                Cosmetics, Ränge und digitale Erweiterungen werden direkt deiner Minecraft-UUID
-                                zugewiesen – dauerhaft nachvollziehbar über deine Seriux-ID.
-                            </p>
-                            <div className="mt-7 flex flex-wrap gap-3 text-xs text-zinc-500">
-                                <span className="store-trust-item">
-                                    <FaShieldHalved /> Sicherer Checkout
-                                </span>
-                                <span className="store-trust-item">
-                                    <FaCheck /> Direkte Freischaltung
-                                </span>
-                                <span className="store-trust-item">
-                                    <FaBoxOpen /> Rein digitale Produkte
-                                </span>
-                            </div>
-                        </div>
-                        <div className="flex flex-wrap gap-3">
-                            {isAuthenticated() && (
-                                <Link className="forum-button-secondary" to="/store/account">
-                                    <FaBagShopping /> Meine Käufe
-                                </Link>
-                            )}
-                            <button className="forum-button-primary" onClick={() => setCartOpen(true)}>
-                                <FaCartShopping /> Warenkorb ({cart.count})
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {state.config && !state.config.checkoutEnabled && (
-                    <div className="mt-6 rounded-2xl border border-amber-400/15 bg-amber-400/[.055] px-5 py-4 text-sm text-amber-100/75">
-                        Der Katalog ist bereits live. Bezahlvorgänge werden freigeschaltet, sobald Zahlungsanbieter,
-                        Steuerkonfiguration und Rechnungssteller vollständig hinterlegt sind.
-                    </div>
-                )}
-
-                <div className="mt-10 flex flex-wrap items-center justify-between gap-5">
+                <div className="flex flex-wrap items-end justify-between gap-5">
                     <div>
-                        <p className="eyebrow">KATALOG</p>
-                        <h2 className="mt-2 font-display text-3xl font-bold">Produkte entdecken</h2>
+                        <p className="eyebrow">SERIUXMOD STORE</p>
+                        <h1 className="mt-2 font-display text-4xl font-bold tracking-tight">Produkte entdecken</h1>
+                        {query && (
+                            <p className="mt-2 text-sm text-zinc-500">
+                                Ergebnisse für <span className="text-orange-300">„{searchParams.get('q')}“</span>
+                            </p>
+                        )}
                     </div>
                     <div className="flex max-w-full gap-2 overflow-x-auto pb-2">
                         <button
@@ -136,9 +103,13 @@ export default function StoreIndex() {
                     <div className="mt-8 grid min-h-80 place-items-center rounded-3xl border border-dashed border-white/10 bg-white/[.018] p-8 text-center">
                         <div>
                             <FaBoxOpen className="mx-auto text-4xl text-orange-400" />
-                            <h3 className="mt-5 font-display text-2xl font-bold">Produkte werden vorbereitet</h3>
+                            <h3 className="mt-5 font-display text-2xl font-bold">
+                                {query ? 'Keine passenden Produkte' : 'Produkte werden vorbereitet'}
+                            </h3>
                             <p className="mt-3 max-w-md text-sm leading-6 text-zinc-500">
-                                In dieser Kategorie sind noch keine veröffentlichten Produkte vorhanden.
+                                {query
+                                    ? 'Versuche einen anderen Suchbegriff oder wähle eine andere Kategorie.'
+                                    : 'In dieser Kategorie sind noch keine veröffentlichten Produkte vorhanden.'}
                             </p>
                         </div>
                     </div>
@@ -172,7 +143,14 @@ export default function StoreIndex() {
                     total={total}
                     currency={state.config?.currency || 'EUR'}
                     cart={cart}
-                    onClose={() => setCartOpen(false)}
+                    onClose={() => {
+                        setCartOpen(false);
+                        if (searchParams.has('cart')) {
+                            const next = new URLSearchParams(searchParams);
+                            next.delete('cart');
+                            setSearchParams(next, { replace: true });
+                        }
+                    }}
                 />
             )}
         </main>

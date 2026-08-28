@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#27153d"/><stop offset="1" stop-color="#090a0d"/></linearGradient></defs>
+  <rect width="1200" height="720" fill="url(#g)"/>
+  <path d="M430 130h340l70 450-240-70-240 70Z" fill="#17131f" stroke="#9d52e4" stroke-width="16"/><path d="m600 215 55 110 120 18-87 85 21 119-109-57-109 57 21-119-87-85 120-18Z" fill="#f36b1d" opacity=".9"/>
+  <text x="64" y="646" fill="white" font-family="Arial,sans-serif" font-size="54" font-weight="800">SHADOW CAPE</text>
+</svg>

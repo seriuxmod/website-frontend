@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs><linearGradient id="g" x2="1" y2="1"><stop stop-color="#361205"/><stop offset="1" stop-color="#090a0d"/></linearGradient></defs>
+  <rect width="1200" height="720" fill="url(#g)"/><circle cx="600" cy="320" r="245" fill="#ff6a00" opacity=".15"/>
+  <path d="M410 240 500 95l65 120h70l65-120 90 145-45 270H455Z" fill="#f45d16" stroke="#ff9a3d" stroke-width="14"/>
+  <path d="m455 510 145 100 145-100-70-70H525Z" fill="#f5e2c0"/><path d="m490 285 75 36-75 32Zm220 0-75 36 75 32Z" fill="#15171d"/>
+  <text x="64" y="646" fill="white" font-family="Arial,sans-serif" font-size="54" font-weight="800">FOXFIRE COMPANION</text>
+</svg>

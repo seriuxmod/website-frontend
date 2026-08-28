@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs><radialGradient id="g"><stop stop-color="#ff8a1c" stop-opacity=".7"/><stop offset=".45" stop-color="#7b1700" stop-opacity=".25"/><stop offset="1" stop-color="#090a0d"/></radialGradient></defs>
+  <rect width="1200" height="720" fill="url(#g)"/>
+  <path d="M600 90c52 120 191 138 183 274-5 91-75 171-183 223-108-52-178-132-183-223-8-136 131-154 183-274Zm0 155c-24 83-103 111-82 198 12 47 48 83 82 105 34-22 70-58 82-105 21-87-58-115-82-198Z" fill="#ff7208" stroke="#ffd35e" stroke-width="13"/>
+  <text x="64" y="646" fill="white" font-family="Arial,sans-serif" font-size="54" font-weight="800">PHOENIX AURA</text>
+</svg>

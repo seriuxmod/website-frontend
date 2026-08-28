@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720">
+  <defs><radialGradient id="g"><stop stop-color="#a43b08"/><stop offset="1" stop-color="#090a0d"/></radialGradient></defs>
+  <rect width="1200" height="720" fill="url(#g)"/><path d="M325 250h550v310H325Z" fill="#17181e" stroke="#ff7a18" stroke-width="18"/><path d="M285 190h630v95H285Z" fill="#ff7a18"/><path d="M555 190h90v370h-90Z" fill="#ffb23f"/>
+  <path d="m600 90 45 72 84 20-55 65-4 87-70-34-70 34-4-87-55-65 84-20Z" fill="#fff0a1"/>
+  <text x="64" y="646" fill="white" font-family="Arial,sans-serif" font-size="54" font-weight="800">FOUNDER BUNDLE</text>
+</svg>

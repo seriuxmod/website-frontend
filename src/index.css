@@ -16,7 +16,8 @@
 }
 
 .store-hero {
-    background: radial-gradient(circle at 82% 12%, rgba(249, 115, 22, 0.2), transparent 32%),
+    background:
+        radial-gradient(circle at 82% 12%, rgba(249, 115, 22, 0.2), transparent 32%),
         linear-gradient(125deg, rgba(24, 26, 32, 0.98), rgba(12, 13, 17, 0.98));
 }
 
@@ -129,12 +130,8 @@
 .liquid-panel {
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.11);
-    background: linear-gradient(
-            120deg,
-            rgba(255, 255, 255, 0.095),
-            rgba(255, 255, 255, 0.025) 42%,
-            rgba(255, 92, 20, 0.055)
-        ),
+    background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.025) 42%, rgba(255, 92, 20, 0.055)),
         rgba(13, 14, 18, 0.67);
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.12),
@@ -146,6 +143,110 @@
 
 .liquid-nav {
     border-radius: 24px;
+}
+
+.store-subnav {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-top-color: rgba(249, 115, 22, 0.16);
+    border-radius: 0 0 22px 22px;
+    background: linear-gradient(115deg, rgba(20, 21, 27, 0.94), rgba(13, 14, 18, 0.91));
+    box-shadow:
+        0 20px 55px rgba(0, 0, 0, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    backdrop-filter: blur(24px) saturate(145%);
+}
+
+.store-subnav-link {
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    border-radius: 0.75rem;
+    padding: 0 0.9rem;
+    color: rgb(161 161 170);
+    font-size: 0.75rem;
+    font-weight: 750;
+    transition: 180ms ease;
+}
+
+.store-subnav-link:hover {
+    background: rgba(255, 255, 255, 0.045);
+    color: white;
+}
+
+.store-subnav-search {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 22rem;
+    align-items: center;
+    gap: 0.7rem;
+    height: 2.65rem;
+    max-width: 34rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.85rem;
+    padding-left: 0.9rem;
+    background: rgba(3, 4, 7, 0.58);
+    color: rgb(113 113 122);
+}
+
+.store-subnav-search:focus-within {
+    border-color: rgba(249, 115, 22, 0.32);
+    color: rgb(251 146 60);
+}
+
+.store-subnav-search input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: white;
+    font-size: 0.78rem;
+}
+
+.store-subnav-search button {
+    align-self: stretch;
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 0 0.9rem;
+    color: rgb(212 212 216);
+    font-size: 0.7rem;
+    font-weight: 800;
+    transition: 180ms ease;
+}
+
+.store-subnav-search button:hover {
+    color: rgb(251 146 60);
+}
+
+.store-cart-button {
+    display: inline-flex;
+    height: 2.65rem;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.55rem;
+    border-radius: 0.85rem;
+    padding: 0 0.85rem;
+    background: rgb(249 115 22);
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 850;
+    box-shadow: 0 10px 28px rgba(249, 115, 22, 0.22);
+    transition: 180ms ease;
+}
+
+.store-cart-button:hover {
+    transform: translateY(-1px);
+    background: rgb(251 146 60);
+}
+
+.store-cart-button b {
+    display: grid;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    place-items: center;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.24);
+    font-size: 0.65rem;
 }
 .liquid-nav::before,
 .liquid-panel::before {
@@ -314,7 +415,8 @@
 }
 
 .forum-hero {
-    background: radial-gradient(circle at 85% 15%, rgba(249, 115, 22, 0.2), transparent 24rem),
+    background:
+        radial-gradient(circle at 85% 15%, rgba(249, 115, 22, 0.2), transparent 24rem),
         radial-gradient(circle at 8% 100%, rgba(251, 191, 36, 0.07), transparent 24rem),
         linear-gradient(135deg, #17191f, #0e0f13 65%);
 }
@@ -364,7 +466,8 @@
 }
 
 .community-page-hero {
-    background: radial-gradient(circle at 86% 18%, rgba(249, 115, 22, 0.2), transparent 23rem),
+    background:
+        radial-gradient(circle at 86% 18%, rgba(249, 115, 22, 0.2), transparent 23rem),
         radial-gradient(circle at 8% 100%, rgba(251, 191, 36, 0.06), transparent 24rem),
         linear-gradient(135deg, #15171d, #0d0e12 68%);
 }
