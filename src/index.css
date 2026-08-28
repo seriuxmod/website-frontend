@@ -576,17 +576,37 @@
 .status-flow-line {
     fill: none;
     stroke: currentColor;
-    stroke-width: 3;
+    stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-dasharray: 9 13;
-    filter: drop-shadow(0 0 5px currentColor);
-    animation: status-flow-travel 2.4s linear infinite;
+    opacity: 0.42;
+    filter: drop-shadow(0 0 4px currentColor);
 }
 
-@keyframes status-flow-travel {
-    to {
-        stroke-dashoffset: -44;
+.status-flow-pulse {
+    filter: drop-shadow(0 0 7px currentColor);
+}
+
+.status-cloud-map {
+    background:
+        radial-gradient(circle at 50% 55%, rgba(249, 115, 22, 0.1), transparent 26rem),
+        radial-gradient(circle at 12% 8%, rgba(76, 29, 149, 0.16), transparent 24rem),
+        radial-gradient(circle at 88% 90%, rgba(30, 64, 175, 0.1), transparent 26rem),
+        linear-gradient(180deg, #0c0b13 0%, #090a0e 100%);
+}
+
+.status-cloud-node {
+    transform: translate(-50%, -50%);
+    animation: status-cloud-float 4.8s ease-in-out infinite;
+}
+
+@keyframes status-cloud-float {
+    0%,
+    100% {
+        transform: translate(-50%, -50%);
+    }
+    50% {
+        transform: translate(-50%, calc(-50% - 6px));
     }
 }
 
@@ -599,5 +619,8 @@
     *::after {
         transition-duration: 0.01ms !important;
         animation-duration: 0.01ms !important;
+    }
+    .status-flow-pulse {
+        display: none;
     }
 }

@@ -59,6 +59,12 @@ const flowLineClasses = {
     outage: 'text-red-400'
 };
 
+const flowPulseClasses = {
+    operational: 'fill-emerald-300',
+    degraded: 'fill-amber-300',
+    outage: 'fill-red-300'
+};
+
 const overallContent = {
     UP: {
         title: 'Alle Systeme operational',
@@ -299,17 +305,44 @@ function ServiceGroup({ group }) {
 
 function ConnectionFlow({ groups }) {
     const groupsByName = Object.fromEntries(groups.map((group) => [group.name, group]));
-    const statusFor = (name) => groupsByName[name]?.status ?? 'outage';
+    const groupFor = (name) => groupsByName[name] ?? { name, status: 'outage', averagePing: 0 };
+    const connectionStatus = (...names) => {
+        const states = names.map((name) => groupFor(name).status);
+        if (states.includes('outage')) return 'outage';
+        if (states.includes('degraded')) return 'degraded';
+        return 'operational';
+    };
     const connections = [
-        { path: 'M 180 165 H 240', status: statusFor('DNS Auflösung') },
-        { path: 'M 400 165 H 470', status: statusFor('API Gateway') },
-        { path: 'M 630 165 H 710', status: statusFor('API Gateway'), arrow: false },
-        { path: 'M 710 165 V 55', status: statusFor('API Gateway'), arrow: false },
-        { path: 'M 710 165 V 385', status: statusFor('API Gateway'), arrow: false },
-        { path: 'M 710 55 H 790', status: statusFor('CDN') },
-        { path: 'M 710 165 H 790', status: statusFor('Database') },
-        { path: 'M 710 275 H 790', status: statusFor('Payment Gateway') },
-        { path: 'M 710 385 H 790', status: statusFor('Notification Service') }
+        {
+            id: 'you-dns',
+            path: 'M 500 122 C 500 150 500 170 500 192',
+            status: connectionStatus('DNS Auflösung')
+        },
+        {
+            id: 'dns-api',
+            path: 'M 500 267 C 500 296 500 320 500 342',
+            status: connectionStatus('DNS Auflösung', 'API Gateway')
+        },
+        {
+            id: 'api-cdn',
+            path: 'M 500 425 C 500 478 140 455 140 520',
+            status: connectionStatus('API Gateway', 'CDN')
+        },
+        {
+            id: 'api-database',
+            path: 'M 500 425 C 500 475 380 470 380 520',
+            status: connectionStatus('API Gateway', 'Database')
+        },
+        {
+            id: 'api-payment',
+            path: 'M 500 425 C 500 475 620 470 620 520',
+            status: connectionStatus('API Gateway', 'Payment Gateway')
+        },
+        {
+            id: 'api-notification',
+            path: 'M 500 425 C 500 478 860 455 860 520',
+            status: connectionStatus('API Gateway', 'Notification Service')
+        }
     ];
 
     return (
@@ -319,107 +352,73 @@ function ConnectionFlow({ groups }) {
                     <p className="eyebrow">LIVE CONNECTION</p>
                     <h2 className="mt-2 font-display text-xl font-bold sm:text-2xl">Connection Flow</h2>
                 </div>
-                <p className="text-[10px] text-zinc-600">Animierte Route durch die SeriuxMod-Infrastruktur</p>
+                <p className="text-[10px] text-zinc-600">Live aus der Status-API · Aktualisierung alle 30 Sekunden</p>
             </div>
 
             <div className="mt-6 overflow-x-auto pb-2">
-                <div className="relative h-[440px] min-w-[900px] overflow-hidden rounded-2xl border border-white/[.05] bg-[#0b0c10]">
+                <div className="status-cloud-map relative h-[650px] min-w-[900px] overflow-hidden rounded-[28px] border border-white/[.06]">
+                    <div className="pointer-events-none absolute left-1/2 top-[58%] h-[170px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-[42px] border border-dashed border-orange-300/15 bg-orange-400/[.025] shadow-[0_0_90px_rgba(249,115,22,.06)]" />
+                    <span className="pointer-events-none absolute left-1/2 top-[47%] -translate-x-1/2 text-[9px] font-bold uppercase tracking-[.26em] text-orange-200/35">
+                        SeriuxMod Core Layer
+                    </span>
+
                     <svg
                         aria-hidden="true"
                         className="absolute inset-0 h-full w-full"
-                        preserveAspectRatio="none"
-                        viewBox="0 0 1000 440"
+                        preserveAspectRatio="xMidYMid meet"
+                        viewBox="0 0 1000 650"
                     >
-                        <defs>
-                            <marker
-                                id="status-arrow-operational"
-                                markerHeight="8"
-                                markerWidth="8"
-                                orient="auto"
-                                refX="7"
-                                refY="4"
-                            >
-                                <path d="M0,0 L8,4 L0,8 Z" fill="#34d399" />
-                            </marker>
-                            <marker
-                                id="status-arrow-degraded"
-                                markerHeight="8"
-                                markerWidth="8"
-                                orient="auto"
-                                refX="7"
-                                refY="4"
-                            >
-                                <path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24" />
-                            </marker>
-                            <marker
-                                id="status-arrow-outage"
-                                markerHeight="8"
-                                markerWidth="8"
-                                orient="auto"
-                                refX="7"
-                                refY="4"
-                            >
-                                <path d="M0,0 L8,4 L0,8 Z" fill="#f87171" />
-                            </marker>
-                        </defs>
                         {connections.map((connection, index) => (
-                            <path
-                                className={`status-flow-line ${flowLineClasses[connection.status]}`}
-                                d={connection.path}
-                                key={connection.path}
-                                markerEnd={
-                                    connection.arrow === false ? undefined : `url(#status-arrow-${connection.status})`
-                                }
-                                style={{ animationDelay: `${index * -0.22}s` }}
-                            />
+                            <g className={flowLineClasses[connection.status]} key={connection.id}>
+                                <path className="status-flow-line" d={connection.path} />
+                                <circle className={`status-flow-pulse ${flowPulseClasses[connection.status]}`} r="5">
+                                    <animateMotion
+                                        begin={`${index * -0.43}s`}
+                                        dur={connection.status === 'outage' ? '4.2s' : '3s'}
+                                        path={connection.path}
+                                        repeatCount="indefinite"
+                                    />
+                                </circle>
+                            </g>
                         ))}
                     </svg>
 
-                    <FlowNode className="left-[2%] top-[37.5%]" label="You" origin />
-                    <FlowNode
-                        className="left-[24%] top-[37.5%]"
-                        label="DNS Auflösung"
-                        status={statusFor('DNS Auflösung')}
-                    />
-                    <FlowNode
-                        className="left-[47%] top-[37.5%]"
-                        label="API Gateway"
-                        status={statusFor('API Gateway')}
-                    />
-                    <FlowNode className="left-[79%] top-[12.5%]" label="CDN" status={statusFor('CDN')} />
-                    <FlowNode className="left-[79%] top-[37.5%]" label="Database" status={statusFor('Database')} />
-                    <FlowNode
-                        className="left-[79%] top-[62.5%]"
-                        label="Payment Gateway"
-                        status={statusFor('Payment Gateway')}
-                    />
-                    <FlowNode
-                        className="left-[79%] top-[87.5%]"
-                        label="Notification Service"
-                        status={statusFor('Notification Service')}
-                    />
+                    <FlowNode animationDelay="-.4s" left="50%" origin top="14%" />
+                    <FlowNode animationDelay="-1.1s" group={groupFor('DNS Auflösung')} left="50%" top="35.4%" />
+                    <FlowNode animationDelay="-2s" group={groupFor('API Gateway')} left="50%" top="59.2%" />
+                    <FlowNode animationDelay="-.7s" group={groupFor('CDN')} left="14%" top="87%" />
+                    <FlowNode animationDelay="-1.5s" group={groupFor('Database')} left="38%" top="87%" />
+                    <FlowNode animationDelay="-2.4s" group={groupFor('Payment Gateway')} left="62%" top="87%" />
+                    <FlowNode animationDelay="-3.2s" group={groupFor('Notification Service')} left="86%" top="87%" />
                 </div>
             </div>
         </section>
     );
 }
 
-function FlowNode({ className, label, origin = false, status = 'operational' }) {
+function FlowNode({ animationDelay, group, left, origin = false, top }) {
+    const status = group?.status ?? 'operational';
     const visual = groupStates[status];
     const StatusIcon = origin ? FaUser : visual.icon;
 
     return (
         <div
-            className={`absolute z-10 flex min-h-16 w-[16%] -translate-y-1/2 items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur ${
-                origin
-                    ? 'border-orange-400/35 bg-orange-500/[.08] text-orange-300 shadow-[0_0_35px_rgba(249,115,22,.1)]'
-                    : visual.circle
-            } ${className}`}
+            className="status-cloud-node absolute z-10 flex w-40 flex-col items-center text-center"
+            style={{ animationDelay, left, top }}
         >
-            <span className="border-current/25 grid h-9 w-9 shrink-0 place-items-center rounded-full border bg-black/20">
-                <StatusIcon className={origin ? 'text-sm' : `text-sm ${visual.iconClass}`} aria-hidden="true" />
+            <span
+                className={`grid h-[74px] w-[74px] place-items-center rounded-full border-2 backdrop-blur-xl ${
+                    origin
+                        ? 'border-orange-400/70 bg-orange-400/[.08] text-orange-300 shadow-[0_0_45px_rgba(249,115,22,.16)]'
+                        : visual.circle
+                }`}
+            >
+                <StatusIcon className={origin ? 'text-xl' : `text-xl ${visual.iconClass}`} aria-hidden="true" />
             </span>
-            <span className="min-w-0 text-xs font-bold leading-4 text-zinc-100">{label}</span>
+            <strong className="mt-3 text-xs font-bold text-zinc-100">{origin ? 'You' : group.name}</strong>
+            <span className={`mt-1 text-[10px] ${origin ? 'text-orange-300/60' : 'text-zinc-500'}`}>
+                {origin ? 'Deine Verbindung' : `${group.averagePing} ms · ${visual.label}`}
+            </span>
         </div>
     );
 }
