@@ -1,16 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-    FaCalendarDays,
-    FaCheck,
-    FaClock,
-    FaComments,
-    FaCopy,
-    FaHeart,
-    FaLink,
-    FaMessage,
-    FaShieldHalved,
-    FaUserCheck
-} from 'react-icons/fa6';
+import { FaCalendarDays, FaCheck, FaComments, FaCopy, FaHeart, FaMessage, FaShieldHalved } from 'react-icons/fa6';
 import { Link, useParams } from 'react-router-dom';
 import { forumApi } from '../../lib/forumApi';
 import { getAuthenticatedUser } from '../../lib/auth';
@@ -24,17 +13,6 @@ function rankColor(color) {
 function formatMemberSince(value) {
     if (!value) return 'SeriuxMod Mitglied';
     return `Dabei seit ${new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(new Date(value))}`;
-}
-
-function formatActivityDate(value) {
-    if (!value) return 'Noch keine Aktivität';
-    return new Intl.DateTimeFormat('de-DE', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    }).format(new Date(value));
 }
 
 export default function PublicPlayerProfile() {
@@ -103,13 +81,16 @@ export default function PublicPlayerProfile() {
 
     const { profile, forum } = state;
     const color = rankColor(profile.rank?.color);
-    const recentPosts = forum?.recentPosts ?? [];
-    const latestActivity = recentPosts[0]?.createdAt;
-    const profileUrl = `${window.location.origin}/@${profile.username}`;
     const stats = [
         [FaComments, 'Themen', forum?.topicsCreated ?? 0],
         [FaMessage, 'Beiträge', forum?.postsCreated ?? 0],
         [FaHeart, 'Reaktionen', forum?.reactionsReceived ?? 0]
+    ];
+    const profileFacts = [
+        ['01', 'Spielername', profile.username],
+        ['02', 'Minecraft UUID', profile.playerId],
+        ['03', 'Community-Rang', profile.rank?.displayName || 'User'],
+        ['04', 'Mitgliedschaft', formatMemberSince(profile.memberSince)]
     ];
 
     const copyValue = async (value, type) => {
@@ -120,126 +101,73 @@ export default function PublicPlayerProfile() {
 
     return (
         <main className="min-h-screen overflow-hidden bg-[#07080b] pb-24 text-white">
-            <section className="relative px-4 pb-8 pt-28 sm:px-6 sm:pt-32">
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-[650px] bg-[radial-gradient(circle_at_18%_12%,rgba(59,130,246,.20),transparent_34rem),radial-gradient(circle_at_82%_16%,rgba(249,115,22,.16),transparent_30rem)]" />
-                <div className="relative mx-auto max-w-[1180px] overflow-hidden rounded-[34px] border border-white/[.08] bg-[#0d1017] shadow-[0_32px_100px_rgba(0,0,0,.45)]">
-                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,rgba(37,99,235,.14),transparent_42%,rgba(249,115,22,.08))]" />
-                    <div className="pointer-events-none absolute inset-0 opacity-[.13] [background-image:linear-gradient(rgba(255,255,255,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.08)_1px,transparent_1px)] [background-size:54px_54px] [mask-image:linear-gradient(to_bottom,black,transparent_76%)]" />
-
-                    <div className="relative grid min-h-[440px] items-end gap-6 px-6 pt-14 sm:px-10 lg:grid-cols-[390px_1fr] lg:gap-12 lg:px-14">
-                        <div className="relative mx-auto flex h-[360px] w-full max-w-[330px] items-end justify-center">
-                            <div className="absolute bottom-5 h-20 w-56 rounded-full bg-orange-500/15 blur-3xl" />
-                            <div className="absolute bottom-3 h-10 w-52 rounded-[50%] border border-white/[.07] bg-black/50 shadow-[0_18px_50px_rgba(0,0,0,.65)]" />
-                            <img
-                                className="relative z-10 h-[340px] w-full object-contain object-bottom drop-shadow-[0_28px_24px_rgba(0,0,0,.62)] [image-rendering:pixelated]"
-                                src={playerBody(profile.username)}
-                                alt={`Minecraft-Skin von ${profile.username}`}
-                            />
-                        </div>
-
-                        <div className="min-w-0 pb-14 text-center lg:text-left">
-                            <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
-                                <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.16em] text-zinc-400">
-                                    Öffentliches Profil
-                                </span>
-                                {isOwnProfile && (
-                                    <span className="rounded-full border border-orange-500/25 bg-orange-500/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.16em] text-orange-300">
-                                        Dein Profil
-                                    </span>
-                                )}
-                            </div>
-                            <h1 className="mt-5 truncate font-display text-5xl font-bold tracking-[-.055em] sm:text-7xl">
-                                {profile.username}
-                            </h1>
-                            <button
-                                type="button"
-                                onClick={() => copyValue(profile.playerId, 'uuid')}
-                                className="mx-auto mt-4 inline-flex max-w-full items-center gap-2 rounded-xl px-2 py-1 font-mono text-[11px] text-zinc-500 transition hover:bg-white/[.04] hover:text-zinc-300 lg:mx-0"
-                            >
-                                <span className="truncate">UUID {profile.playerId}</span>
-                                {copied === 'uuid' ? <FaCheck className="text-emerald-400" /> : <FaCopy />}
-                            </button>
-                            <div className="mt-5 flex flex-wrap justify-center gap-3 lg:justify-start">
-                                <span
-                                    className="inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold"
-                                    style={{ borderColor: `${color}55`, background: `${color}18`, color }}
-                                >
-                                    <span className="relative grid h-5 w-5 place-items-center">
-                                        <FaShieldHalved />
-                                        {profile.rank?.badgeUrl && (
-                                            <img
-                                                className="absolute inset-0 h-5 w-5 object-contain"
-                                                src={profile.rank.badgeUrl}
-                                                alt=""
-                                                onError={(event) => event.currentTarget.remove()}
-                                            />
-                                        )}
-                                    </span>
-                                    {profile.rank?.displayName || 'User'}
-                                </span>
-                                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3.5 py-2 text-xs text-zinc-400">
-                                    <FaCalendarDays className="text-orange-400" />{' '}
-                                    {formatMemberSince(profile.memberSince)}
-                                </span>
-                            </div>
-                            <div className="mt-7 flex flex-wrap justify-center gap-3 lg:justify-start">
-                                <Link to={`/forum/user/${profile.playerId}`} className="forum-button-primary">
-                                    <FaComments /> Forum-Aktivität
-                                </Link>
-                                <button
-                                    type="button"
-                                    onClick={() => copyValue(profileUrl, 'profile')}
-                                    className="forum-button-secondary"
-                                >
-                                    {copied === 'profile' ? <FaCheck /> : <FaLink />}
-                                    {copied === 'profile' ? 'Link kopiert' : 'Profil teilen'}
-                                </button>
-                            </div>
-                        </div>
+            <section className="relative min-h-[610px] overflow-hidden pt-28 sm:pt-32">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_8%,rgba(30,94,163,.46),transparent_48%),linear-gradient(125deg,#19223f_0%,#13233e_48%,#08101c_76%,#07080b_100%)]" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-80 bg-gradient-to-b from-transparent via-[#07080b]/70 to-[#07080b]" />
+                <div className="relative mx-auto grid min-h-[480px] max-w-6xl items-end gap-6 px-5 sm:px-8 lg:grid-cols-[390px_minmax(0,1fr)] lg:gap-10">
+                    <div className="relative mx-auto flex h-[440px] w-full max-w-[360px] items-end justify-center pb-10">
+                        <div className="absolute bottom-10 h-14 w-48 rounded-[50%] bg-black/55 blur-md" />
+                        <img
+                            className="relative z-10 h-[400px] w-full object-contain object-bottom drop-shadow-[0_30px_22px_rgba(0,0,0,.52)] [image-rendering:pixelated]"
+                            src={playerBody(profile.username)}
+                            alt={`Minecraft-Skin von ${profile.username}`}
+                        />
                     </div>
 
-                    <div className="relative grid border-t border-white/[.07] bg-black/20 sm:grid-cols-3">
-                        <div className="flex items-center gap-4 border-b border-white/[.06] px-6 py-5 sm:border-b-0 sm:border-r">
-                            <span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/10 text-emerald-400">
-                                <FaUserCheck />
-                            </span>
-                            <div>
-                                <small className="block text-[9px] font-bold uppercase tracking-[.14em] text-zinc-600">
-                                    Identität
-                                </small>
-                                <b className="mt-1 block text-sm">Minecraft verifiziert</b>
-                            </div>
+                    <div className="min-w-0 pb-24 text-center lg:pb-28 lg:text-left">
+                        <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-start">
+                            {isOwnProfile && (
+                                <span className="rounded-full border border-orange-500/25 bg-orange-500/10 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.16em] text-orange-300">
+                                    Dein Profil
+                                </span>
+                            )}
                         </div>
-                        <div className="flex items-center gap-4 border-b border-white/[.06] px-6 py-5 sm:border-b-0 sm:border-r">
-                            <span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/10 text-orange-400">
-                                <FaShieldHalved />
+                        <h1 className="truncate font-display text-5xl font-bold tracking-[-.055em] sm:text-7xl">
+                            {profile.username}
+                        </h1>
+                        <button
+                            type="button"
+                            onClick={() => copyValue(profile.playerId, 'uuid')}
+                            className="mx-auto mt-4 inline-flex max-w-full items-center gap-3 rounded-lg px-1 py-1 font-mono text-[11px] text-zinc-400 transition hover:text-white lg:mx-0"
+                        >
+                            <span className="text-[9px] font-bold uppercase tracking-[.12em] text-zinc-600">UUID</span>
+                            <span className="truncate">{profile.playerId}</span>
+                            {copied === 'uuid' ? <FaCheck className="text-emerald-400" /> : <FaCopy />}
+                        </button>
+                        <div className="mt-4 flex flex-wrap justify-center gap-2 lg:justify-start">
+                            <span
+                                className="inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-xs font-bold"
+                                style={{ borderColor: `${color}55`, background: `${color}18`, color }}
+                            >
+                                <span className="relative grid h-4 w-4 place-items-center">
+                                    <FaShieldHalved />
+                                    {profile.rank?.badgeUrl && (
+                                        <img
+                                            className="absolute inset-0 h-4 w-4 object-contain"
+                                            src={profile.rank.badgeUrl}
+                                            alt=""
+                                            onError={(event) => event.currentTarget.remove()}
+                                        />
+                                    )}
+                                </span>
+                                {profile.rank?.displayName || 'User'}
                             </span>
-                            <div className="min-w-0">
-                                <small className="block text-[9px] font-bold uppercase tracking-[.14em] text-zinc-600">
-                                    Community-Rang
-                                </small>
-                                <b className="mt-1 block truncate text-sm">{profile.rank?.displayName || 'User'}</b>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-4 px-6 py-5">
-                            <span className="grid h-10 w-10 place-items-center rounded-xl bg-blue-500/10 text-blue-400">
-                                <FaClock />
+                            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3.5 py-2 text-xs text-zinc-300">
+                                <FaCalendarDays className="text-orange-400" /> {formatMemberSince(profile.memberSince)}
                             </span>
-                            <div className="min-w-0">
-                                <small className="block text-[9px] font-bold uppercase tracking-[.14em] text-zinc-600">
-                                    Letzte Forum-Aktivität
-                                </small>
-                                <b className="mt-1 block truncate text-sm">{formatActivityDate(latestActivity)}</b>
-                            </div>
+                            <span className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/[.08] px-3.5 py-2 text-xs text-pink-300">
+                                <FaHeart /> {forum?.reactionsReceived ?? 0} Reaktionen
+                            </span>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section className="mx-auto mt-8 grid max-w-6xl gap-6 px-5 lg:grid-cols-[320px_1fr]">
+            <section className="relative z-10 mx-auto mt-10 grid max-w-6xl gap-6 px-5 lg:grid-cols-[320px_1fr]">
                 <aside className="space-y-6">
                     <div className="forum-panel overflow-hidden rounded-3xl p-6">
-                        <div className="flex items-center gap-4">
+                        <h2 className="font-display text-lg font-bold">Minecraft-Profil</h2>
+                        <div className="mt-5 flex items-center gap-4">
                             <img
                                 className="h-16 w-16 rounded-2xl bg-black/30 [image-rendering:pixelated]"
                                 src={playerAvatar(profile.playerId, 128)}
@@ -265,6 +193,31 @@ export default function PublicPlayerProfile() {
                 </aside>
 
                 <div className="space-y-6">
+                    <section className="forum-panel overflow-hidden rounded-3xl">
+                        <header className="flex items-center justify-between border-b border-white/[.06] px-6 py-5">
+                            <h2 className="font-display text-lg font-bold">Profilinformationen</h2>
+                            <span className="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-600">
+                                Seriux-ID
+                            </span>
+                        </header>
+                        <div className="space-y-2 p-4">
+                            {profileFacts.map(([number, label, value]) => (
+                                <div
+                                    key={label}
+                                    className="grid min-h-14 grid-cols-[34px_135px_minmax(0,1fr)] items-center gap-3 rounded-xl border border-white/[.04] bg-black/20 px-4 py-3"
+                                >
+                                    <b className="font-mono text-sm text-orange-500">{number}</b>
+                                    <span className="text-xs text-zinc-600">{label}</span>
+                                    <span
+                                        className={`truncate text-right text-xs font-bold text-zinc-300 ${label === 'Minecraft UUID' ? 'font-mono text-[10px]' : ''}`}
+                                    >
+                                        {value}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
                     <div className="grid gap-4 sm:grid-cols-3">
                         {stats.map(([Icon, label, value]) => (
                             <div className="forum-panel rounded-3xl p-6" key={label}>
