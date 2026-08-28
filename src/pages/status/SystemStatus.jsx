@@ -4,27 +4,28 @@ import {
     FaCheck,
     FaCircleExclamation,
     FaClock,
-    FaServer,
-    FaTriangleExclamation
+    FaTriangleExclamation,
+    FaWifi
 } from 'react-icons/fa6';
 
 const STATUS_API = 'https://api.seriuxmod.net/api/v1/status/summary';
 const REFRESH_INTERVAL = 30_000;
 
-const stateLabels = {
-    UP: 'Operational',
-    DEGRADED: 'Beeinträchtigt',
-    DOWN: 'Ausfall',
-    MISSING: 'Nicht erreichbar',
-    SCALED_DOWN: 'Wartung'
-};
+const excludedMonitorIds = new Set(['seriuxmod-homepage', 'gcore-api', 'nexus', 'docker-registry', 'docker-swarm-api']);
 
-const stateClasses = {
-    UP: 'bg-emerald-400 shadow-[0_0_0_5px_rgba(52,211,153,.10)]',
-    DEGRADED: 'bg-amber-400 shadow-[0_0_0_5px_rgba(251,191,36,.10)]',
-    DOWN: 'bg-red-500 shadow-[0_0_0_5px_rgba(239,68,68,.10)]',
-    MISSING: 'bg-red-500 shadow-[0_0_0_5px_rgba(239,68,68,.10)]',
-    SCALED_DOWN: 'bg-sky-400 shadow-[0_0_0_5px_rgba(56,189,248,.10)]'
+const groupStates = {
+    operational: {
+        label: 'Operational',
+        circle: 'border-emerald-400/70 bg-emerald-400/[.08] text-emerald-300 shadow-[0_0_45px_rgba(52,211,153,.14)]'
+    },
+    degraded: {
+        label: 'Beeinträchtigt',
+        circle: 'border-amber-400/70 bg-amber-400/[.08] text-amber-300 shadow-[0_0_45px_rgba(251,191,36,.14)]'
+    },
+    outage: {
+        label: 'Nicht erreichbar',
+        circle: 'border-red-500/70 bg-red-500/[.08] text-red-300 shadow-[0_0_45px_rgba(239,68,68,.14)]'
+    }
 };
 
 const overallContent = {
@@ -98,16 +99,56 @@ export default function SystemStatus() {
         };
     }, [load]);
 
+    const publicServices = useMemo(
+        () =>
+            (state.data?.services ?? []).filter(
+                (service) => service.group !== 'Development' && !excludedMonitorIds.has(service.monitorId)
+            ),
+        [state.data]
+    );
+
     const groups = useMemo(() => {
         const grouped = new Map();
-        for (const service of state.data?.services ?? []) {
+        for (const service of publicServices) {
             if (!grouped.has(service.group)) grouped.set(service.group, []);
             grouped.get(service.group).push(service);
         }
-        return [...grouped.entries()];
-    }, [state.data]);
+        return [...grouped.entries()]
+            .map(([name, services]) => {
+                const onlineServices = services.filter((service) => service.state === 'UP').length;
+                const status =
+                    onlineServices === services.length ? 'operational' : onlineServices === 0 ? 'outage' : 'degraded';
+                const averagePing = Math.round(
+                    services.reduce((total, service) => total + (Number(service.responseTimeMs) || 0), 0) /
+                        services.length
+                );
+                return {
+                    name,
+                    services,
+                    onlineServices,
+                    status,
+                    averagePing,
+                    order: Math.min(...services.map((service) => service.groupOrder ?? 999))
+                };
+            })
+            .sort((left, right) => left.order - right.order || left.name.localeCompare(right.name, 'de'));
+    }, [publicServices]);
 
-    const overall = overallContent[state.data?.overallStatus] ?? overallContent.UNKNOWN;
+    const publicIncidents = useMemo(
+        () => (state.data?.incidents ?? []).filter((incident) => !excludedMonitorIds.has(incident.monitorId)),
+        [state.data]
+    );
+
+    const healthyServices = publicServices.filter((service) => service.state === 'UP').length;
+    const calculatedOverallStatus = groups.some((group) => group.status === 'outage')
+        ? 'CRITICAL'
+        : groups.some((group) => group.status === 'degraded')
+          ? 'DEGRADED'
+          : publicServices.length
+            ? 'UP'
+            : 'UNKNOWN';
+
+    const overall = overallContent[calculatedOverallStatus] ?? overallContent.UNKNOWN;
     const OverallIcon = overall.icon;
 
     return (
@@ -120,7 +161,7 @@ export default function SystemStatus() {
                             Systemstatus
                         </h1>
                         <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-500">
-                            Live-Überblick über Website, APIs, Datenbanken und zentrale Plattformdienste.
+                            Live-Überblick über APIs, Datenbanken und zentrale SeriuxMod-Dienste.
                         </p>
                     </div>
                     <button
@@ -169,13 +210,13 @@ export default function SystemStatus() {
                                     <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Dienste</h2>
                                 </div>
                                 <span className="text-xs text-zinc-600">
-                                    {state.data?.healthyServices ?? 0} von {state.data?.monitoredServices ?? 0} operational
+                                    {healthyServices} von {publicServices.length} operational
                                 </span>
                             </div>
 
-                            <div className="mt-6 space-y-5">
-                                {groups.map(([group, services]) => (
-                                    <ServiceGroup group={group} key={group} services={services} />
+                            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                                {groups.map((group) => (
+                                    <ServiceGroup group={group} key={group.name} />
                                 ))}
                             </div>
                         </section>
@@ -184,15 +225,19 @@ export default function SystemStatus() {
                             <p className="eyebrow">AKTUELLE MELDUNGEN</p>
                             <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Störungen</h2>
                             <div className="mt-6 space-y-3">
-                                {(state.data?.incidents ?? []).length ? (
-                                    state.data.incidents.map((incident) => (
+                                {publicIncidents.length ? (
+                                    publicIncidents.map((incident) => (
                                         <article
                                             className="rounded-2xl border border-red-400/10 bg-red-500/[.035] p-5 sm:flex sm:items-center sm:justify-between sm:gap-6"
                                             key={`${incident.monitorId}-${incident.type}`}
                                         >
                                             <div>
-                                                <h3 className="text-sm font-bold text-zinc-100">{incident.serviceName}</h3>
-                                                <p className="mt-1 text-xs leading-5 text-zinc-500">{incident.message}</p>
+                                                <h3 className="text-sm font-bold text-zinc-100">
+                                                    {incident.serviceName}
+                                                </h3>
+                                                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                                                    {incident.message}
+                                                </p>
                                             </div>
                                             <span className="mt-3 inline-flex rounded-full bg-red-500/10 px-3 py-1 text-[10px] font-extrabold tracking-wider text-red-300 sm:mt-0">
                                                 {incident.severity}
@@ -213,37 +258,41 @@ export default function SystemStatus() {
     );
 }
 
-function ServiceGroup({ group, services }) {
+function ServiceGroup({ group }) {
+    const visual = groupStates[group.status];
+
     return (
-        <section className="overflow-hidden rounded-3xl border border-white/[.07] bg-[#111218]">
-            <header className="flex items-center gap-3 border-b border-white/[.06] px-5 py-4 sm:px-6">
-                <FaServer className="text-orange-400" />
-                <h3 className="text-sm font-bold text-zinc-200">{group}</h3>
-            </header>
-            <div className="divide-y divide-white/[.055]">
-                {services.map((service) => (
-                    <div className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_auto_auto] sm:items-center sm:px-6" key={service.monitorId}>
-                        <div className="flex items-center gap-3">
-                            <i className={`h-2.5 w-2.5 shrink-0 rounded-full ${stateClasses[service.state] ?? 'bg-zinc-500'}`} />
-                            <div>
-                                <p className="text-sm font-semibold text-zinc-200">{service.displayName}</p>
-                                <p className="mt-0.5 text-[10px] text-zinc-600">{service.healthStatus}</p>
-                            </div>
-                        </div>
-                        <span className="text-[11px] text-zinc-600">{service.responseTimeMs} ms</span>
-                        <span className="text-xs font-bold text-zinc-400">{stateLabels[service.state] ?? service.state}</span>
-                    </div>
-                ))}
+        <article className="flex min-h-80 flex-col items-center rounded-[30px] border border-white/[.07] bg-[#111218] px-6 py-8 text-center shadow-[0_22px_65px_rgba(0,0,0,.2)]">
+            <h3 className="min-h-12 text-base font-bold text-zinc-100">{group.name}</h3>
+            <div
+                className={`mt-5 grid h-32 w-32 place-items-center rounded-full border-2 ${visual.circle}`}
+                aria-label={`${group.name}: ${visual.label}`}
+                title={visual.label}
+            >
+                <FaWifi className="text-4xl" aria-hidden="true" />
             </div>
-        </section>
+            <p className="mt-6 font-display text-3xl font-bold tracking-[-.04em] text-white">
+                {group.averagePing} <span className="text-base text-zinc-500">ms</span>
+            </p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-[.14em] text-zinc-600">Ø Antwortzeit</p>
+            <div className="mt-auto flex w-full items-center justify-between border-t border-white/[.06] pt-5 text-[11px]">
+                <span className="text-zinc-600">
+                    {group.onlineServices} von {group.services.length} erreichbar
+                </span>
+                <span className="font-bold text-zinc-400">{visual.label}</span>
+            </div>
+        </article>
     );
 }
 
 function StatusSkeleton() {
     return (
-        <div className="mt-12 space-y-5" aria-label="Systemstatus wird geladen">
-            {[0, 1, 2].map((item) => (
-                <div className="h-36 animate-pulse rounded-3xl border border-white/[.05] bg-white/[.025]" key={item} />
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Systemstatus wird geladen">
+            {[0, 1, 2, 3, 4].map((item) => (
+                <div
+                    className="h-80 animate-pulse rounded-[30px] border border-white/[.05] bg-white/[.025]"
+                    key={item}
+                />
             ))}
         </div>
     );
