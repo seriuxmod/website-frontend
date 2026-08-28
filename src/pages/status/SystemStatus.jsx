@@ -305,7 +305,7 @@ function ServiceGroup({ group }) {
 
 function ConnectionFlow({ groups }) {
     const groupsByName = Object.fromEntries(groups.map((group) => [group.name, group]));
-    const groupFor = (name) => groupsByName[name] ?? { name, status: 'outage', averagePing: 0 };
+    const groupFor = (name) => groupsByName[name] ?? { name, status: 'outage', averagePing: 0, services: [] };
     const connectionStatus = (...names) => {
         const states = names.map((name) => groupFor(name).status);
         if (states.includes('outage')) return 'outage';
@@ -315,35 +315,36 @@ function ConnectionFlow({ groups }) {
     const connections = [
         {
             id: 'you-dns',
-            path: 'M 500 122 C 500 150 500 170 500 192',
+            path: 'M 540 108 C 540 120 540 128 540 140',
             status: connectionStatus('DNS Auflösung')
         },
         {
             id: 'dns-api',
-            path: 'M 500 267 C 500 296 500 320 500 342',
+            path: 'M 540 250 C 540 270 540 290 540 315',
             status: connectionStatus('DNS Auflösung', 'API Gateway')
         },
         {
             id: 'api-cdn',
-            path: 'M 500 425 C 500 478 140 455 140 520',
+            path: 'M 540 535 C 540 600 158 570 158 650',
             status: connectionStatus('API Gateway', 'CDN')
         },
         {
             id: 'api-database',
-            path: 'M 500 425 C 500 475 380 470 380 520',
+            path: 'M 540 535 C 540 600 413 590 413 650',
             status: connectionStatus('API Gateway', 'Database')
         },
         {
             id: 'api-payment',
-            path: 'M 500 425 C 500 475 620 470 620 520',
+            path: 'M 540 535 C 540 600 668 590 668 650',
             status: connectionStatus('API Gateway', 'Payment Gateway')
         },
         {
             id: 'api-notification',
-            path: 'M 500 425 C 500 478 860 455 860 520',
+            path: 'M 540 535 C 540 600 923 570 923 650',
             status: connectionStatus('API Gateway', 'Notification Service')
         }
     ];
+    const downstreamGroups = ['CDN', 'Database', 'Payment Gateway', 'Notification Service'].map(groupFor);
 
     return (
         <section className="mt-8 overflow-hidden rounded-[30px] border border-white/[.07] bg-[#111218] p-5 shadow-[0_22px_65px_rgba(0,0,0,.2)] sm:p-7">
@@ -356,17 +357,12 @@ function ConnectionFlow({ groups }) {
             </div>
 
             <div className="mt-6 overflow-x-auto pb-2">
-                <div className="status-cloud-map relative h-[650px] min-w-[900px] overflow-hidden rounded-[28px] border border-white/[.06]">
-                    <div className="pointer-events-none absolute left-1/2 top-[58%] h-[170px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-[42px] border border-dashed border-orange-300/15 bg-orange-400/[.025] shadow-[0_0_90px_rgba(249,115,22,.06)]" />
-                    <span className="pointer-events-none absolute left-1/2 top-[47%] -translate-x-1/2 text-[9px] font-bold uppercase tracking-[.26em] text-orange-200/35">
-                        SeriuxMod Core Layer
-                    </span>
-
+                <div className="status-cloud-map relative h-[950px] min-w-[1080px] overflow-hidden rounded-[28px] border border-white/[.06]">
                     <svg
                         aria-hidden="true"
                         className="absolute inset-0 h-full w-full"
                         preserveAspectRatio="xMidYMid meet"
-                        viewBox="0 0 1000 650"
+                        viewBox="0 0 1080 950"
                     >
                         {connections.map((connection, index) => (
                             <g className={flowLineClasses[connection.status]} key={connection.id}>
@@ -383,43 +379,105 @@ function ConnectionFlow({ groups }) {
                         ))}
                     </svg>
 
-                    <FlowNode animationDelay="-.4s" left="50%" origin top="14%" />
-                    <FlowNode animationDelay="-1.1s" group={groupFor('DNS Auflösung')} left="50%" top="35.4%" />
-                    <FlowNode animationDelay="-2s" group={groupFor('API Gateway')} left="50%" top="59.2%" />
-                    <FlowNode animationDelay="-.7s" group={groupFor('CDN')} left="14%" top="87%" />
-                    <FlowNode animationDelay="-1.5s" group={groupFor('Database')} left="38%" top="87%" />
-                    <FlowNode animationDelay="-2.4s" group={groupFor('Payment Gateway')} left="62%" top="87%" />
-                    <FlowNode animationDelay="-3.2s" group={groupFor('Notification Service')} left="86%" top="87%" />
+                    <FlowOrigin />
+                    <MonitorCluster
+                        className="absolute left-1/2 top-[140px] w-[300px] -translate-x-1/2"
+                        group={groupFor('DNS Auflösung')}
+                    />
+                    <MonitorCluster
+                        className="absolute left-1/2 top-[315px] w-[620px] -translate-x-1/2"
+                        columns={3}
+                        core
+                        group={groupFor('API Gateway')}
+                    />
+                    <div className="absolute inset-x-[30px] top-[650px] grid grid-cols-4 gap-5">
+                        {downstreamGroups.map((group) => (
+                            <MonitorCluster group={group} key={group.name} />
+                        ))}
+                    </div>
                 </div>
             </div>
         </section>
     );
 }
 
-function FlowNode({ animationDelay, group, left, origin = false, top }) {
-    const status = group?.status ?? 'operational';
-    const visual = groupStates[status];
-    const StatusIcon = origin ? FaUser : visual.icon;
+function FlowOrigin() {
+    return (
+        <div className="status-cloud-node absolute left-1/2 top-[70px] z-10 flex w-40 flex-col items-center text-center [animation-delay:-.4s]">
+            <span className="grid h-[62px] w-[62px] place-items-center rounded-full border-2 border-orange-400/70 bg-orange-400/[.08] text-orange-300 shadow-[0_0_45px_rgba(249,115,22,.16)] backdrop-blur-xl">
+                <FaUser className="text-lg" aria-hidden="true" />
+            </span>
+            <strong className="mt-2 text-xs font-bold text-zinc-100">You</strong>
+            <span className="mt-1 text-[9px] text-orange-300/60">Deine Verbindung</span>
+        </div>
+    );
+}
+
+function MonitorCluster({ className = '', columns = 1, core = false, group }) {
+    const visual = groupStates[group.status];
+    const StatusIcon = visual.icon;
+    const gridClass = columns === 3 ? 'grid-cols-3' : 'grid-cols-1';
 
     return (
-        <div
-            className="status-cloud-node absolute z-10 flex w-40 flex-col items-center text-center"
-            style={{ animationDelay, left, top }}
+        <section
+            className={`z-10 rounded-[28px] border border-dashed bg-[#0c0d12]/90 p-4 backdrop-blur-xl ${
+                group.status === 'operational'
+                    ? 'border-emerald-400/20 shadow-[0_0_55px_rgba(52,211,153,.045)]'
+                    : group.status === 'degraded'
+                      ? 'border-amber-400/25 shadow-[0_0_55px_rgba(251,191,36,.06)]'
+                      : 'border-red-400/25 shadow-[0_0_55px_rgba(248,113,113,.06)]'
+            } ${core ? 'bg-orange-400/[.025] px-5 pb-5 pt-4' : ''} ${className}`}
         >
-            <span
-                className={`grid h-[74px] w-[74px] place-items-center rounded-full border-2 backdrop-blur-xl ${
-                    origin
-                        ? 'border-orange-400/70 bg-orange-400/[.08] text-orange-300 shadow-[0_0_45px_rgba(249,115,22,.16)]'
-                        : visual.circle
-                }`}
-            >
-                <StatusIcon className={origin ? 'text-xl' : `text-xl ${visual.iconClass}`} aria-hidden="true" />
+            <header className="flex items-center justify-between gap-3 border-b border-white/[.055] pb-3">
+                <div className="min-w-0">
+                    <p className="text-[8px] font-bold uppercase tracking-[.22em] text-zinc-600">
+                        {core ? 'Core Layer' : 'Infrastructure Layer'}
+                    </p>
+                    <h3 className="mt-1 truncate text-xs font-bold text-zinc-100">{group.name}</h3>
+                </div>
+                <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border ${visual.circle}`}>
+                    <StatusIcon className={`text-xs ${visual.iconClass}`} aria-hidden="true" />
+                </span>
+            </header>
+            <div className={`mt-3 grid gap-2 ${gridClass}`}>
+                {group.services.length ? (
+                    group.services.map((service) => <MonitorNode key={service.monitorId} service={service} />)
+                ) : (
+                    <p className="py-4 text-center text-[10px] text-zinc-600">Kein Monitor registriert</p>
+                )}
+            </div>
+        </section>
+    );
+}
+
+function MonitorNode({ service }) {
+    const responseTime = Number(service.responseTimeMs) || 0;
+    const status =
+        service.state === 'UP'
+            ? responseTime >= HIGH_PING_THRESHOLD_MS
+                ? 'degraded'
+                : 'operational'
+            : service.state === 'DEGRADED'
+              ? 'degraded'
+              : 'outage';
+    const visual = groupStates[status];
+    const StatusIcon = visual.icon;
+
+    return (
+        <article className="flex min-w-0 items-center gap-2 rounded-xl border border-white/[.055] bg-white/[.025] px-2.5 py-2">
+            <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border ${visual.circle}`}>
+                <StatusIcon className={`text-[10px] ${visual.iconClass}`} aria-hidden="true" />
             </span>
-            <strong className="mt-3 text-xs font-bold text-zinc-100">{origin ? 'You' : group.name}</strong>
-            <span className={`mt-1 text-[10px] ${origin ? 'text-orange-300/60' : 'text-zinc-500'}`}>
-                {origin ? 'Deine Verbindung' : `${group.averagePing} ms · ${visual.label}`}
+            <span className="min-w-0 flex-1">
+                <strong className="block truncate text-[10px] font-bold text-zinc-200" title={service.displayName}>
+                    {service.displayName}
+                </strong>
+                <span className="mt-0.5 block truncate text-[8px] text-zinc-600" title={service.monitorId}>
+                    {service.monitorId}
+                </span>
             </span>
-        </div>
+            <span className="shrink-0 text-[9px] font-bold text-zinc-500">{responseTime} ms</span>
+        </article>
     );
 }
 
