@@ -16,6 +16,7 @@ const excludedMonitorIds = new Set(['seriuxmod-homepage', 'gcore-api', 'nexus', 
 const groupPresentation = {
     'API Services': { name: 'DNS Auflösung', order: 10 },
     'DNS Auflösung': { name: 'DNS Auflösung', order: 10 },
+    'DNS AuflÃ¶sung': { name: 'DNS Auflösung', order: 10 },
     seriuxmod: { name: 'API Gateway', order: 20 },
     'API Gateway': { name: 'API Gateway', order: 20 },
     CDN: { name: 'CDN', order: 30 },
