@@ -145,7 +145,19 @@
     border-radius: 24px;
 }
 
+.liquid-nav.profile-nav-expanded {
+    isolation: isolate;
+    border-bottom-color: rgba(255, 255, 255, 0.065);
+    border-radius: 24px 24px 0 0;
+    background: linear-gradient(115deg, rgba(255, 255, 255, 0.055), rgba(255, 92, 20, 0.025)), rgba(8, 9, 12, 0.965);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.11),
+        0 10px 32px rgba(0, 0, 0, 0.3);
+}
+
 .profile-context-bar {
+    position: relative;
+    isolation: isolate;
     display: flex;
     min-height: 58px;
     align-items: center;
@@ -156,9 +168,11 @@
     border-top-color: rgba(255, 255, 255, 0.07);
     border-radius: 0 0 22px 22px;
     padding: 0.6rem 1.25rem;
-    background: rgba(9, 10, 13, 0.92);
-    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.38);
-    backdrop-filter: blur(24px) saturate(145%);
+    background: linear-gradient(105deg, rgba(255, 255, 255, 0.022), rgba(249, 115, 22, 0.018)), rgba(7, 8, 11, 0.975);
+    box-shadow:
+        inset 0 -1px 0 rgba(255, 255, 255, 0.025),
+        0 24px 58px rgba(0, 0, 0, 0.46);
+    backdrop-filter: blur(30px) saturate(130%);
     animation: profile-context-in 180ms ease-out;
 }
 
