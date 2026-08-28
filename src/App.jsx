@@ -12,6 +12,7 @@ import Terms from './pages/legal/Terms';
 import PlatformHub from './pages/platform/PlatformHub';
 import AuthCallback from './pages/platform/AuthCallback';
 import Profile from './pages/platform/Profile';
+import PublicPlayerProfile from './pages/platform/PublicPlayerProfile';
 import ForumIndex from './pages/forum/ForumIndex';
 import ForumBoard from './pages/forum/ForumBoard';
 import ForumTopic from './pages/forum/ForumTopic';
@@ -47,6 +48,7 @@ export default function App() {
                 <Route path="/admin/store" element={<StoreAdmin />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/:profileSlug" element={<PublicPlayerProfile />} />
                 <Route path="/community/:page" element={<CommunityPage />} />
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>

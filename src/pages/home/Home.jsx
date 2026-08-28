@@ -12,6 +12,7 @@ import {
     FaUsers,
     FaWindows
 } from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
 
 const API = 'https://api.seriuxmod.net/api/v1';
 
@@ -149,16 +150,16 @@ function ForumPreview() {
                             Minecraft-Konto an.
                         </p>
                     </div>
-                    <a href="/#/forum" className="button-secondary">
+                    <Link to="/forum" className="button-secondary">
                         Alle Foren öffnen <FaArrowRight />
-                    </a>
+                    </Link>
                 </div>
                 {!state.loading && !state.error && state.forums.length > 0 && (
                     <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {state.forums.map((forum) => (
-                            <a
+                            <Link
                                 key={forum.id}
-                                href={`/#/forum/${forum.id}`}
+                                to={`/forum/${forum.id}`}
                                 className="rounded-2xl border border-white/[.07] bg-[#121318] p-6 transition hover:border-orange-500/30"
                             >
                                 <h3 className="font-display text-lg font-bold">{forum.title}</h3>
@@ -168,7 +169,7 @@ function ForumPreview() {
                                 <span className="mt-5 block text-xs text-orange-400">
                                     {forum.topics ?? 0} Themen · {forum.posts ?? 0} Beiträge
                                 </span>
-                            </a>
+                            </Link>
                         ))}
                     </div>
                 )}
@@ -188,9 +189,9 @@ function ForumPreview() {
                         <p className="p-8 text-sm text-zinc-500">In diesen Foren wurden noch keine Themen erstellt.</p>
                     )}
                     {state.topics.map((topic) => (
-                        <a
+                        <Link
                             key={topic.id}
-                            href={`/#/forum/topic/${topic.id}`}
+                            to={`/forum/topic/${topic.id}`}
                             className="group grid gap-3 border-b border-white/[.06] p-6 last:border-0 sm:grid-cols-[1fr_auto] sm:items-center"
                         >
                             <div>
@@ -205,7 +206,7 @@ function ForumPreview() {
                             <span className="text-xs text-zinc-500">
                                 {new Date(topic.lastReplyAt ?? topic.createdAt).toLocaleDateString('de-DE')}
                             </span>
-                        </a>
+                        </Link>
                     ))}
                 </div>
             </div>

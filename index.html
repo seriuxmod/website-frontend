@@ -7,7 +7,10 @@
         <title>SeriuxMod — Dein Minecraft. Neu gedacht.</title>
 
         <!-- Basic Metadata -->
-        <meta name="description" content="SeriuxMod – der moderne Minecraft Client für Performance, Individualität und Community." />
+        <meta
+            name="description"
+            content="SeriuxMod – der moderne Minecraft Client für Performance, Individualität und Community."
+        />
         <meta
             name="keywords"
             content="SeriuxMod, seriux, client, minecraft client, minecraft, minecraft mod, minecraft anti cheat, anti cheat, cosmetics, minecraft skins, block launcher, bedrock, java, minecraft java"
@@ -19,7 +22,10 @@
 
         <!-- Open Graph Meta Tags -->
         <meta property="og:title" content="SeriuxMod" />
-        <meta property="og:description" content="Performance, Individualität und Community in einem modernen Minecraft Client." />
+        <meta
+            property="og:description"
+            content="Performance, Individualität und Community in einem modernen Minecraft Client."
+        />
         <meta property="og:image" content="/logo.png" />
         <meta property="og:url" content="https://seriuxmod.de/" />
         <meta property="og:type" content="website" />
@@ -33,6 +39,14 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="#f8ab1b" />
 
         <link rel="manifest" href="/manifest.json" />
+        <script>
+            (function () {
+                var redirect = new URLSearchParams(window.location.search).get('spa');
+                if (redirect && redirect.charAt(0) === '/') {
+                    window.history.replaceState(null, '', redirect);
+                }
+            })();
+        </script>
     </head>
     <body class="select-none overflow-x-hidden bg-[var(--background-color-primary)] text-[var(--text-color-primary)]">
         <div id="app"></div>

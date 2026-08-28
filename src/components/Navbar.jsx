@@ -5,7 +5,6 @@ import {
     FaBars,
     FaBell,
     FaChevronDown,
-    FaMagnifyingGlass,
     FaRightToBracket,
     FaShieldHalved,
     FaUser,
@@ -22,12 +21,12 @@ import {
 } from '../lib/auth';
 import { forumApi } from '../lib/forumApi';
 import { communityItems } from '../config/community';
+import PlayerSearch from './PlayerSearch';
 
 export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [communityOpen, setCommunityOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
-    const [search, setSearch] = useState('');
     const [user, setUser] = useState(() => getAuthenticatedUser());
     const [unreadForumNotifications, setUnreadForumNotifications] = useState(0);
     const location = useLocation();
@@ -96,12 +95,6 @@ export default function Navbar() {
             document.body.style.overflow = '';
         };
     }, [mobileOpen]);
-
-    const submitSearch = (event) => {
-        event.preventDefault();
-        const query = search.trim();
-        if (query) navigate(`/forum?search=${encodeURIComponent(query)}`);
-    };
 
     const signOut = () => {
         logout();
@@ -183,23 +176,10 @@ export default function Navbar() {
                     </div>
                 </div>
 
-                <form
-                    onSubmit={submitSearch}
-                    className="ml-auto hidden h-12 min-w-0 flex-1 items-center rounded-2xl border border-white/[.09] bg-[#090b11]/90 px-4 xl:flex xl:max-w-[390px]"
-                >
-                    <FaMagnifyingGlass className="shrink-0 text-base text-zinc-500" />
-                    <input
-                        ref={searchRef}
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                        className="min-w-0 flex-1 bg-transparent px-3 text-sm text-zinc-200 outline-none placeholder:text-zinc-600"
-                        placeholder="Spieler, Clans oder Beiträge suchen..."
-                        aria-label="SeriuxMod durchsuchen"
-                    />
-                    <kbd className="rounded-lg border border-white/10 bg-white/[.04] px-2 py-1 font-sans text-[10px] text-zinc-500">
-                        Ctrl K
-                    </kbd>
-                </form>
+                <PlayerSearch
+                    ref={searchRef}
+                    className="ml-auto hidden min-w-0 flex-1 lg:block lg:max-w-[300px] xl:max-w-[390px]"
+                />
 
                 {user ? (
                     <div ref={profileRef} className="relative ml-1 hidden sm:block">
@@ -221,7 +201,7 @@ export default function Navbar() {
                         </button>
                         {profileOpen && (
                             <div className="liquid-menu absolute right-0 top-full mt-3 w-56 rounded-2xl p-2">
-                                <Link to="/profile" className="profile-menu-item">
+                                <Link to={`/@${encodeURIComponent(user.username)}`} className="profile-menu-item">
                                     <FaUser /> Mein Profil
                                 </Link>
                                 <Link to="/forum/account" className="profile-menu-item">
@@ -287,18 +267,7 @@ export default function Navbar() {
                     className={`liquid-menu mx-auto max-w-lg rounded-[26px] p-3 transition duration-300 ${mobileOpen ? 'translate-y-0 scale-100' : '-translate-y-3 scale-95'}`}
                     onClick={(event) => event.stopPropagation()}
                 >
-                    <form
-                        onSubmit={submitSearch}
-                        className="mb-3 flex h-12 items-center rounded-2xl border border-white/[.09] bg-black/30 px-4"
-                    >
-                        <FaMagnifyingGlass className="text-zinc-500" />
-                        <input
-                            value={search}
-                            onChange={(event) => setSearch(event.target.value)}
-                            className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-zinc-600"
-                            placeholder="SeriuxMod durchsuchen..."
-                        />
-                    </form>
+                    <PlayerSearch mobile className="mb-3" />
                     <div className="grid gap-1">
                         <Link className="mobile-nav-item" to="/">
                             SeriuxMod
@@ -343,7 +312,7 @@ export default function Navbar() {
                                 />
                                 <b>{user.username}</b>
                             </div>
-                            <Link className="mobile-nav-item" to="/profile">
+                            <Link className="mobile-nav-item" to={`/@${encodeURIComponent(user.username)}`}>
                                 Mein Profil
                             </Link>
                             <Link className="mobile-nav-item flex items-center justify-between" to="/forum/account">
