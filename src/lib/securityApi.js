@@ -38,6 +38,19 @@ export const securityApi = {
         request(`${USER_SECURITY_API}/totp/enable`, { method: 'POST', body: JSON.stringify({ code }) }),
     disableTotp: (password, code) =>
         request(`${USER_SECURITY_API}/totp`, { method: 'DELETE', body: JSON.stringify({ password, code }) }),
+    passkeys: () => request(`${USER_SECURITY_API}/passkeys`),
+    startPasskeyRegistration: (name) =>
+        request(`${USER_SECURITY_API}/passkeys/registration/options`, {
+            method: 'POST',
+            body: JSON.stringify({ name })
+        }),
+    finishPasskeyRegistration: (challengeId, credential) =>
+        request(`${USER_SECURITY_API}/passkeys/registration/verify`, {
+            method: 'POST',
+            body: JSON.stringify({ challengeId, credential })
+        }),
+    removePasskey: (credentialId) =>
+        request(`${USER_SECURITY_API}/passkeys/${encodeURIComponent(credentialId)}`, { method: 'DELETE' }),
     devices: () => request(`${AUTH_SECURITY_API}/devices`),
     revokeDevice: (deviceId) =>
         request(`${AUTH_SECURITY_API}/devices/${encodeURIComponent(deviceId)}`, { method: 'DELETE' })

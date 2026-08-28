@@ -7,25 +7,31 @@ import {
     FaLaptop,
     FaLocationDot,
     FaMobileScreen,
+    FaFingerprint,
     FaShieldHalved,
     FaTrash
 } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { fetchAuthenticatedUser, getAuthenticatedUser } from '../../lib/auth';
 import { securityApi } from '../../lib/securityApi';
+import { registrationOptions, serializeCredential } from '../../lib/passkeys';
 import { ForumError, ForumLoading, ForumShell, formatDate } from '../forum/ForumComponents';
 
 export default function Security() {
     const [user, setUser] = useState(() => getAuthenticatedUser());
-    const [state, setState] = useState({ loading: true, status: null, devices: [], error: '' });
+    const [state, setState] = useState({ loading: true, status: null, devices: [], passkeys: [], error: '' });
     const [totpSetup, setTotpSetup] = useState(null);
     const [message, setMessage] = useState('');
 
     const load = useCallback(async () => {
         setState((current) => ({ ...current, loading: true, error: '' }));
         try {
-            const [status, devices] = await Promise.all([securityApi.status(), securityApi.devices()]);
-            setState({ loading: false, status, devices, error: '' });
+            const [status, devices, passkeys] = await Promise.all([
+                securityApi.status(),
+                securityApi.devices(),
+                securityApi.passkeys()
+            ]);
+            setState({ loading: false, status, devices, passkeys, error: '' });
         } catch (error) {
             setState((current) => ({ ...current, loading: false, error: error.message }));
         }
@@ -91,8 +97,130 @@ export default function Security() {
                     }}
                 />
             </div>
+            <PasskeyPanel
+                passkeys={state.passkeys}
+                onChanged={async (text) => {
+                    setMessage(text);
+                    await load();
+                }}
+            />
             <DevicePanel devices={state.devices} onChanged={load} />
         </ForumShell>
+    );
+}
+
+function PasskeyPanel({ passkeys, onChanged }) {
+    const [name, setName] = useState('');
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+
+    const createPasskey = async () => {
+        setError('');
+        if (!window.PublicKeyCredential || !navigator.credentials) {
+            setError('Dieser Browser unterstützt keine Passkeys.');
+            return;
+        }
+        if (!name.trim()) {
+            setError('Gib dem Passkey einen Gerätenamen.');
+            return;
+        }
+        setBusy(true);
+        try {
+            const challenge = await securityApi.startPasskeyRegistration(name.trim());
+            const credential = await navigator.credentials.create({
+                publicKey: registrationOptions(challenge.publicKey)
+            });
+            await securityApi.finishPasskeyRegistration(challenge.challengeId, serializeCredential(credential));
+            setName('');
+            await onChanged('Der Passkey wurde sicher mit deiner Minecraft-UUID verknüpft.');
+        } catch (reason) {
+            setError(
+                reason.name === 'NotAllowedError'
+                    ? 'Die Passkey-Einrichtung wurde abgebrochen.'
+                    : reason.message || 'Der Passkey konnte nicht eingerichtet werden.'
+            );
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    const remove = async (passkey) => {
+        if (!window.confirm(`Passkey „${passkey.name || 'Unbenannt'}“ wirklich entfernen?`)) return;
+        setBusy(true);
+        setError('');
+        try {
+            await securityApi.removePasskey(passkey.id);
+            await onChanged('Der Passkey wurde entfernt.');
+        } catch (reason) {
+            setError(reason.message);
+        } finally {
+            setBusy(false);
+        }
+    };
+
+    return (
+        <section className="forum-panel mt-6 overflow-hidden rounded-3xl">
+            <header className="flex flex-col gap-5 border-b border-white/[.06] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+                <div className="flex items-start gap-4">
+                    <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-orange-500/10 text-orange-300">
+                        <FaFingerprint />
+                    </span>
+                    <div>
+                        <p className="eyebrow">PASSKEYS</p>
+                        <h2 className="mt-1 font-display text-2xl font-bold">Kontaktlos anmelden</h2>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+                            Nutze Windows Hello, dein Smartphone oder einen Sicherheitsschlüssel. Der private Schlüssel verlässt dein Gerät nie.
+                        </p>
+                    </div>
+                </div>
+                <StatusBadge active={passkeys.length > 0} />
+            </header>
+
+            <div className="grid gap-3 p-6 sm:grid-cols-[minmax(0,1fr)_auto] sm:p-8">
+                <label className="forum-label">
+                    Gerätename
+                    <input
+                        className="forum-input"
+                        maxLength="64"
+                        value={name}
+                        onChange={(event) => setName(event.target.value)}
+                        placeholder="z. B. Windows Hello – Gaming-PC"
+                    />
+                </label>
+                <button disabled={busy} onClick={createPasskey} className="forum-button-primary self-end">
+                    <FaFingerprint /> Passkey hinzufügen
+                </button>
+            </div>
+
+            {error && <p className="px-6 pb-6 text-sm text-red-300 sm:px-8">{error}</p>}
+            {passkeys.length === 0 ? (
+                <p className="border-t border-white/[.055] p-6 text-sm text-zinc-500 sm:px-8">
+                    Noch kein Passkey eingerichtet. Die Anmeldung mit Minecraft-Name und Passwort bleibt verfügbar.
+                </p>
+            ) : (
+                passkeys.map((passkey) => (
+                    <div
+                        key={passkey.id}
+                        className="flex flex-col gap-4 border-t border-white/[.055] p-6 sm:flex-row sm:items-center sm:px-8"
+                    >
+                        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-white/[.04] text-orange-300">
+                            <FaFingerprint />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                            <b className="text-zinc-100">{passkey.name || 'Unbenannter Passkey'}</b>
+                            <p className="mt-2 text-xs text-zinc-500">
+                                Erstellt {formatDate(passkey.registeredAt)}
+                                {passkey.lastUsedAt ? ` · Zuletzt verwendet ${formatDate(passkey.lastUsedAt)}` : ''}
+                                {passkey.backedUp ? ' · Synchronisiert' : ''}
+                            </p>
+                        </div>
+                        <button disabled={busy} onClick={() => remove(passkey)} className="forum-button-secondary text-red-300">
+                            <FaTrash /> Entfernen
+                        </button>
+                    </div>
+                ))
+            )}
+        </section>
     );
 }
 
