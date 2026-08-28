@@ -114,7 +114,9 @@ export default function Navbar() {
     };
 
     return (
-        <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-5">
+        <header
+            className={`pointer-events-none fixed inset-x-0 top-0 z-50 px-3 sm:px-6 ${profileContext?.visible ? 'pt-1 sm:pt-1' : 'pt-3 sm:pt-5'}`}
+        >
             <nav
                 className={`liquid-nav pointer-events-auto mx-auto flex h-[74px] max-w-[1500px] items-center gap-3 px-4 sm:px-5 ${profileContext?.visible ? 'profile-nav-expanded' : ''}`}
                 aria-label="Hauptnavigation"
