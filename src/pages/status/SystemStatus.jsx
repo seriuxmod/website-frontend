@@ -13,6 +13,20 @@ const REFRESH_INTERVAL = 30_000;
 
 const excludedMonitorIds = new Set(['seriuxmod-homepage', 'gcore-api', 'nexus', 'docker-registry', 'docker-swarm-api']);
 
+const groupPresentation = {
+    'API Services': { name: 'DNS Auflösung', order: 10 },
+    'DNS Auflösung': { name: 'DNS Auflösung', order: 10 },
+    seriuxmod: { name: 'API Gateway', order: 20 },
+    'API Gateway': { name: 'API Gateway', order: 20 },
+    CDN: { name: 'CDN', order: 30 },
+    'Databases & Cache': { name: 'Database', order: 40 },
+    Database: { name: 'Database', order: 40 },
+    Payments: { name: 'Payment Gateway', order: 50 },
+    'Payment Gateway': { name: 'Payment Gateway', order: 50 },
+    Notifications: { name: 'Notification Service', order: 60 },
+    'Notification Service': { name: 'Notification Service', order: 60 }
+};
+
 const groupStates = {
     operational: {
         label: 'Operational',
@@ -110,11 +124,18 @@ export default function SystemStatus() {
     const groups = useMemo(() => {
         const grouped = new Map();
         for (const service of publicServices) {
-            if (!grouped.has(service.group)) grouped.set(service.group, []);
-            grouped.get(service.group).push(service);
+            const presentation = groupPresentation[service.group] ?? {
+                name: service.group,
+                order: service.groupOrder ?? 999
+            };
+            if (!grouped.has(presentation.name)) {
+                grouped.set(presentation.name, { services: [], order: presentation.order });
+            }
+            grouped.get(presentation.name).services.push(service);
         }
         return [...grouped.entries()]
-            .map(([name, services]) => {
+            .map(([name, group]) => {
+                const { services } = group;
                 const onlineServices = services.filter((service) => service.state === 'UP').length;
                 const status =
                     onlineServices === services.length ? 'operational' : onlineServices === 0 ? 'outage' : 'degraded';
@@ -128,16 +149,11 @@ export default function SystemStatus() {
                     onlineServices,
                     status,
                     averagePing,
-                    order: Math.min(...services.map((service) => service.groupOrder ?? 999))
+                    order: group.order
                 };
             })
             .sort((left, right) => left.order - right.order || left.name.localeCompare(right.name, 'de'));
     }, [publicServices]);
-
-    const publicIncidents = useMemo(
-        () => (state.data?.incidents ?? []).filter((incident) => !excludedMonitorIds.has(incident.monitorId)),
-        [state.data]
-    );
 
     const healthyServices = publicServices.filter((service) => service.state === 'UP').length;
     const calculatedOverallStatus = groups.some((group) => group.status === 'outage')
@@ -214,41 +230,10 @@ export default function SystemStatus() {
                                 </span>
                             </div>
 
-                            <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                                 {groups.map((group) => (
                                     <ServiceGroup group={group} key={group.name} />
                                 ))}
-                            </div>
-                        </section>
-
-                        <section className="mt-12">
-                            <p className="eyebrow">AKTUELLE MELDUNGEN</p>
-                            <h2 className="mt-2 font-display text-2xl font-bold sm:text-3xl">Störungen</h2>
-                            <div className="mt-6 space-y-3">
-                                {publicIncidents.length ? (
-                                    publicIncidents.map((incident) => (
-                                        <article
-                                            className="rounded-2xl border border-red-400/10 bg-red-500/[.035] p-5 sm:flex sm:items-center sm:justify-between sm:gap-6"
-                                            key={`${incident.monitorId}-${incident.type}`}
-                                        >
-                                            <div>
-                                                <h3 className="text-sm font-bold text-zinc-100">
-                                                    {incident.serviceName}
-                                                </h3>
-                                                <p className="mt-1 text-xs leading-5 text-zinc-500">
-                                                    {incident.message}
-                                                </p>
-                                            </div>
-                                            <span className="mt-3 inline-flex rounded-full bg-red-500/10 px-3 py-1 text-[10px] font-extrabold tracking-wider text-red-300 sm:mt-0">
-                                                {incident.severity}
-                                            </span>
-                                        </article>
-                                    ))
-                                ) : (
-                                    <div className="rounded-2xl border border-emerald-400/10 bg-emerald-400/[.035] p-6 text-sm text-emerald-300">
-                                        Keine aktiven Störungen vorhanden.
-                                    </div>
-                                )}
                             </div>
                         </section>
                     </>
@@ -262,24 +247,24 @@ function ServiceGroup({ group }) {
     const visual = groupStates[group.status];
 
     return (
-        <article className="flex min-h-80 flex-col items-center rounded-[30px] border border-white/[.07] bg-[#111218] px-6 py-8 text-center shadow-[0_22px_65px_rgba(0,0,0,.2)]">
-            <h3 className="min-h-12 text-base font-bold text-zinc-100">{group.name}</h3>
+        <article className="flex min-h-56 flex-col items-center rounded-3xl border border-white/[.07] bg-[#111218] px-4 py-5 text-center shadow-[0_18px_45px_rgba(0,0,0,.18)]">
+            <h3 className="min-h-8 text-sm font-bold text-zinc-100">{group.name}</h3>
             <div
-                className={`mt-5 grid h-32 w-32 place-items-center rounded-full border-2 ${visual.circle}`}
+                className={`mt-3 grid h-20 w-20 place-items-center rounded-full border-2 ${visual.circle}`}
                 aria-label={`${group.name}: ${visual.label}`}
                 title={visual.label}
             >
-                <FaWifi className="text-4xl" aria-hidden="true" />
+                <FaWifi className="text-2xl" aria-hidden="true" />
             </div>
-            <p className="mt-6 font-display text-3xl font-bold tracking-[-.04em] text-white">
-                {group.averagePing} <span className="text-base text-zinc-500">ms</span>
+            <p className="mt-4 font-display text-2xl font-bold tracking-[-.04em] text-white">
+                {group.averagePing} <span className="text-sm text-zinc-500">ms</span>
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-[.14em] text-zinc-600">Ø Antwortzeit</p>
-            <div className="mt-auto flex w-full items-center justify-between border-t border-white/[.06] pt-5 text-[11px]">
+            <div className="mt-4 flex w-full items-center justify-between gap-2 border-t border-white/[.06] pt-3 text-[9px]">
                 <span className="text-zinc-600">
-                    {group.onlineServices} von {group.services.length} erreichbar
+                    {group.onlineServices}/{group.services.length} online
                 </span>
-                <span className="font-bold text-zinc-400">{visual.label}</span>
+                <span className="truncate font-bold text-zinc-400">{visual.label}</span>
             </div>
         </article>
     );
@@ -287,12 +272,12 @@ function ServiceGroup({ group }) {
 
 function StatusSkeleton() {
     return (
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-label="Systemstatus wird geladen">
-            {[0, 1, 2, 3, 4].map((item) => (
-                <div
-                    className="h-80 animate-pulse rounded-[30px] border border-white/[.05] bg-white/[.025]"
-                    key={item}
-                />
+        <div
+            className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+            aria-label="Systemstatus wird geladen"
+        >
+            {[0, 1, 2, 3, 4, 5].map((item) => (
+                <div className="h-56 animate-pulse rounded-3xl border border-white/[.05] bg-white/[.025]" key={item} />
             ))}
         </div>
     );
