@@ -33,6 +33,14 @@ export const securityApi = {
             method: 'POST',
             body: JSON.stringify({ email })
         }),
+    confirmPasswordReset: (token, password) =>
+        request('https://api.seriuxmod.net/api/v1/user/account/website/password-reset/confirm', {
+            method: 'POST', body: JSON.stringify({ token, password })
+        }),
+    verifyEmail: (token) =>
+        request(`https://api.seriuxmod.net/api/v1/user/account/website/email/verify?token=${encodeURIComponent(token)}`, {
+            method: 'POST'
+        }),
     setupTotp: () => request(`${USER_SECURITY_API}/totp/setup`, { method: 'POST' }),
     enableTotp: (code) =>
         request(`${USER_SECURITY_API}/totp/enable`, { method: 'POST', body: JSON.stringify({ code }) }),
@@ -49,8 +57,10 @@ export const securityApi = {
             method: 'POST',
             body: JSON.stringify({ challengeId, credential })
         }),
-    removePasskey: (credentialId) =>
-        request(`${USER_SECURITY_API}/passkeys/${encodeURIComponent(credentialId)}`, { method: 'DELETE' }),
+    removePasskey: (credentialId, password, code) =>
+        request(`${USER_SECURITY_API}/passkeys/${encodeURIComponent(credentialId)}`, {
+            method: 'DELETE', body: JSON.stringify({ password, code: code || null })
+        }),
     devices: () => request(`${AUTH_SECURITY_API}/devices`),
     revokeDevice: (deviceId) =>
         request(`${AUTH_SECURITY_API}/devices/${encodeURIComponent(deviceId)}`, { method: 'DELETE' })

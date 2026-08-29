@@ -5,7 +5,8 @@ import {
     fetchAuthenticatedUser,
     getAuthenticatedUser,
     isForumAdministrator,
-    isStoreAdministrator
+    isStoreAdministrator,
+    isUserAdministrator
 } from '../../lib/auth';
 import { forumApi } from '../../lib/forumApi';
 import { storeApi } from '../../lib/storeApi';
@@ -52,13 +53,14 @@ export default function AdminDashboard() {
 
     const forumAdmin = isForumAdministrator(user);
     const storeAdmin = isStoreAdministrator(user);
+    const userAdmin = isUserAdministrator(user);
     if (loading)
         return (
             <ForumShell title="Administration">
                 <ForumLoading label="Team-Berechtigungen werden geprüft …" />
             </ForumShell>
         );
-    if (!forumAdmin && !storeAdmin)
+    if (!forumAdmin && !storeAdmin && !userAdmin)
         return (
             <ForumShell
                 title="Kein Zugriff"
@@ -85,7 +87,17 @@ export default function AdminDashboard() {
                     </p>
                 </div>
             </section>
-            <div className="grid gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-3">
+                {userAdmin && (
+                    <AdminModule
+                        icon={FaUsers}
+                        eyebrow="IDENTITY"
+                        title="Benutzer verwalten"
+                        description="Konten, PermissionGroups, zeitliche Ränge, direkte Rechte, Bans, Mutes und Audit-Logs."
+                        href="/admin/users"
+                        stats={[[user.groups?.length ?? 0, 'eigene Gruppen'], [user.permissions?.length ?? 0, 'eigene Rechte']]}
+                    />
+                )}
                 {forumAdmin && (
                     <AdminModule
                         icon={FaComments}

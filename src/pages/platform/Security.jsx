@@ -113,6 +113,9 @@ function PasskeyPanel({ passkeys, onChanged }) {
     const [name, setName] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
+    const [removeTarget, setRemoveTarget] = useState(null);
+    const [removePassword, setRemovePassword] = useState('');
+    const [removeCode, setRemoveCode] = useState('');
 
     const createPasskey = async () => {
         setError('');
@@ -145,11 +148,13 @@ function PasskeyPanel({ passkeys, onChanged }) {
     };
 
     const remove = async (passkey) => {
-        if (!window.confirm(`Passkey „${passkey.name || 'Unbenannt'}“ wirklich entfernen?`)) return;
         setBusy(true);
         setError('');
         try {
-            await securityApi.removePasskey(passkey.id);
+            await securityApi.removePasskey(passkey.id, removePassword, removeCode);
+            setRemoveTarget(null);
+            setRemovePassword('');
+            setRemoveCode('');
             await onChanged('Der Passkey wurde entfernt.');
         } catch (reason) {
             setError(reason.message);
@@ -193,6 +198,18 @@ function PasskeyPanel({ passkeys, onChanged }) {
             </div>
 
             {error && <p className="px-6 pb-6 text-sm text-red-300 sm:px-8">{error}</p>}
+            {removeTarget && (
+                <div className="mx-6 mb-6 rounded-2xl border border-red-500/20 bg-red-500/[.055] p-5 sm:mx-8">
+                    <b className="text-sm text-red-200">„{removeTarget.name || 'Unbenannt'}“ entfernen</b>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">Bestätige die sicherheitskritische Änderung mit deinem Passwort und – falls aktiviert – deinem 2FA-Code.</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_auto_auto]">
+                        <input className="forum-input mt-0" type="password" value={removePassword} onChange={(e) => setRemovePassword(e.target.value)} placeholder="Passwort" />
+                        <input className="forum-input mt-0" inputMode="numeric" value={removeCode} onChange={(e) => setRemoveCode(e.target.value)} placeholder="2FA-Code (optional)" />
+                        <button className="rounded-xl bg-red-500 px-4 text-xs font-bold" disabled={busy || !removePassword} onClick={() => remove(removeTarget)}>Entfernen</button>
+                        <button className="forum-button-secondary" onClick={() => setRemoveTarget(null)}>Abbrechen</button>
+                    </div>
+                </div>
+            )}
             {passkeys.length === 0 ? (
                 <p className="border-t border-white/[.055] p-6 text-sm text-zinc-500 sm:px-8">
                     Noch kein Passkey eingerichtet. Die Anmeldung mit Minecraft-Name und Passwort bleibt verfügbar.
@@ -214,7 +231,7 @@ function PasskeyPanel({ passkeys, onChanged }) {
                                 {passkey.backedUp ? ' · Synchronisiert' : ''}
                             </p>
                         </div>
-                        <button disabled={busy} onClick={() => remove(passkey)} className="forum-button-secondary text-red-300">
+                        <button disabled={busy} onClick={() => setRemoveTarget(passkey)} className="forum-button-secondary text-red-300">
                             <FaTrash /> Entfernen
                         </button>
                     </div>

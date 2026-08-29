@@ -17,8 +17,7 @@ import {
     beginLogin,
     fetchAuthenticatedUser,
     getAuthenticatedUser,
-    isForumAdministrator,
-    isStoreAdministrator,
+    isAdministrator,
     logout
 } from '../lib/auth';
 import { forumApi } from '../lib/forumApi';
@@ -230,7 +229,7 @@ export default function Navbar() {
                                 <Link to="/account/security" className="profile-menu-item">
                                     <FaKey /> Sicherheit
                                 </Link>
-                                {(isForumAdministrator(user) || isStoreAdministrator(user)) && (
+                                {isAdministrator(user) && (
                                     <Link to="/admin" className="profile-menu-item">
                                         <FaShieldHalved /> Administration
                                     </Link>
@@ -359,7 +358,7 @@ export default function Navbar() {
                             <Link className="mobile-nav-item" to="/account/security">
                                 Sicherheit
                             </Link>
-                            {(isForumAdministrator(user) || isStoreAdministrator(user)) && (
+                            {isAdministrator(user) && (
                                 <Link className="mobile-nav-item" to="/admin">
                                     Administration
                                 </Link>

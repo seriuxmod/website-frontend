@@ -26,6 +26,10 @@ import StoreAccount from './pages/store/StoreAccount';
 import StoreAdmin from './pages/store/StoreAdmin';
 import Security from './pages/platform/Security';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import UserAdmin from './pages/admin/UserAdmin';
+import VerifyEmail from './pages/platform/VerifyEmail';
+import ResetPassword from './pages/platform/ResetPassword';
+import ForgotPassword from './pages/platform/ForgotPassword';
 import SystemStatus from './pages/status/SystemStatus';
 
 export default function App() {
@@ -50,7 +54,11 @@ export default function App() {
                 <Route path="/store/account" element={<StoreAccount />} />
                 <Route path="/admin/store" element={<StoreAdmin />} />
                 <Route path="/admin" element={<AdminDashboard />} />
+                <Route path="/admin/users" element={<UserAdmin />} />
                 <Route path="/account/security" element={<Security />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/status" element={<SystemStatus />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />

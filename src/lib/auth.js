@@ -172,6 +172,14 @@ export const isForumAdministrator = (user = getAuthenticatedUser()) =>
 export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('store.admin'));
 
+export const isUserAdministrator = (user = getAuthenticatedUser()) =>
+    Boolean(user?.permissions?.some((permission) =>
+        permission.startsWith('users.') || permission.startsWith('permissions.') ||
+        permission.startsWith('moderation.') || permission.startsWith('audits.')));
+
+export const isAdministrator = (user = getAuthenticatedUser()) =>
+    isForumAdministrator(user) || isStoreAdministrator(user) || isUserAdministrator(user);
+
 export async function authenticatedFetch(input, init = {}) {
     let accessToken = getAccessToken();
     if (accessToken && accessTokenExpired(accessToken)) accessToken = await refreshAccessToken();
