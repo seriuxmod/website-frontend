@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
     FaBan, FaClockRotateLeft, FaFloppyDisk, FaGavel, FaMagnifyingGlass, FaPlus,
-    FaShieldHalved, FaUserGear, FaUsers, FaVolumeXmark, FaXmark
+    FaShieldHalved, FaTrashCan, FaUserGear, FaUsers, FaVolumeXmark, FaXmark
 } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { fetchAuthenticatedUser, getAuthenticatedUser, isUserAdministrator } from '../../lib/auth';
@@ -102,10 +102,11 @@ function UsersPanel({ groups, banReasons, muteReasons, action }) {
         setSelected(account); setLoading(true);
         const optional = (promise) => promise.catch((failure) => failure.status === 404 ? null : Promise.reject(failure));
         try {
-            const [permissions, audits, activeBan, activeMute, banHistory, muteHistory] = await Promise.all([
-                userAdminApi.permissions(account.id), userAdminApi.audits(account.id), optional(userAdminApi.activeBan(account.id)),
+            const [freshAccount, permissions, audits, activeBan, activeMute, banHistory, muteHistory] = await Promise.all([
+                userAdminApi.user(account.id), userAdminApi.permissions(account.id), userAdminApi.audits(account.id), optional(userAdminApi.activeBan(account.id)),
                 optional(userAdminApi.activeMute(account.id)), userAdminApi.banHistory(account.id), userAdminApi.muteHistory(account.id)
             ]);
+            setSelected(freshAccount);
             setDetail({ permissions, audits, activeBan, activeMute, banHistory, muteHistory });
         } finally { setLoading(false); }
     };
@@ -156,6 +157,7 @@ function UserDetail({ account, initial, groups, banReasons, muteReasons, action,
             <Panel title="Direkte Berechtigungen" icon={FaUserGear}><textarea className="forum-input mt-0 min-h-48 font-mono" value={direct} onChange={(e) => setDirect(e.target.value)} placeholder="users.example&#10;forum.example"/><button className="forum-button-primary mt-4" onClick={saveDirect}><FaFloppyDisk/> Speichern</button></Panel>
         </div>
         <ModerationActions account={account} initial={initial} banReasons={banReasons} muteReasons={muteReasons} action={action} reload={reload}/>
+        <ModerationHistory banHistory={initial.banHistory} muteHistory={initial.muteHistory}/>
         <Panel title="Audit-Verlauf" icon={FaClockRotateLeft}><div className="divide-y divide-white/[.05]">{list(initial.audits).map(entry => <div key={entry.id} className="grid gap-2 py-4 text-xs sm:grid-cols-[190px_1fr_auto]"><b>{entry.action}</b><span className="text-zinc-500">{Object.entries(entry.details ?? {}).map(([k,v]) => `${k}: ${v}`).join(' · ') || 'Keine Zusatzdaten'}</span><time className="text-zinc-700">{when(entry.timestamp)}</time></div>)}</div></Panel>
     </div>;
 }
@@ -168,6 +170,14 @@ function ModerationActions({ account, initial, banReasons, muteReasons, action, 
 
 function ModerationBox({ title, icon: Icon, active, reasons, value, setValue, note, setNote, onApply, onRevoke }) {
     return <div className={`rounded-2xl border p-5 ${active ? 'border-red-500/20 bg-red-500/[.055]' : 'border-white/[.06] bg-black/15'}`}><div className="flex items-center justify-between"><h3 className="flex items-center gap-2 font-bold"><Icon className="text-orange-400"/>{title}</h3><span className="text-xs text-zinc-600">{active ? `Aktiv bis ${when(active.expiresAt)}` : 'Nicht aktiv'}</span></div>{!active && <><select className="forum-input" value={value} onChange={(e) => setValue(e.target.value)}>{reasons.map(r => <option key={r.key} value={r.key}>{r.description}</option>)}</select><input className="forum-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Interne Notiz"/><button className="forum-button-primary mt-4" onClick={onApply}>{title} setzen</button></>}{active && <button className="forum-button-secondary mt-5" onClick={onRevoke}>{title} aufheben</button>}</div>;
+}
+
+function ModerationHistory({ banHistory, muteHistory }) {
+    return <Panel title="Moderationsverlauf" icon={FaClockRotateLeft}><div className="grid gap-6 xl:grid-cols-2"><HistoryList title="Bans" entries={list(banHistory)}/><HistoryList title="Mutes" entries={list(muteHistory)}/></div></Panel>;
+}
+
+function HistoryList({ title, entries }) {
+    return <section><h3 className="mb-3 text-xs font-bold uppercase tracking-[.14em] text-zinc-600">{title}</h3><div className="max-h-72 divide-y divide-white/[.05] overflow-y-auto rounded-2xl border border-white/[.055] bg-black/15 px-4">{entries.map(entry => <div key={entry.id} className="grid gap-1 py-4 text-xs sm:grid-cols-[100px_1fr_auto]"><b className="text-zinc-300">{entry.action}</b><span className="min-w-0 truncate text-zinc-600">{entry.reasonKey || '–'}{entry.note ? ` · ${entry.note}` : ''}</span><time className="text-zinc-700">{when(entry.createdAt)}</time></div>)}{!entries.length && <p className="py-6 text-center text-xs text-zinc-700">Noch keine Einträge.</p>}</div></section>;
 }
 
 function GroupsPanel({ groups, reload, action }) {
@@ -190,7 +200,8 @@ function ReasonEditor({ title, type, reasons, reload, action }) {
     const [editing, setEditing] = useState(false); const [form, setForm] = useState(emptyReason);
     const choose = (reason) => { setEditing(Boolean(reason)); setForm(reason ? {...reason} : emptyReason); };
     const save = () => action(() => type === 'ban' ? userAdminApi.saveBanReason(form, editing) : userAdminApi.saveMuteReason(form, editing), 'Moderationsgrund gespeichert.').then(async () => { await reload(); choose(null); });
-    return <Panel title={title} icon={type === 'ban' ? FaBan : FaVolumeXmark}><div className="grid gap-2 sm:grid-cols-2">{reasons.map(reason => <button key={reason.key} onClick={() => choose(reason)} className="rounded-2xl border border-white/[.06] bg-black/15 p-4 text-left"><b className="text-sm">{reason.description}</b><p className="mt-2 text-[10px] text-zinc-600">{reason.key} · {reason.permanent ? 'dauerhaft' : `${reason.defaultDurationSeconds}s`}</p></button>)}</div><div className="mt-6 border-t border-white/[.06] pt-6"><div className="grid gap-4 sm:grid-cols-2"><input className="forum-input mt-0" disabled={editing} value={form.key} onChange={(e)=>setForm({...form,key:e.target.value})} placeholder="Key"/><input className="forum-input mt-0" value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} placeholder="Beschreibung"/><input className="forum-input mt-0" type="number" value={form.defaultDurationSeconds ?? 0} onChange={(e)=>setForm({...form,defaultDurationSeconds:Number(e.target.value)})} placeholder="Sekunden"/><label className="flex items-center gap-3 text-sm text-zinc-400"><input type="checkbox" checked={form.permanent} onChange={(e)=>setForm({...form,permanent:e.target.checked})}/> Dauerhaft</label></div><div className="mt-4 flex gap-3"><button className="forum-button-primary" onClick={save}>Speichern</button><button className="forum-button-secondary" onClick={()=>choose(null)}>Neu</button></div></div></Panel>;
+    const remove = () => action(() => type === 'ban' ? userAdminApi.deleteBanReason(form.key) : userAdminApi.deleteMuteReason(form.key), 'Moderationsgrund gelöscht.').then(async () => { await reload(); choose(null); });
+    return <Panel title={title} icon={type === 'ban' ? FaBan : FaVolumeXmark}><div className="grid gap-2 sm:grid-cols-2">{reasons.map(reason => <button key={reason.key} onClick={() => choose(reason)} className="rounded-2xl border border-white/[.06] bg-black/15 p-4 text-left"><b className="text-sm">{reason.description}</b><p className="mt-2 text-[10px] text-zinc-600">{reason.key} · {reason.permanent ? 'dauerhaft' : `${reason.defaultDurationSeconds}s`}</p></button>)}</div><div className="mt-6 border-t border-white/[.06] pt-6"><div className="grid gap-4 sm:grid-cols-2"><input className="forum-input mt-0" disabled={editing} value={form.key} onChange={(e)=>setForm({...form,key:e.target.value})} placeholder="Key"/><input className="forum-input mt-0" value={form.description} onChange={(e)=>setForm({...form,description:e.target.value})} placeholder="Beschreibung"/><input className="forum-input mt-0" type="number" value={form.defaultDurationSeconds ?? 0} onChange={(e)=>setForm({...form,defaultDurationSeconds:Number(e.target.value)})} placeholder="Sekunden"/><label className="flex items-center gap-3 text-sm text-zinc-400"><input type="checkbox" checked={form.permanent} onChange={(e)=>setForm({...form,permanent:e.target.checked})}/> Dauerhaft</label></div><div className="mt-4 flex flex-wrap gap-3"><button className="forum-button-primary" onClick={save}>Speichern</button><button className="forum-button-secondary" onClick={()=>choose(null)}>Neu</button>{editing && <button className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 px-4 py-3 text-xs font-bold text-red-300 transition hover:bg-red-500/10" onClick={remove}><FaTrashCan/> Löschen</button>}</div></div></Panel>;
 }
 
 function Panel({ title, icon: Icon, children }) { return <article className="rounded-3xl border border-white/[.075] bg-[#111218] p-6 sm:p-7"><h2 className="mb-6 flex items-center gap-3 font-display text-xl font-bold"><span className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500/10 text-orange-300"><Icon/></span>{title}</h2>{children}</article>; }
