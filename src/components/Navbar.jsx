@@ -13,13 +13,7 @@ import {
     FaXmark
 } from 'react-icons/fa6';
 import { Link, useLocation } from 'react-router-dom';
-import {
-    beginLogin,
-    fetchAuthenticatedUser,
-    getAuthenticatedUser,
-    isAdministrator,
-    logout
-} from '../lib/auth';
+import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isAdministrator, logout } from '../lib/auth';
 import { forumApi } from '../lib/forumApi';
 import { communityItems } from '../config/community';
 import PlayerSearch from './PlayerSearch';
@@ -29,12 +23,15 @@ export default function Navbar() {
     const [communityOpen, setCommunityOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [user, setUser] = useState(() => getAuthenticatedUser());
+    const [logoutPending, setLogoutPending] = useState(false);
+    const [logoutNotice, setLogoutNotice] = useState('');
     const [unreadForumNotifications, setUnreadForumNotifications] = useState(0);
     const [profileContext, setProfileContext] = useState(null);
     const location = useLocation();
     const searchRef = useRef(null);
     const communityRef = useRef(null);
     const profileRef = useRef(null);
+    const logoutNoticeTimerRef = useRef(null);
 
     useEffect(() => {
         let active = true;
@@ -104,9 +101,34 @@ export default function Navbar() {
         };
     }, [mobileOpen]);
 
-    const signOut = () => {
+    useEffect(() => {
+        const onAuthChanged = (event) => {
+            if (event.detail?.authenticated !== false) return;
+            setUser(null);
+            setUnreadForumNotifications(0);
+            setProfileOpen(false);
+            setMobileOpen(false);
+            setLogoutNotice(
+                event.detail.authServerSessionEnded
+                    ? 'Du wurdest erfolgreich abgemeldet.'
+                    : 'Du bist lokal abgemeldet. Die Authserver-Sitzung konnte nicht beendet werden.'
+            );
+            window.clearTimeout(logoutNoticeTimerRef.current);
+            logoutNoticeTimerRef.current = window.setTimeout(() => setLogoutNotice(''), 5000);
+        };
+        window.addEventListener('seriux-auth-changed', onAuthChanged);
+        return () => {
+            window.removeEventListener('seriux-auth-changed', onAuthChanged);
+            window.clearTimeout(logoutNoticeTimerRef.current);
+        };
+    }, []);
+
+    const signOut = async () => {
+        if (logoutPending) return;
         setProfileOpen(false);
-        logout(location.pathname);
+        setLogoutPending(true);
+        await logout();
+        setLogoutPending(false);
     };
 
     return (
@@ -237,9 +259,10 @@ export default function Navbar() {
                                 <button
                                     type="button"
                                     onClick={signOut}
+                                    disabled={logoutPending}
                                     className="profile-menu-item w-full text-red-300 hover:text-red-200"
                                 >
-                                    <FaArrowRightFromBracket /> Abmelden
+                                    <FaArrowRightFromBracket /> {logoutPending ? 'Wird abgemeldet …' : 'Abmelden'}
                                 </button>
                             </div>
                         )}
@@ -264,6 +287,16 @@ export default function Navbar() {
                     {mobileOpen ? <FaXmark /> : <FaBars />}
                 </button>
             </nav>
+
+            {logoutNotice && (
+                <div
+                    className="pointer-events-auto fixed left-1/2 top-28 -translate-x-1/2 rounded-2xl border border-emerald-400/20 bg-[#101713]/95 px-5 py-3 text-sm font-bold text-emerald-200 shadow-2xl backdrop-blur-xl"
+                    role="status"
+                    aria-live="polite"
+                >
+                    {logoutNotice}
+                </div>
+            )}
 
             {profileContext?.visible && (
                 <div className="profile-context-bar pointer-events-auto mx-auto max-w-[1500px]">
@@ -366,9 +399,10 @@ export default function Navbar() {
                             <button
                                 type="button"
                                 onClick={signOut}
+                                disabled={logoutPending}
                                 className="mobile-nav-item w-full text-left text-red-300"
                             >
-                                Abmelden
+                                {logoutPending ? 'Wird abgemeldet …' : 'Abmelden'}
                             </button>
                         </div>
                     ) : (

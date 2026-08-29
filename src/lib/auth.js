@@ -173,9 +173,15 @@ export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('store.admin'));
 
 export const isUserAdministrator = (user = getAuthenticatedUser()) =>
-    Boolean(user?.permissions?.some((permission) =>
-        permission.startsWith('users.') || permission.startsWith('permissions.') ||
-        permission.startsWith('moderation.') || permission.startsWith('audits.')));
+    Boolean(
+        user?.permissions?.some(
+            (permission) =>
+                permission.startsWith('users.') ||
+                permission.startsWith('permissions.') ||
+                permission.startsWith('moderation.') ||
+                permission.startsWith('audits.')
+        )
+    );
 
 export const isAdministrator = (user = getAuthenticatedUser()) =>
     isForumAdministrator(user) || isStoreAdministrator(user) || isUserAdministrator(user);
@@ -242,11 +248,54 @@ export async function completeLogin(code, state) {
     return sessionStorage.getItem('seriux_return_to') || '/';
 }
 
-export function logout(returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+export async function logout() {
+    const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
     clearLocalSession();
 
-    const target = new URL(returnTo || '/', window.location.origin);
-    const safeTarget = target.origin === window.location.origin ? target.href : `${window.location.origin}/`;
-    const params = new URLSearchParams({ redirect: safeTarget });
-    window.location.assign(`${AUTH_URL}/logout?${params}`);
+    if (refreshToken) {
+        try {
+            await fetch(`${AUTH_URL}/oauth2/revoke`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    client_id: CLIENT_ID,
+                    token: refreshToken,
+                    token_type_hint: 'refresh_token'
+                })
+            });
+        } catch {
+            // The browser session must still be terminated if token revocation is unavailable.
+        }
+    }
+
+    let authServerSessionEnded = false;
+    try {
+        const csrfResponse = await fetch(`${AUTH_URL}/api/session/csrf`, {
+            credentials: 'include',
+            headers: { Accept: 'application/json' },
+            cache: 'no-store'
+        });
+        if (!csrfResponse.ok) throw new Error('CSRF token unavailable');
+
+        const csrf = await csrfResponse.json();
+        const response = await fetch(`${AUTH_URL}/api/session/logout`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({ [csrf.parameterName]: csrf.token })
+        });
+        authServerSessionEnded = response.status === 204;
+    } catch {
+        authServerSessionEnded = false;
+    }
+
+    window.dispatchEvent(
+        new CustomEvent('seriux-auth-changed', {
+            detail: { authenticated: false, authServerSessionEnded }
+        })
+    );
+    return authServerSessionEnded;
 }
