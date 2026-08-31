@@ -20,6 +20,8 @@ import ForumAdmin from './pages/forum/ForumAdmin';
 import ForumAccount from './pages/forum/ForumAccount';
 import ForumUserProfile from './pages/forum/ForumUserProfile';
 import CommunityPage from './pages/community/CommunityPage';
+import CommunityBlog from './pages/community/CommunityBlog';
+import CommunityFeedback from './pages/community/CommunityFeedback';
 import StoreIndex from './pages/store/StoreIndex';
 import StoreCheckout from './pages/store/StoreCheckout';
 import StoreAccount from './pages/store/StoreAccount';
@@ -63,6 +65,10 @@ export default function App() {
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/:profileSlug" element={<PublicPlayerProfile />} />
+                <Route path="/community/blog" element={<CommunityBlog />} />
+                <Route path="/community/blog/:slug" element={<CommunityBlog />} />
+                <Route path="/community/feedback" element={<CommunityFeedback />} />
+                <Route path="/community/feedback/:suggestionId" element={<CommunityFeedback />} />
                 <Route path="/community/:page" element={<CommunityPage />} />
                 <Route path="*" element={<Navigate to="/" />} />
             </Routes>

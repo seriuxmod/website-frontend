@@ -39,7 +39,7 @@ export const communityItems = [
         title: 'Gestalte SeriuxMod mit uns.',
         copy: 'Teile Ideen, melde Probleme und diskutiere neue Client-Funktionen direkt mit der Community.',
         features: ['Feature-Vorschläge', 'Community-Abstimmung', 'Offene Diskussionen'],
-        cta: { label: 'Zum Feedback-Forum', to: '/forum/6a907487820fbf197544646a' }
+        cta: { label: 'Vorschläge öffnen', to: '/community/feedback' }
     },
     {
         slug: 'tools',
@@ -60,7 +60,7 @@ export const communityItems = [
         title: 'Updates aus erster Hand.',
         copy: 'Release Notes, Entwicklungsstände und Einblicke hinter die Kulissen des SeriuxMod-Projekts.',
         features: ['Release Notes', 'Entwicklungsupdates', 'Community-News'],
-        cta: { label: 'Ankündigungen lesen', to: '/forum/demo-announcements' }
+        cta: { label: 'Blog öffnen', to: '/community/blog' }
     },
     {
         slug: 'spotify',

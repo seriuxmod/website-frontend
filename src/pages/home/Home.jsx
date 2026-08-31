@@ -42,7 +42,7 @@ const platformModules = [
         icon: FaComments,
         name: 'Forum & Content',
         text: 'Diskussionen, News und Ideen aus der gesamten Community.',
-        capabilities: ['Foren & Topics', 'Posts & Reaktionen', 'Blog & News', 'Vorschläge & Votes', 'Support-Tickets'],
+        capabilities: ['Foren & Topics', 'Posts & Reaktionen', 'Blog & News', 'Vorschläge & Votes', 'Moderation & Meldungen'],
         action: 'Community entdecken',
         href: '/forum'
     },

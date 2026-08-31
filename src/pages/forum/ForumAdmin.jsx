@@ -5,6 +5,8 @@ import {
     FaFloppyDisk,
     FaFolderPlus,
     FaGear,
+    FaLightbulb,
+    FaNewspaper,
     FaShieldHalved,
     FaTags,
     FaTriangleExclamation
@@ -13,6 +15,7 @@ import { Link } from 'react-router-dom';
 import { fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator } from '../../lib/auth';
 import { forumApi, getPermissionGroups } from '../../lib/forumApi';
 import { ForumError, ForumLoading, ForumShell, Pagination, UserIdentity, formatDate } from './ForumComponents';
+import { BlogAdmin, SuggestionAdmin } from './ForumContentAdmin';
 
 const permissionFields = [
     ['view', 'Forum sehen'],
@@ -126,6 +129,8 @@ export default function ForumAdmin() {
         ['permissions', FaShieldHalved, 'Gruppenrechte'],
         ['labels', FaTags, 'Labels'],
         ['reports', FaTriangleExclamation, 'Meldungen'],
+        ['suggestions', FaLightbulb, 'Vorschläge'],
+        ['blog', FaNewspaper, 'Blog'],
         ['settings', FaGear, 'Einstellungen']
     ];
 
@@ -179,6 +184,8 @@ export default function ForumAdmin() {
                 <SettingsEditor initial={state.settings} onChanged={load} />
             )}
             {!state.loading && !state.error && tab === 'reports' && <ReportsEditor />}
+            {!state.loading && !state.error && tab === 'suggestions' && <SuggestionAdmin />}
+            {!state.loading && !state.error && tab === 'blog' && <BlogAdmin />}
         </ForumShell>
     );
 }
