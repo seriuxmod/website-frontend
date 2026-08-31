@@ -34,13 +34,20 @@ export const storeApi = {
     createOrder: (order) => request('/orders', { method: 'POST', body: JSON.stringify(order) }, true),
     orders: (page = 0, size = 20) => request(`/orders?page=${page}&size=${size}`, {}, true),
     order: (orderId) => request(`/orders/${encodeURIComponent(orderId)}`, {}, true),
-    createPayment: (orderId, gatewayId) =>
-        request('/payments', { method: 'POST', body: JSON.stringify({ orderId, gatewayId }) }, true),
+    createPayment: (orderId, gatewayId, paymentMethodId) =>
+        request(
+            '/payments',
+            { method: 'POST', body: JSON.stringify({ orderId, gatewayId, paymentMethodId }) },
+            true
+        ),
     payments: (page = 0, size = 20) => request(`/payments?page=${page}&size=${size}`, {}, true),
     entitlements: () => request('/entitlements', {}, true),
     credits: () => request('/me/credits', {}, true),
     admin: {
         overview: () => request('/admin/overview', {}, true),
+        settings: () => request('/admin/settings', {}, true),
+        saveSettings: (body) =>
+            request('/admin/settings', { method: 'PUT', body: JSON.stringify(body) }, true),
         categories: () => request('/admin/categories', {}, true),
         saveCategory: (id, body) =>
             request(

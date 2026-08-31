@@ -28,6 +28,7 @@ export default function StoreCheckout() {
     const [profile, setProfile] = useState(emptyProfile);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [digitalContentConsent, setDigitalContentConsent] = useState(false);
+    const [selectedMethodId, setSelectedMethodId] = useState('');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
 
@@ -43,6 +44,7 @@ export default function StoreCheckout() {
                         email: billing.email || '',
                         address: { ...emptyProfile.address, ...billing.address }
                     });
+                setSelectedMethodId((current) => current || config.paymentMethods?.[0]?.id || '');
                 setState({ loading: false, config, products: products.products ?? [], error: '' });
             })
             .catch((error) => active && setState((current) => ({ ...current, loading: false, error: error.message })));
@@ -90,7 +92,9 @@ export default function StoreCheckout() {
                 termsAccepted,
                 digitalContentConsent
             });
-            await storeApi.createPayment(order.id, state.config.paymentGateways[0]);
+            const paymentMethod = state.config.paymentMethods?.find((method) => method.id === selectedMethodId);
+            if (!paymentMethod) throw new Error('Bitte wähle eine verfügbare Zahlungsmethode aus.');
+            await storeApi.createPayment(order.id, paymentMethod.provider, paymentMethod.id);
             cart.clear();
             navigate('/store/account', { state: { orderCreated: order.id } });
         } catch (error) {
@@ -262,6 +266,30 @@ export default function StoreCheckout() {
                             <b>Gesamtsumme</b>
                             <b className="font-display text-3xl">{formatStorePrice(total, state.config?.currency)}</b>
                         </div>
+                        {state.config?.paymentMethods?.length > 0 && (
+                            <div className="mt-5">
+                                <span className="forum-label">Zahlungsmethode</span>
+                                <div className="mt-2 grid gap-2">
+                                    {state.config.paymentMethods.map((method) => (
+                                        <button
+                                            key={method.id}
+                                            type="button"
+                                            className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-left text-sm transition ${
+                                                selectedMethodId === method.id
+                                                    ? 'border-orange-400/45 bg-orange-500/10 text-white'
+                                                    : 'border-white/[.07] bg-black/15 text-zinc-400 hover:border-white/15'
+                                            }`}
+                                            onClick={() => setSelectedMethodId(method.id)}
+                                        >
+                                            <span>{method.displayName}</span>
+                                            <span className="text-[10px] uppercase tracking-wider text-zinc-600">
+                                                {method.provider}
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <p className="mt-3 text-[11px] leading-5 text-zinc-600">
                             Endpreis. Die konkrete steuerliche Aufschlüsselung wird vor Aktivierung des Bezahlvorgangs
                             konfiguriert.
@@ -280,6 +308,7 @@ export default function StoreCheckout() {
                                 lines.length === 0 ||
                                 !termsAccepted ||
                                 !digitalContentConsent ||
+                                !selectedMethodId ||
                                 !state.config?.checkoutEnabled
                             }
                         >

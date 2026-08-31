@@ -4,7 +4,9 @@ import {
     FaBagShopping,
     FaBoxesStacked,
     FaCreditCard,
+    FaBuilding,
     FaFloppyDisk,
+    FaGear,
     FaList,
     FaPlus,
     FaTicket,
@@ -67,7 +69,7 @@ const emptyCoupon = {
 export default function StoreAdmin() {
     const [user, setUser] = useState(() => getAuthenticatedUser());
     const [checking, setChecking] = useState(true);
-    const [tab, setTab] = useState('catalog');
+    const [tab, setTab] = useState('settings');
     const [state, setState] = useState({
         loading: true,
         overview: null,
@@ -75,20 +77,22 @@ export default function StoreAdmin() {
         products: [],
         fields: [],
         coupons: [],
+        settings: null,
         error: ''
     });
 
     const load = useCallback(async () => {
         setState((current) => ({ ...current, loading: true, error: '' }));
         try {
-            const [overview, categories, products, fields, coupons] = await Promise.all([
+            const [overview, categories, products, fields, coupons, settings] = await Promise.all([
                 storeApi.admin.overview(),
                 storeApi.admin.categories(),
                 storeApi.admin.products(),
                 storeApi.admin.fields(),
-                storeApi.admin.coupons()
+                storeApi.admin.coupons(),
+                storeApi.admin.settings()
             ]);
-            setState({ loading: false, overview, categories, products, fields, coupons, error: '' });
+            setState({ loading: false, overview, categories, products, fields, coupons, settings, error: '' });
         } catch (error) {
             setState((current) => ({ ...current, loading: false, error: error.message }));
         }
@@ -120,6 +124,7 @@ export default function StoreAdmin() {
         );
 
     const tabs = [
+        ['settings', FaGear, 'Shop-Einstellungen'],
         ['catalog', FaBoxesStacked, 'Katalog'],
         ['fields', FaList, 'Produktfelder'],
         ['coupons', FaTicket, 'Coupons'],
@@ -167,6 +172,9 @@ export default function StoreAdmin() {
                     onChanged={load}
                 />
             )}
+            {!state.loading && !state.error && tab === 'settings' && (
+                <StoreSettingsEditor settings={state.settings} onChanged={load} />
+            )}
             {!state.loading && !state.error && tab === 'fields' && (
                 <FieldEditor fields={state.fields} onChanged={load} />
             )}
@@ -195,6 +203,180 @@ function Overview({ data }) {
                 </article>
             ))}
         </div>
+    );
+}
+
+function StoreSettingsEditor({ settings, onChanged }) {
+    const [form, setForm] = useState(null);
+    const [saving, setSaving] = useState(false);
+    const [message, setMessage] = useState('');
+
+    useEffect(() => {
+        if (!settings) return;
+        setForm({
+            checkoutEnabled: Boolean(settings.checkoutEnabled),
+            currency: settings.currency || 'EUR',
+            merchant: {
+                legalName: '',
+                tradingName: '',
+                addressLine1: '',
+                addressLine2: '',
+                postalCode: '',
+                city: '',
+                region: '',
+                countryCode: 'DE',
+                email: '',
+                phone: '',
+                website: '',
+                vatId: '',
+                taxNumber: '',
+                registrationCourt: '',
+                registrationNumber: '',
+                managingDirector: '',
+                ...(settings.merchant || {})
+            },
+            invoicePrefix: settings.invoicePrefix || 'SM',
+            pricesIncludeVat: settings.pricesIncludeVat !== false,
+            vatRate: (settings.defaultVatRateBasisPoints || 0) / 100,
+            paymentMethods: (settings.paymentMethods || []).map((method) => ({ ...method }))
+        });
+        setMessage('');
+    }, [settings]);
+
+    if (!form) return <ForumLoading label="Shop-Einstellungen werden geladen …" />;
+
+    const merchant = (field, value) =>
+        setForm((current) => ({ ...current, merchant: { ...current.merchant, [field]: value } }));
+    const method = (id, changes) =>
+        setForm((current) => ({
+            ...current,
+            paymentMethods: current.paymentMethods.map((entry) => (entry.id === id ? { ...entry, ...changes } : entry))
+        }));
+    const save = async (event) => {
+        event.preventDefault();
+        setSaving(true);
+        setMessage('');
+        try {
+            await storeApi.admin.saveSettings({
+                checkoutEnabled: form.checkoutEnabled,
+                currency: form.currency,
+                merchant: form.merchant,
+                invoicePrefix: form.invoicePrefix,
+                pricesIncludeVat: form.pricesIncludeVat,
+                defaultVatRateBasisPoints: Math.round(Number(form.vatRate || 0) * 100),
+                paymentMethods: form.paymentMethods.map(({ id, enabled, order }) => ({ id, enabled, order }))
+            });
+            setMessage('Shop-Einstellungen gespeichert.');
+            await onChanged();
+        } catch (error) {
+            setMessage(error.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <form className="space-y-8" onSubmit={save}>
+            <section className="forum-panel rounded-3xl p-6 sm:p-8">
+                <EditorHeader eyebrow="ZAHLUNGSVERKEHR" title="Zahlungsmethoden" />
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-500">
+                    Apple Pay, Google Pay und Kartenzahlungen laufen über Stripe. PayPal verwendet einen eigenen
+                    Provider. API-Schlüssel werden ausschließlich als Server-Secrets hinterlegt und hier nie angezeigt.
+                </p>
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                    {form.paymentMethods.map((entry) => (
+                        <article
+                            className="rounded-2xl border border-white/[.07] bg-black/15 p-5"
+                            key={entry.id}
+                        >
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex gap-3">
+                                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300">
+                                        <FaCreditCard />
+                                    </span>
+                                    <div>
+                                        <b className="block text-sm text-white">{entry.displayName}</b>
+                                        <span className="text-[11px] uppercase tracking-wider text-zinc-600">
+                                            Provider: {entry.provider}
+                                        </span>
+                                    </div>
+                                </div>
+                                <span
+                                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                                        entry.providerConfigured
+                                            ? 'bg-emerald-400/10 text-emerald-300'
+                                            : 'bg-amber-400/10 text-amber-200'
+                                    }`}
+                                >
+                                    {entry.providerConfigured ? 'Server bereit' : 'Secrets fehlen'}
+                                </span>
+                            </div>
+                            <div className="mt-5 grid grid-cols-[1fr_100px] items-end gap-3">
+                                <Toggle
+                                    label="Im Checkout anzeigen"
+                                    checked={entry.enabled}
+                                    onChange={(enabled) => method(entry.id, { enabled })}
+                                />
+                                <Field
+                                    label="Reihenfolge"
+                                    type="number"
+                                    min="0"
+                                    max="1000"
+                                    value={entry.order}
+                                    onChange={(order) => method(entry.id, { order: Number(order) })}
+                                />
+                            </div>
+                        </article>
+                    ))}
+                </div>
+            </section>
+
+            <section className="forum-panel rounded-3xl p-6 sm:p-8">
+                <EditorHeader eyebrow="RECHNUNGSSTELLER" title="Firmendaten">
+                    <FaBuilding className="text-orange-300" />
+                </EditorHeader>
+                <p className="mt-3 text-sm leading-6 text-zinc-500">
+                    Diese Angaben werden als unveränderlicher Rechnungssteller in zukünftige Rechnungen übernommen.
+                </p>
+                <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                    <Field label="Rechtlicher Firmenname" value={form.merchant.legalName} onChange={(v) => merchant('legalName', v)} required />
+                    <Field label="Marken-/Handelsname" value={form.merchant.tradingName} onChange={(v) => merchant('tradingName', v)} />
+                    <Field label="Geschäftsführer/Inhaber" value={form.merchant.managingDirector} onChange={(v) => merchant('managingDirector', v)} />
+                    <Field label="Kontakt-E-Mail" type="email" value={form.merchant.email} onChange={(v) => merchant('email', v)} required />
+                    <Field label="Straße und Hausnummer" value={form.merchant.addressLine1} onChange={(v) => merchant('addressLine1', v)} required />
+                    <Field label="Adresszusatz" value={form.merchant.addressLine2} onChange={(v) => merchant('addressLine2', v)} />
+                    <Field label="Postleitzahl" value={form.merchant.postalCode} onChange={(v) => merchant('postalCode', v)} required />
+                    <Field label="Ort" value={form.merchant.city} onChange={(v) => merchant('city', v)} required />
+                    <Field label="Bundesland/Region" value={form.merchant.region} onChange={(v) => merchant('region', v)} />
+                    <Field label="Ländercode" value={form.merchant.countryCode} onChange={(v) => merchant('countryCode', v)} required maxLength={2} />
+                    <Field label="Telefon" value={form.merchant.phone} onChange={(v) => merchant('phone', v)} />
+                    <Field label="Website" type="url" value={form.merchant.website} onChange={(v) => merchant('website', v)} />
+                    <Field label="USt-IdNr." value={form.merchant.vatId} onChange={(v) => merchant('vatId', v)} />
+                    <Field label="Steuernummer" value={form.merchant.taxNumber} onChange={(v) => merchant('taxNumber', v)} />
+                    <Field label="Registergericht" value={form.merchant.registrationCourt} onChange={(v) => merchant('registrationCourt', v)} />
+                    <Field label="Registernummer" value={form.merchant.registrationNumber} onChange={(v) => merchant('registrationNumber', v)} />
+                </div>
+            </section>
+
+            <section className="forum-panel rounded-3xl p-6 sm:p-8">
+                <EditorHeader eyebrow="CHECKOUT" title="Rechnung und Freigabe" />
+                <div className="mt-6 grid gap-5 sm:grid-cols-3">
+                    <Field label="Währung" value={form.currency} onChange={(currency) => setForm({ ...form, currency })} required maxLength={3} />
+                    <Field label="Rechnungspräfix" value={form.invoicePrefix} onChange={(invoicePrefix) => setForm({ ...form, invoicePrefix })} required />
+                    <Field label="Standard-USt. in %" type="number" min="0" max="100" step="0.01" value={form.vatRate} onChange={(vatRate) => setForm({ ...form, vatRate })} />
+                </div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <Toggle label="Preise enthalten Umsatzsteuer" checked={form.pricesIncludeVat} onChange={(pricesIncludeVat) => setForm({ ...form, pricesIncludeVat })} />
+                    <Toggle label="Produktiven Checkout aktivieren" checked={form.checkoutEnabled} onChange={(checkoutEnabled) => setForm({ ...form, checkoutEnabled })} />
+                </div>
+                {settings?.missingRequirements?.length > 0 && (
+                    <div className="mt-5 rounded-2xl border border-amber-400/15 bg-amber-400/[.05] p-4 text-xs leading-6 text-amber-100/75">
+                        Noch nicht vollständig: {settings.missingRequirements.join(', ')}
+                    </div>
+                )}
+                <SaveBar saving={saving} message={message} />
+            </section>
+        </form>
     );
 }
 
