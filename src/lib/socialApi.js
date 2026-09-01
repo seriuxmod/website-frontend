@@ -25,6 +25,15 @@ async function request(path, options = {}, authenticated = true) {
 }
 
 export const socialApi = {
+    presence: {
+        heartbeat: () => request('/presence/heartbeat', { method: 'POST' }),
+        public: (userId, days = 112, signal) =>
+            request(`/public/profiles/${encodeURIComponent(userId)}/presence?days=${days}`, { signal }, false)
+    },
+    profiles: {
+        friends: (userId, limit = 100, signal) =>
+            request(`/public/profiles/${encodeURIComponent(userId)}/friends?limit=${limit}`, { signal }, false)
+    },
     clans: {
         public: (query = '', page = 0, size = 20, signal) =>
             request(`/public/clans?query=${encodeURIComponent(query)}&page=${page}&size=${size}`, { signal }, false),

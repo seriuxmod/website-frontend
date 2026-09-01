@@ -33,11 +33,13 @@ import ResetPassword from './pages/platform/ResetPassword';
 import ForgotPassword from './pages/platform/ForgotPassword';
 import SystemStatus from './pages/status/SystemStatus';
 import SocialHub from './pages/social/SocialHub';
+import PresenceReporter from './components/PresenceReporter';
 
 export default function App() {
     useScrollToTop();
     return (
         <div className="min-h-screen bg-[#090a0d]">
+            <PresenceReporter />
             <Navbar />
             <Routes>
                 <Route path="/" element={<Home />} exact />

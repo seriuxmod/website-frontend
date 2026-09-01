@@ -245,6 +245,7 @@ export async function completeLogin(code, state) {
     storeTokens(payload);
     sessionStorage.removeItem('seriux_pkce_verifier');
     sessionStorage.removeItem('seriux_oauth_state');
+    window.dispatchEvent(new CustomEvent('seriux-auth-changed', { detail: { authenticated: true } }));
     return sessionStorage.getItem('seriux_return_to') || '/';
 }
 

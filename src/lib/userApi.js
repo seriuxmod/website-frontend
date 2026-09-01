@@ -13,6 +13,10 @@ async function request(path, options = {}) {
 
 export const userApi = {
     byId: (playerId, signal) => request(`/${encodeURIComponent(playerId)}`, { signal }),
+    batch: (playerIds, signal) =>
+        playerIds?.length
+            ? request(`/batch?ids=${playerIds.map(encodeURIComponent).join(',')}`, { signal })
+            : Promise.resolve([]),
     byUsername: (username, signal) => request(`/by-name/${encodeURIComponent(username)}`, { signal }),
     search: (query, limit = 8, signal) => request(`/search?q=${encodeURIComponent(query)}&limit=${limit}`, { signal })
 };

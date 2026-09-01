@@ -1,9 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FaCalendarDays, FaCheck, FaComments, FaCopy, FaHeart, FaMessage, FaShieldHalved } from 'react-icons/fa6';
+import {
+    FaCalendarDays,
+    FaChartColumn,
+    FaCheck,
+    FaCircle,
+    FaComments,
+    FaCopy,
+    FaGamepad,
+    FaGlobe,
+    FaHeart,
+    FaMessage,
+    FaRocket,
+    FaShieldHalved,
+    FaUsers
+} from 'react-icons/fa6';
 import { Link, useParams } from 'react-router-dom';
 import { forumApi } from '../../lib/forumApi';
 import { getAuthenticatedUser } from '../../lib/auth';
 import { playerAvatar, playerBody, userApi } from '../../lib/userApi';
+import { socialApi } from '../../lib/socialApi';
+
+const PRESENCE_LABELS = {
+    CLIENT: 'Client',
+    LAUNCHER: 'Launcher',
+    WEBSITE: 'Webseite'
+};
 
 function rankColor(color) {
     if (!Number.isFinite(color)) return '#f97316';
@@ -15,27 +36,105 @@ function formatMemberSince(value) {
     return `Dabei seit ${new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(new Date(value))}`;
 }
 
+function formatDate(value, fallback = 'Noch nicht erfasst') {
+    if (!value) return fallback;
+    return new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    }).format(new Date(value));
+}
+
+function formatLastOnline(value, online) {
+    if (online) return 'Jetzt';
+    if (!value) return 'Noch nicht erfasst';
+    const date = new Date(value);
+    const today = new Date();
+    const sameDay = date.toDateString() === today.toDateString();
+    return new Intl.DateTimeFormat(
+        'de-DE',
+        sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: '2-digit', month: 'short', year: 'numeric' }
+    ).format(date);
+}
+
+function activityWeeks(activity = []) {
+    const byDate = new Map(activity.map((entry) => [entry.date, entry]));
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const mondayOffset = (today.getUTCDay() + 6) % 7;
+    const start = new Date(today);
+    start.setUTCDate(today.getUTCDate() - mondayOffset - 15 * 7);
+
+    return Array.from({ length: 16 }, (_, weekIndex) =>
+        Array.from({ length: 7 }, (_, dayIndex) => {
+            const date = new Date(start);
+            date.setUTCDate(start.getUTCDate() + weekIndex * 7 + dayIndex);
+            const key = date.toISOString().slice(0, 10);
+            return {
+                key,
+                date,
+                future: date > today,
+                ...(byDate.get(key) || { events: 0, surfaces: [] })
+            };
+        })
+    );
+}
+
+function activityLevel(events = 0) {
+    if (events >= 12) return 'bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,.38)]';
+    if (events >= 6) return 'bg-orange-600';
+    if (events >= 2) return 'bg-orange-800';
+    if (events >= 1) return 'bg-orange-950';
+    return 'bg-white/[.055]';
+}
+
 export default function PublicPlayerProfile() {
     const { profileSlug } = useParams();
     const username = profileSlug?.startsWith('@') ? profileSlug.slice(1) : profileSlug;
-    const [state, setState] = useState({ loading: true, profile: null, forum: null, error: '' });
+    const [state, setState] = useState({
+        loading: true,
+        profile: null,
+        forum: null,
+        presence: null,
+        friends: [],
+        error: ''
+    });
     const [copied, setCopied] = useState('');
     const currentUser = getAuthenticatedUser();
     const identityRef = useRef(null);
 
     const load = useCallback(
         async (signal) => {
-            setState({ loading: true, profile: null, forum: null, error: '' });
+            setState({ loading: true, profile: null, forum: null, presence: null, friends: [], error: '' });
             try {
                 const profile = await userApi.byUsername(username, signal);
-                const forum = await forumApi.userProfile(profile.playerId, 6).catch(() => null);
-                setState({ loading: false, profile, forum, error: '' });
+                const [forum, presence, friendRelations] = await Promise.all([
+                    forumApi.userProfile(profile.playerId, 6).catch(() => null),
+                    socialApi.presence.public(profile.playerId, 112, signal).catch(() => null),
+                    socialApi.profiles.friends(profile.playerId, 100, signal).catch(() => [])
+                ]);
+                const friendProfiles = await userApi
+                    .batch(
+                        friendRelations.map((friend) => friend.friendUserId),
+                        signal
+                    )
+                    .catch(() => []);
+                const profilesById = new Map(friendProfiles.map((friend) => [friend.playerId, friend]));
+                const friends = friendRelations
+                    .map((relation) => {
+                        const friend = profilesById.get(relation.friendUserId);
+                        return friend ? { ...friend, friendsSince: relation.friendsSince } : null;
+                    })
+                    .filter(Boolean);
+                setState({ loading: false, profile, forum, presence, friends, error: '' });
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     setState({
                         loading: false,
                         profile: null,
                         forum: null,
+                        presence: null,
+                        friends: [],
                         error: error.status === 404 ? 'Dieses Spielerprofil wurde nicht gefunden.' : error.message
                     });
                 }
@@ -106,8 +205,12 @@ export default function PublicPlayerProfile() {
         );
     }
 
-    const { profile, forum } = state;
+    const { profile, forum, presence, friends } = state;
     const color = rankColor(profile.rank?.color);
+    const online = Boolean(presence?.online);
+    const surfaces = presence?.surfaces || [];
+    const lastOnline = presence?.lastSeenAt || profile.lastOnline;
+    const weeks = activityWeeks(presence?.activity);
     const stats = [
         [FaComments, 'Themen', forum?.topicsCreated ?? 0],
         [FaMessage, 'Beiträge', forum?.postsCreated ?? 0],
@@ -148,6 +251,25 @@ export default function PublicPlayerProfile() {
                                     Dein Profil
                                 </span>
                             )}
+                            <span
+                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[.14em] ${
+                                    online
+                                        ? 'border-emerald-400/25 bg-emerald-400/10 text-emerald-300'
+                                        : 'border-white/[.08] bg-black/20 text-zinc-500'
+                                }`}
+                            >
+                                <span className="relative grid h-2 w-2 place-items-center">
+                                    {online && (
+                                        <span className="absolute h-2 w-2 animate-ping rounded-full bg-emerald-400/50" />
+                                    )}
+                                    <FaCircle
+                                        className={`relative text-[7px] ${online ? 'text-emerald-400' : 'text-zinc-700'}`}
+                                    />
+                                </span>
+                                {online
+                                    ? `Online · ${surfaces.map((surface) => PRESENCE_LABELS[surface] || surface).join(', ')}`
+                                    : 'Offline'}
+                            </span>
                         </div>
                         <h1
                             ref={identityRef}
@@ -222,7 +344,152 @@ export default function PublicPlayerProfile() {
                     </div>
                 </aside>
 
-                <div className="space-y-6">
+                <div className="min-w-0 space-y-6">
+                    <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
+                        <header className="flex items-center gap-3">
+                            <FaChartColumn className="text-sky-400" />
+                            <h2 className="font-display text-lg font-bold">SeriuxMod Stats</h2>
+                        </header>
+                        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-2xl border border-white/[.055] bg-white/[.025] px-5 py-6 text-center">
+                                <b className="block break-words font-display text-xl tracking-tight text-white sm:text-3xl">
+                                    {formatDate(profile.memberSince)}
+                                </b>
+                                <span className="mt-2 block text-[10px] uppercase tracking-[.12em] text-zinc-600">
+                                    Beigetreten
+                                </span>
+                            </div>
+                            <div className="rounded-2xl border border-white/[.055] bg-white/[.025] px-5 py-6 text-center">
+                                <b className="block break-words font-display text-xl tracking-tight text-white sm:text-3xl">
+                                    {formatLastOnline(lastOnline, online)}
+                                </b>
+                                <span className="mt-2 block text-[10px] uppercase tracking-[.12em] text-zinc-600">
+                                    Zuletzt online
+                                </span>
+                            </div>
+                        </div>
+                        <div className="mt-3 flex flex-col justify-between gap-4 rounded-2xl border border-white/[.055] bg-black/20 px-5 py-4 sm:flex-row sm:items-center">
+                            <div>
+                                <span className="text-[10px] uppercase tracking-[.12em] text-zinc-600">
+                                    Aktive Verbindung
+                                </span>
+                                <b className="mt-1 block text-sm text-zinc-200">
+                                    {online ? 'SeriuxMod ist gerade verbunden' : 'Aktuell keine aktive Sitzung'}
+                                </b>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {(online ? surfaces : ['OFFLINE']).map((surface) => (
+                                    <span
+                                        key={surface}
+                                        className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-bold ${
+                                            online
+                                                ? 'border-emerald-400/20 bg-emerald-400/[.08] text-emerald-300'
+                                                : 'border-white/[.07] text-zinc-600'
+                                        }`}
+                                    >
+                                        {surface === 'CLIENT' && <FaGamepad />}
+                                        {surface === 'LAUNCHER' && <FaRocket />}
+                                        {surface === 'WEBSITE' && <FaGlobe />}
+                                        <FaCircle className="text-[6px]" />
+                                        {PRESENCE_LABELS[surface] || 'Offline'}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
+                        <header className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <FaCalendarDays className="text-sky-400" />
+                                <h2 className="font-display text-lg font-bold">Aktivität</h2>
+                            </div>
+                            <span
+                                className={`flex items-center gap-2 text-[10px] font-bold ${online ? 'text-emerald-300' : 'text-zinc-600'}`}
+                            >
+                                <FaCircle className="text-[6px]" /> {online ? 'Online' : 'Offline'}
+                            </span>
+                        </header>
+                        <div className="mt-6 overflow-x-auto pb-2">
+                            <div className="min-w-[570px]">
+                                <div className="mb-2 grid grid-cols-[34px_1fr] gap-3 text-[9px] font-bold uppercase tracking-[.1em] text-zinc-700">
+                                    <span />
+                                    <div className="flex justify-between px-1">
+                                        <span>Vor 4 Monaten</span>
+                                        <span>Heute</span>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-[34px_1fr] gap-3">
+                                    <div className="grid grid-rows-7 gap-1.5 py-0.5 text-[9px] text-zinc-700">
+                                        {['Mo', '', 'Mi', '', 'Fr', '', 'So'].map((day, index) => (
+                                            <span key={`${day}-${index}`} className="flex h-5 items-center">
+                                                {day}
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                        {weeks.map((week, weekIndex) => (
+                                            <div key={weekIndex} className="grid flex-1 grid-rows-7 gap-1.5">
+                                                {week.map((day) => (
+                                                    <span
+                                                        key={day.key}
+                                                        title={`${formatDate(day.date)} · ${day.events || 0} Aktivitätspunkte${
+                                                            day.surfaces?.length
+                                                                ? ` · ${day.surfaces.map((surface) => PRESENCE_LABELS[surface] || surface).join(', ')}`
+                                                                : ''
+                                                        }`}
+                                                        className={`h-5 min-w-5 rounded-[5px] border border-white/[.025] ${
+                                                            day.future ? 'opacity-20' : activityLevel(day.events)
+                                                        }`}
+                                                    />
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-4 flex items-center justify-end gap-1.5 text-[9px] text-zinc-700">
+                            <span>Weniger</span>
+                            {[0, 1, 2, 6, 12].map((value) => (
+                                <span key={value} className={`h-3 w-3 rounded-[3px] ${activityLevel(value)}`} />
+                            ))}
+                            <span>Mehr</span>
+                        </div>
+                    </section>
+
+                    <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
+                        <header className="flex items-center gap-3">
+                            <FaUsers className="text-sky-400" />
+                            <h2 className="font-display text-lg font-bold">Freunde</h2>
+                            <span className="rounded-full bg-white/[.06] px-2 py-0.5 text-[10px] font-bold text-zinc-500">
+                                {friends.length}
+                            </span>
+                        </header>
+                        {friends.length === 0 ? (
+                            <p className="mt-5 break-words rounded-2xl border border-dashed border-white/[.07] p-6 text-sm text-zinc-600">
+                                Dieses Profil hat noch keine öffentlichen Freundschaften.
+                            </p>
+                        ) : (
+                            <div className="mt-5 flex flex-wrap gap-2">
+                                {friends.map((friend) => (
+                                    <Link
+                                        key={friend.playerId}
+                                        to={`/@${encodeURIComponent(friend.username)}`}
+                                        className="group inline-flex max-w-full items-center gap-2 rounded-full border border-white/[.075] bg-white/[.025] py-1.5 pl-1.5 pr-3 text-xs font-bold text-zinc-400 transition hover:border-orange-500/25 hover:bg-orange-500/[.07] hover:text-white"
+                                    >
+                                        <img
+                                            className="h-6 w-6 rounded-full bg-black/30 [image-rendering:pixelated]"
+                                            src={playerAvatar(friend.playerId, 48)}
+                                            alt=""
+                                        />
+                                        <span className="truncate">{friend.username}</span>
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
                     <section className="forum-panel overflow-hidden rounded-3xl">
                         <header className="flex items-center justify-between border-b border-white/[.06] px-6 py-5">
                             <h2 className="font-display text-lg font-bold">Profilinformationen</h2>
