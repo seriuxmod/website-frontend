@@ -1,15 +1,31 @@
 import {
     FaAt,
     FaCircleQuestion,
+    FaCrown,
     FaHeart,
     FaLightbulb,
     FaMedal,
     FaMusic,
     FaNewspaper,
-    FaScrewdriverWrench
+    FaScrewdriverWrench,
+    FaUsers
 } from 'react-icons/fa6';
 
 export const communityItems = [
+    {
+        slug: 'clans',
+        to: '/clans',
+        label: 'Clans',
+        description: 'Communitys entdecken',
+        icon: FaCrown
+    },
+    {
+        slug: 'friends',
+        to: '/friends',
+        label: 'Freunde & Partys',
+        description: 'Gemeinsam spielen',
+        icon: FaUsers
+    },
     {
         slug: 'badges',
         label: 'Badges',

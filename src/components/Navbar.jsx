@@ -10,6 +10,7 @@ import {
     FaKey,
     FaShieldHalved,
     FaUser,
+    FaUsers,
     FaXmark
 } from 'react-icons/fa6';
 import { Link, useLocation } from 'react-router-dom';
@@ -187,7 +188,7 @@ export default function Navbar() {
                                         return (
                                             <Link
                                                 key={item.slug}
-                                                to={`/community/${item.slug}`}
+                                                to={item.to || `/community/${item.slug}`}
                                                 className="community-dropdown-item"
                                             >
                                                 <span className="community-nav-icon">
@@ -247,6 +248,9 @@ export default function Navbar() {
                                 </Link>
                                 <Link to="/store/account" className="profile-menu-item">
                                     <FaBagShopping /> Meine Käufe
+                                </Link>
+                                <Link to="/friends" className="profile-menu-item">
+                                    <FaUsers /> Freunde &amp; Partys
                                 </Link>
                                 <Link to="/account/security" className="profile-menu-item">
                                     <FaKey /> Sicherheit
@@ -348,7 +352,7 @@ export default function Navbar() {
                             return (
                                 <Link
                                     className="mobile-nav-item flex items-center gap-3"
-                                    to={`/community/${item.slug}`}
+                                    to={item.to || `/community/${item.slug}`}
                                     key={item.slug}
                                 >
                                     <span className="community-nav-icon">
@@ -387,6 +391,9 @@ export default function Navbar() {
                             </Link>
                             <Link className="mobile-nav-item" to="/store/account">
                                 Meine Käufe
+                            </Link>
+                            <Link className="mobile-nav-item" to="/friends">
+                                Freunde &amp; Partys
                             </Link>
                             <Link className="mobile-nav-item" to="/account/security">
                                 Sicherheit

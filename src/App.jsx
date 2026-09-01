@@ -9,7 +9,6 @@ import Home from './pages/home/Home';
 import Disclosure from './pages/legal/Disclosure';
 import Privacy from './pages/legal/Privacy';
 import Terms from './pages/legal/Terms';
-import PlatformHub from './pages/platform/PlatformHub';
 import AuthCallback from './pages/platform/AuthCallback';
 import Profile from './pages/platform/Profile';
 import PublicPlayerProfile from './pages/platform/PublicPlayerProfile';
@@ -33,6 +32,7 @@ import VerifyEmail from './pages/platform/VerifyEmail';
 import ResetPassword from './pages/platform/ResetPassword';
 import ForgotPassword from './pages/platform/ForgotPassword';
 import SystemStatus from './pages/status/SystemStatus';
+import SocialHub from './pages/social/SocialHub';
 
 export default function App() {
     useScrollToTop();
@@ -44,7 +44,10 @@ export default function App() {
                 <Route path="/disclosure" element={<Disclosure />} exact />
                 <Route path="/privacy" element={<Privacy />} exact />
                 <Route path="/terms" element={<Terms />} exact />
-                <Route path="/clans" element={<PlatformHub type="clans" />} />
+                <Route path="/social" element={<Navigate to="/clans" replace />} />
+                <Route path="/clans" element={<SocialHub initialTab="clans" />} />
+                <Route path="/friends" element={<SocialHub initialTab="friends" />} />
+                <Route path="/party" element={<SocialHub initialTab="party" />} />
                 <Route path="/forum" element={<ForumIndex />} />
                 <Route path="/forum/:forumId" element={<ForumBoard />} />
                 <Route path="/forum/topic/:topicId" element={<ForumTopic />} />
