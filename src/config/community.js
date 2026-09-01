@@ -1,31 +1,6 @@
-import {
-    FaAt,
-    FaCircleQuestion,
-    FaCrown,
-    FaHeart,
-    FaLightbulb,
-    FaMedal,
-    FaMusic,
-    FaNewspaper,
-    FaScrewdriverWrench,
-    FaUsers
-} from 'react-icons/fa6';
+import { FaAt, FaCircleQuestion, FaLightbulb, FaMedal, FaNewspaper } from 'react-icons/fa6';
 
 export const communityItems = [
-    {
-        slug: 'clans',
-        to: '/clans',
-        label: 'Clans',
-        description: 'Communitys entdecken',
-        icon: FaCrown
-    },
-    {
-        slug: 'friends',
-        to: '/friends',
-        label: 'Freunde & Partys',
-        description: 'Gemeinsam spielen',
-        icon: FaUsers
-    },
     {
         slug: 'badges',
         label: 'Badges',
@@ -58,16 +33,6 @@ export const communityItems = [
         cta: { label: 'Vorschläge öffnen', to: '/community/feedback' }
     },
     {
-        slug: 'tools',
-        label: 'Tools',
-        description: 'Generatoren & Rechner',
-        icon: FaScrewdriverWrench,
-        eyebrow: 'PRAKTISCHE HELFER',
-        title: 'Werkzeuge für deinen Minecraft-Alltag.',
-        copy: 'Hier entsteht eine Sammlung nützlicher Generatoren, Rechner und kleiner Hilfen für Client und Community.',
-        features: ['Minecraft-Rechner', 'Profil-Generatoren', 'Client-Hilfen']
-    },
-    {
         slug: 'blog',
         label: 'Blog',
         description: 'Neuigkeiten & Updates',
@@ -77,27 +42,6 @@ export const communityItems = [
         copy: 'Release Notes, Entwicklungsstände und Einblicke hinter die Kulissen des SeriuxMod-Projekts.',
         features: ['Release Notes', 'Entwicklungsupdates', 'Community-News'],
         cta: { label: 'Blog öffnen', to: '/community/blog' }
-    },
-    {
-        slug: 'spotify',
-        label: 'Spotify',
-        description: 'Community-Musik',
-        icon: FaMusic,
-        eyebrow: 'COMMUNITY SOUND',
-        title: 'Der Sound für deine nächste Session.',
-        copy: 'Entdecke künftig Playlists und Musikempfehlungen aus der SeriuxMod-Community.',
-        features: ['Community-Playlists', 'Musikempfehlungen', 'Gemeinsame Sessions']
-    },
-    {
-        slug: 'contribute',
-        label: 'Mitwirken',
-        description: 'Der Community helfen',
-        icon: FaHeart,
-        eyebrow: 'GEMEINSAM BAUEN',
-        title: 'Mach SeriuxMod ein Stück besser.',
-        copy: 'Unterstütze das Projekt mit Code, Tests, Übersetzungen, Design oder hilfreichem Feedback.',
-        features: ['Open-Source-Projekte', 'Tests & Übersetzungen', 'Community-Support'],
-        cta: { label: 'SeriuxMod auf GitHub', to: 'https://github.com/seriuxmod', external: true }
     },
     {
         slug: 'support',
