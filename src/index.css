@@ -556,6 +556,22 @@
     background: rgba(249, 115, 22, 0.08);
 }
 
+.notification-trigger {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #a1a1aa;
+    background: rgba(7, 8, 12, 0.7);
+    transition:
+        border-color 0.2s ease,
+        color 0.2s ease,
+        background 0.2s ease;
+}
+.notification-trigger:hover,
+.notification-trigger-active {
+    border-color: rgba(249, 115, 22, 0.35);
+    color: #fdba74;
+    background: rgba(249, 115, 22, 0.08);
+}
+
 .community-page-hero {
     background:
         radial-gradient(circle at 86% 18%, rgba(249, 115, 22, 0.2), transparent 23rem),

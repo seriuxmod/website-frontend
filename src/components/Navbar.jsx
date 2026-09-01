@@ -15,8 +15,8 @@ import {
 } from 'react-icons/fa6';
 import { Link, useLocation } from 'react-router-dom';
 import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isAdministrator, logout } from '../lib/auth';
-import { forumApi } from '../lib/forumApi';
 import { communityItems } from '../config/community';
+import NavbarNotifications from './NavbarNotifications';
 import PlayerSearch from './PlayerSearch';
 
 export default function Navbar() {
@@ -55,21 +55,6 @@ export default function Navbar() {
         window.addEventListener('seriux-profile-context', updateProfileContext);
         return () => window.removeEventListener('seriux-profile-context', updateProfileContext);
     }, [location.pathname]);
-
-    useEffect(() => {
-        let active = true;
-        if (!user) {
-            setUnreadForumNotifications(0);
-            return undefined;
-        }
-        forumApi
-            .unreadCount()
-            .then((result) => active && setUnreadForumNotifications(result.unread ?? 0))
-            .catch(() => active && setUnreadForumNotifications(0));
-        return () => {
-            active = false;
-        };
-    }, [location.pathname, user?.playerId]);
 
     useEffect(() => {
         const onPointerDown = (event) => {
@@ -211,6 +196,8 @@ export default function Navbar() {
                     ref={searchRef}
                     className="ml-auto hidden min-w-0 flex-1 lg:block lg:max-w-[300px] xl:max-w-[390px]"
                 />
+
+                <NavbarNotifications user={user} onUnreadChange={setUnreadForumNotifications} />
 
                 {user ? (
                     <div ref={profileRef} className="relative ml-1 hidden sm:block">

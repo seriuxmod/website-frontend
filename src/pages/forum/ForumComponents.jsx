@@ -140,11 +140,8 @@ export function UserIdentity({ playerId, compact = false, linked = false, author
             </div>
         </div>
     );
-    return linked && playerId ? (
-        <Link
-            className="block rounded-xl transition hover:opacity-80"
-            to={`/forum/user/${encodeURIComponent(playerId)}`}
-        >
+    return linked && playerId && profile?.username ? (
+        <Link className="block rounded-xl transition hover:opacity-80" to={`/@${encodeURIComponent(profile.username)}`}>
             {identity}
         </Link>
     ) : (

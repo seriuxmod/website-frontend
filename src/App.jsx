@@ -17,7 +17,7 @@ import ForumBoard from './pages/forum/ForumBoard';
 import ForumTopic from './pages/forum/ForumTopic';
 import ForumAdmin from './pages/forum/ForumAdmin';
 import ForumAccount from './pages/forum/ForumAccount';
-import ForumUserProfile from './pages/forum/ForumUserProfile';
+import LegacyForumProfileRedirect from './pages/forum/LegacyForumProfileRedirect';
 import CommunityPage from './pages/community/CommunityPage';
 import CommunityBlog from './pages/community/CommunityBlog';
 import CommunityFeedback from './pages/community/CommunityFeedback';
@@ -55,7 +55,7 @@ export default function App() {
                 <Route path="/forum/:forumId" element={<ForumBoard />} />
                 <Route path="/forum/topic/:topicId" element={<ForumTopic />} />
                 <Route path="/forum/account" element={<ForumAccount />} />
-                <Route path="/forum/user/:userId" element={<ForumUserProfile />} />
+                <Route path="/forum/user/:userId" element={<LegacyForumProfileRedirect />} />
                 <Route path="/store" element={<StoreIndex />} />
                 <Route path="/store/checkout" element={<StoreCheckout />} />
                 <Route path="/store/account" element={<StoreAccount />} />

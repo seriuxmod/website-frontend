@@ -526,16 +526,13 @@ export default function PublicPlayerProfile() {
                     </div>
 
                     <section className="forum-panel overflow-hidden rounded-3xl">
-                        <header className="flex items-center justify-between gap-4 border-b border-white/[.06] p-6">
+                        <header className="border-b border-white/[.06] p-6">
                             <div>
                                 <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-orange-400">
                                     Community
                                 </p>
                                 <h2 className="mt-2 font-display text-2xl font-bold">Letzte Beiträge</h2>
                             </div>
-                            <Link to={`/forum/user/${profile.playerId}`} className="forum-button-secondary">
-                                Forum-Profil
-                            </Link>
                         </header>
                         {(forum?.recentPosts ?? []).length === 0 ? (
                             <p className="p-8 text-sm text-zinc-500">

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FaBell, FaCheck, FaEye, FaGear, FaReply, FaThumbsUp, FaTrash } from 'react-icons/fa6';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser } from '../../lib/auth';
 import { forumApi } from '../../lib/forumApi';
 import { ForumError, ForumLoading, ForumShell, Pagination, UserIdentity, formatDate } from './ForumComponents';
@@ -9,7 +9,10 @@ const PAGE_SIZE = 20;
 
 export default function ForumAccount() {
     const [user, setUser] = useState(() => getAuthenticatedUser());
-    const [tab, setTab] = useState('notifications');
+    const location = useLocation();
+    const navigate = useNavigate();
+    const requestedTab = new URLSearchParams(location.search).get('tab');
+    const tab = ['notifications', 'following', 'preferences'].includes(requestedTab) ? requestedTab : 'notifications';
 
     useEffect(() => {
         fetchAuthenticatedUser().then(setUser);
@@ -50,7 +53,7 @@ export default function ForumAccount() {
                     <button
                         className={`forum-admin-tab ${tab === key ? 'forum-admin-tab-active' : ''}`}
                         key={key}
-                        onClick={() => setTab(key)}
+                        onClick={() => navigate(`/forum/account?tab=${key}`)}
                     >
                         <Icon /> {label}
                     </button>
