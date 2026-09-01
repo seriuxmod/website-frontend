@@ -28,6 +28,7 @@ import StoreAdmin from './pages/store/StoreAdmin';
 import Security from './pages/platform/Security';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import UserAdmin from './pages/admin/UserAdmin';
+import AdminLayout from './components/admin/AdminLayout';
 import VerifyEmail from './pages/platform/VerifyEmail';
 import ResetPassword from './pages/platform/ResetPassword';
 import ForgotPassword from './pages/platform/ForgotPassword';
@@ -55,13 +56,15 @@ export default function App() {
                 <Route path="/forum/topic/:topicId" element={<ForumTopic />} />
                 <Route path="/forum/account" element={<ForumAccount />} />
                 <Route path="/forum/user/:userId" element={<ForumUserProfile />} />
-                <Route path="/admin/forum" element={<ForumAdmin />} />
                 <Route path="/store" element={<StoreIndex />} />
                 <Route path="/store/checkout" element={<StoreCheckout />} />
                 <Route path="/store/account" element={<StoreAccount />} />
-                <Route path="/admin/store" element={<StoreAdmin />} />
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/users" element={<UserAdmin />} />
+                <Route path="/admin" element={<AdminLayout />}>
+                    <Route index element={<AdminDashboard />} />
+                    <Route path="users" element={<UserAdmin />} />
+                    <Route path="forum" element={<ForumAdmin />} />
+                    <Route path="store" element={<StoreAdmin />} />
+                </Route>
                 <Route path="/account/security" element={<Security />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/reset-password" element={<ResetPassword />} />

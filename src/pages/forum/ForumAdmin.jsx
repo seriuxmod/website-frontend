@@ -108,13 +108,14 @@ export default function ForumAdmin() {
 
     if (checking)
         return (
-            <ForumShell title="Administration">
+            <ForumShell embedded title="Administration">
                 <ForumLoading label="Berechtigungen werden geprüft …" />
             </ForumShell>
         );
     if (!isForumAdministrator(user))
         return (
             <ForumShell
+                embedded
                 title="Kein Zugriff"
                 description="Für diesen Bereich benötigst du die Berechtigung forum.admin."
             >
@@ -136,6 +137,7 @@ export default function ForumAdmin() {
 
     return (
         <ForumShell
+            embedded
             eyebrow="ADMINISTRATION"
             title="Forum verwalten"
             description="Erstelle Kategorien und Foren, ordne Benutzergruppen zu und passe globale Forum-Einstellungen an."

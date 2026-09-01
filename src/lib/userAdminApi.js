@@ -20,7 +20,9 @@ async function request(path, options = {}) {
 const json = (method, body) => ({ method, body: JSON.stringify(body) });
 
 export const userAdminApi = {
-    users: (query = '', page = 0, size = 30) => request(`/users?q=${encodeURIComponent(query)}&page=${page}&size=${size}`),
+    overview: () => request('/users/admin/overview'),
+    users: (query = '', page = 0, size = 30) =>
+        request(`/users?q=${encodeURIComponent(query)}&page=${page}&size=${size}`),
     user: (id) => request(`/users/${encodeURIComponent(id)}`),
     lock: (id, locked, reason) => request(`/users/${encodeURIComponent(id)}/lock`, json('PATCH', { locked, reason })),
     permissions: (id) => request(`/permissions/users/${encodeURIComponent(id)}`),
@@ -37,18 +39,26 @@ export const userAdminApi = {
     audits: (id, page = 0) => request(`/users/${encodeURIComponent(id)}/audits?page=${page}&size=30`),
     banReasons: () => request('/bans/reasons?page=0&size=100'),
     saveBanReason: (reason, existing = false) =>
-        request(`/bans/reasons${existing ? `/${encodeURIComponent(reason.key)}` : ''}`, json(existing ? 'PUT' : 'POST', reason)),
+        request(
+            `/bans/reasons${existing ? `/${encodeURIComponent(reason.key)}` : ''}`,
+            json(existing ? 'PUT' : 'POST', reason)
+        ),
     deleteBanReason: (key) => request(`/bans/reasons/${encodeURIComponent(key)}`, { method: 'DELETE' }),
     ban: (value) => request('/bans', json('POST', value)),
     activeBan: (id) => request(`/bans/users/${encodeURIComponent(id)}`),
-    revokeBan: (id, note = '') => request(`/bans/${encodeURIComponent(id)}?note=${encodeURIComponent(note)}`, { method: 'DELETE' }),
+    revokeBan: (id, note = '') =>
+        request(`/bans/${encodeURIComponent(id)}?note=${encodeURIComponent(note)}`, { method: 'DELETE' }),
     banHistory: (id) => request(`/bans/users/${encodeURIComponent(id)}/history?page=0&size=30`),
     muteReasons: () => request('/mutes/reasons?page=0&size=100'),
     saveMuteReason: (reason, existing = false) =>
-        request(`/mutes/reasons${existing ? `/${encodeURIComponent(reason.key)}` : ''}`, json(existing ? 'PUT' : 'POST', reason)),
+        request(
+            `/mutes/reasons${existing ? `/${encodeURIComponent(reason.key)}` : ''}`,
+            json(existing ? 'PUT' : 'POST', reason)
+        ),
     deleteMuteReason: (key) => request(`/mutes/reasons/${encodeURIComponent(key)}`, { method: 'DELETE' }),
     mute: (value) => request('/mutes', json('POST', value)),
     activeMute: (id) => request(`/mutes/users/${encodeURIComponent(id)}`),
-    revokeMute: (id, note = '') => request(`/mutes/${encodeURIComponent(id)}?note=${encodeURIComponent(note)}`, { method: 'DELETE' }),
+    revokeMute: (id, note = '') =>
+        request(`/mutes/${encodeURIComponent(id)}?note=${encodeURIComponent(note)}`, { method: 'DELETE' }),
     muteHistory: (id) => request(`/mutes/users/${encodeURIComponent(id)}/history?page=0&size=30`)
 };

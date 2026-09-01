@@ -16,11 +16,17 @@ export function ForumShell({
     breadcrumbs = [],
     actions,
     children,
-    showHero = true
+    showHero = true,
+    embedded = false
 }) {
+    const Root = embedded ? 'div' : 'main';
     return (
-        <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-32 text-white sm:px-6 sm:pt-36">
-            <div className="mx-auto max-w-7xl">
+        <Root
+            className={
+                embedded ? 'text-white' : 'min-h-screen bg-[#090a0d] px-4 pb-24 pt-32 text-white sm:px-6 sm:pt-36'
+            }
+        >
+            <div className={embedded ? '' : 'mx-auto max-w-7xl'}>
                 <div className={showHero ? '' : 'mb-5 flex flex-wrap items-center justify-between gap-4'}>
                     <nav
                         className={`${showHero ? 'mb-8' : ''} flex flex-wrap items-center gap-2 text-xs text-zinc-600`}
@@ -68,7 +74,7 @@ export function ForumShell({
                 ) : null}
                 <div className={showHero ? 'mt-8' : ''}>{children}</div>
             </div>
-        </main>
+        </Root>
     );
 }
 

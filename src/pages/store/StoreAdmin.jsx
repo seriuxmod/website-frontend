@@ -110,13 +110,13 @@ export default function StoreAdmin() {
 
     if (checking)
         return (
-            <ForumShell title="Shop-Administration">
+            <ForumShell embedded title="Shop-Administration">
                 <ForumLoading label="Berechtigungen werden geprüft …" />
             </ForumShell>
         );
     if (!isStoreAdministrator(user))
         return (
-            <ForumShell title="Kein Zugriff" description="Für diesen Bereich benötigst du store.admin.">
+            <ForumShell embedded title="Kein Zugriff" description="Für diesen Bereich benötigst du store.admin.">
                 <Link className="forum-button-secondary" to="/store">
                     <FaArrowLeft /> Zurück zum Shop
                 </Link>
@@ -134,6 +134,7 @@ export default function StoreAdmin() {
 
     return (
         <ForumShell
+            embedded
             eyebrow="STORE ADMINISTRATION"
             title="Shop verwalten"
             description="Pflege Kategorien, Produkte und Coupons und kontrolliere Bestellungen, Zahlungen und Freischaltungen."
@@ -285,10 +286,7 @@ function StoreSettingsEditor({ settings, onChanged }) {
                 </p>
                 <div className="mt-6 grid gap-3 md:grid-cols-2">
                     {form.paymentMethods.map((entry) => (
-                        <article
-                            className="rounded-2xl border border-white/[.07] bg-black/15 p-5"
-                            key={entry.id}
-                        >
+                        <article className="rounded-2xl border border-white/[.07] bg-black/15 p-5" key={entry.id}>
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex gap-3">
                                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300">
@@ -339,35 +337,122 @@ function StoreSettingsEditor({ settings, onChanged }) {
                     Diese Angaben werden als unveränderlicher Rechnungssteller in zukünftige Rechnungen übernommen.
                 </p>
                 <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                    <Field label="Rechtlicher Firmenname" value={form.merchant.legalName} onChange={(v) => merchant('legalName', v)} required />
-                    <Field label="Marken-/Handelsname" value={form.merchant.tradingName} onChange={(v) => merchant('tradingName', v)} />
-                    <Field label="Geschäftsführer/Inhaber" value={form.merchant.managingDirector} onChange={(v) => merchant('managingDirector', v)} />
-                    <Field label="Kontakt-E-Mail" type="email" value={form.merchant.email} onChange={(v) => merchant('email', v)} required />
-                    <Field label="Straße und Hausnummer" value={form.merchant.addressLine1} onChange={(v) => merchant('addressLine1', v)} required />
-                    <Field label="Adresszusatz" value={form.merchant.addressLine2} onChange={(v) => merchant('addressLine2', v)} />
-                    <Field label="Postleitzahl" value={form.merchant.postalCode} onChange={(v) => merchant('postalCode', v)} required />
+                    <Field
+                        label="Rechtlicher Firmenname"
+                        value={form.merchant.legalName}
+                        onChange={(v) => merchant('legalName', v)}
+                        required
+                    />
+                    <Field
+                        label="Marken-/Handelsname"
+                        value={form.merchant.tradingName}
+                        onChange={(v) => merchant('tradingName', v)}
+                    />
+                    <Field
+                        label="Geschäftsführer/Inhaber"
+                        value={form.merchant.managingDirector}
+                        onChange={(v) => merchant('managingDirector', v)}
+                    />
+                    <Field
+                        label="Kontakt-E-Mail"
+                        type="email"
+                        value={form.merchant.email}
+                        onChange={(v) => merchant('email', v)}
+                        required
+                    />
+                    <Field
+                        label="Straße und Hausnummer"
+                        value={form.merchant.addressLine1}
+                        onChange={(v) => merchant('addressLine1', v)}
+                        required
+                    />
+                    <Field
+                        label="Adresszusatz"
+                        value={form.merchant.addressLine2}
+                        onChange={(v) => merchant('addressLine2', v)}
+                    />
+                    <Field
+                        label="Postleitzahl"
+                        value={form.merchant.postalCode}
+                        onChange={(v) => merchant('postalCode', v)}
+                        required
+                    />
                     <Field label="Ort" value={form.merchant.city} onChange={(v) => merchant('city', v)} required />
-                    <Field label="Bundesland/Region" value={form.merchant.region} onChange={(v) => merchant('region', v)} />
-                    <Field label="Ländercode" value={form.merchant.countryCode} onChange={(v) => merchant('countryCode', v)} required maxLength={2} />
+                    <Field
+                        label="Bundesland/Region"
+                        value={form.merchant.region}
+                        onChange={(v) => merchant('region', v)}
+                    />
+                    <Field
+                        label="Ländercode"
+                        value={form.merchant.countryCode}
+                        onChange={(v) => merchant('countryCode', v)}
+                        required
+                        maxLength={2}
+                    />
                     <Field label="Telefon" value={form.merchant.phone} onChange={(v) => merchant('phone', v)} />
-                    <Field label="Website" type="url" value={form.merchant.website} onChange={(v) => merchant('website', v)} />
+                    <Field
+                        label="Website"
+                        type="url"
+                        value={form.merchant.website}
+                        onChange={(v) => merchant('website', v)}
+                    />
                     <Field label="USt-IdNr." value={form.merchant.vatId} onChange={(v) => merchant('vatId', v)} />
-                    <Field label="Steuernummer" value={form.merchant.taxNumber} onChange={(v) => merchant('taxNumber', v)} />
-                    <Field label="Registergericht" value={form.merchant.registrationCourt} onChange={(v) => merchant('registrationCourt', v)} />
-                    <Field label="Registernummer" value={form.merchant.registrationNumber} onChange={(v) => merchant('registrationNumber', v)} />
+                    <Field
+                        label="Steuernummer"
+                        value={form.merchant.taxNumber}
+                        onChange={(v) => merchant('taxNumber', v)}
+                    />
+                    <Field
+                        label="Registergericht"
+                        value={form.merchant.registrationCourt}
+                        onChange={(v) => merchant('registrationCourt', v)}
+                    />
+                    <Field
+                        label="Registernummer"
+                        value={form.merchant.registrationNumber}
+                        onChange={(v) => merchant('registrationNumber', v)}
+                    />
                 </div>
             </section>
 
             <section className="forum-panel rounded-3xl p-6 sm:p-8">
                 <EditorHeader eyebrow="CHECKOUT" title="Rechnung und Freigabe" />
                 <div className="mt-6 grid gap-5 sm:grid-cols-3">
-                    <Field label="Währung" value={form.currency} onChange={(currency) => setForm({ ...form, currency })} required maxLength={3} />
-                    <Field label="Rechnungspräfix" value={form.invoicePrefix} onChange={(invoicePrefix) => setForm({ ...form, invoicePrefix })} required />
-                    <Field label="Standard-USt. in %" type="number" min="0" max="100" step="0.01" value={form.vatRate} onChange={(vatRate) => setForm({ ...form, vatRate })} />
+                    <Field
+                        label="Währung"
+                        value={form.currency}
+                        onChange={(currency) => setForm({ ...form, currency })}
+                        required
+                        maxLength={3}
+                    />
+                    <Field
+                        label="Rechnungspräfix"
+                        value={form.invoicePrefix}
+                        onChange={(invoicePrefix) => setForm({ ...form, invoicePrefix })}
+                        required
+                    />
+                    <Field
+                        label="Standard-USt. in %"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        value={form.vatRate}
+                        onChange={(vatRate) => setForm({ ...form, vatRate })}
+                    />
                 </div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <Toggle label="Preise enthalten Umsatzsteuer" checked={form.pricesIncludeVat} onChange={(pricesIncludeVat) => setForm({ ...form, pricesIncludeVat })} />
-                    <Toggle label="Produktiven Checkout aktivieren" checked={form.checkoutEnabled} onChange={(checkoutEnabled) => setForm({ ...form, checkoutEnabled })} />
+                    <Toggle
+                        label="Preise enthalten Umsatzsteuer"
+                        checked={form.pricesIncludeVat}
+                        onChange={(pricesIncludeVat) => setForm({ ...form, pricesIncludeVat })}
+                    />
+                    <Toggle
+                        label="Produktiven Checkout aktivieren"
+                        checked={form.checkoutEnabled}
+                        onChange={(checkoutEnabled) => setForm({ ...form, checkoutEnabled })}
+                    />
                 </div>
                 {settings?.missingRequirements?.length > 0 && (
                     <div className="mt-5 rounded-2xl border border-amber-400/15 bg-amber-400/[.05] p-4 text-xs leading-6 text-amber-100/75">
