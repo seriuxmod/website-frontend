@@ -13,6 +13,7 @@ import {
     FaWindows
 } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
+import HomeBlogSlider from './HomeBlogSlider';
 
 const API = 'https://api.seriuxmod.net/api/v1';
 
@@ -42,7 +43,13 @@ const platformModules = [
         icon: FaComments,
         name: 'Forum & Content',
         text: 'Diskussionen, News und Ideen aus der gesamten Community.',
-        capabilities: ['Foren & Topics', 'Posts & Reaktionen', 'Blog & News', 'Vorschläge & Votes', 'Moderation & Meldungen'],
+        capabilities: [
+            'Foren & Topics',
+            'Posts & Reaktionen',
+            'Blog & News',
+            'Vorschläge & Votes',
+            'Moderation & Meldungen'
+        ],
         action: 'Community entdecken',
         href: '/forum'
     },
@@ -306,6 +313,8 @@ export default function Home() {
                     </div>
                 </div>
             </section>
+
+            <HomeBlogSlider />
 
             <ForumPreview />
 

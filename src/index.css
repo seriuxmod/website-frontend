@@ -572,6 +572,23 @@
     background: rgba(249, 115, 22, 0.08);
 }
 
+.home-blog-control {
+    @apply grid h-12 w-12 place-items-center rounded-2xl border border-white/[.08] bg-white/[.035] text-sm text-zinc-400 transition hover:border-orange-500/30 hover:bg-orange-500/10 hover:text-orange-300;
+}
+
+.home-blog-thumbnail {
+    @apply flex h-16 min-w-[190px] max-w-[250px] items-center gap-3 rounded-2xl border border-white/[.06] bg-white/[.025] p-2 text-left text-xs font-bold text-zinc-600 transition hover:border-white/[.12] hover:text-zinc-300;
+}
+.home-blog-thumbnail img {
+    @apply h-12 w-16 shrink-0 rounded-xl object-cover opacity-60 transition;
+}
+.home-blog-thumbnail-active {
+    @apply border-orange-500/30 bg-orange-500/[.08] text-white;
+}
+.home-blog-thumbnail-active img {
+    @apply opacity-100;
+}
+
 .community-page-hero {
     background:
         radial-gradient(circle at 86% 18%, rgba(249, 115, 22, 0.2), transparent 23rem),

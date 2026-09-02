@@ -1,4 +1,4 @@
-import { FaAt, FaCircleQuestion, FaLightbulb, FaMedal, FaNewspaper } from 'react-icons/fa6';
+import { FaAt, FaCircleQuestion, FaLightbulb, FaMedal } from 'react-icons/fa6';
 
 export const communityItems = [
     {
@@ -31,17 +31,6 @@ export const communityItems = [
         copy: 'Teile Ideen, melde Probleme und diskutiere neue Client-Funktionen direkt mit der Community.',
         features: ['Feature-Vorschläge', 'Community-Abstimmung', 'Offene Diskussionen'],
         cta: { label: 'Vorschläge öffnen', to: '/community/feedback' }
-    },
-    {
-        slug: 'blog',
-        label: 'Blog',
-        description: 'Neuigkeiten & Updates',
-        icon: FaNewspaper,
-        eyebrow: 'SERIUXMOD NEWS',
-        title: 'Updates aus erster Hand.',
-        copy: 'Release Notes, Entwicklungsstände und Einblicke hinter die Kulissen des SeriuxMod-Projekts.',
-        features: ['Release Notes', 'Entwicklungsupdates', 'Community-News'],
-        cta: { label: 'Blog öffnen', to: '/community/blog' }
     },
     {
         slug: 'support',
