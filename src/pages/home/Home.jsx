@@ -1,5 +1,17 @@
 import { useEffect, useState } from 'react';
-import { FaArrowRight, FaCheck, FaCloudArrowDown, FaWindows } from 'react-icons/fa6';
+import {
+    FaArrowRight,
+    FaBolt,
+    FaCheck,
+    FaCloudArrowDown,
+    FaGamepad,
+    FaLayerGroup,
+    FaPalette,
+    FaRotate,
+    FaShieldHalved,
+    FaUserGroup,
+    FaWindows
+} from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import HomeBlogSlider from './HomeBlogSlider';
 import LauncherShowcase, { LauncherWindow } from './LauncherShowcase';
@@ -20,10 +32,7 @@ function SystemStatus() {
         return () => controller.abort();
     }, []);
     return (
-        <Link
-            to="/status"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[.04] px-3 py-2 text-xs text-zinc-400"
-        >
+        <Link to="/status" className="home-status-pill inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
             <i
                 className={`h-2 w-2 rounded-full ${online === false ? 'bg-amber-400' : 'bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]'}`}
             />
@@ -32,12 +41,72 @@ function SystemStatus() {
     );
 }
 
+const proofPoints = [
+    { icon: FaLayerGroup, value: '212', label: 'Module im aktuellen Pack' },
+    { icon: FaGamepad, value: '1.21.4', label: 'Aktuelle Minecraft-Basis' },
+    { icon: FaRotate, value: 'Automatisch', label: 'Updates und Synchronisierung' },
+    { icon: FaShieldHalved, value: 'Eine Seriux-ID', label: 'Für Client und Community' }
+];
+
+const benefits = [
+    {
+        icon: FaBolt,
+        eyebrow: 'PERFORMANCE',
+        title: 'Mehr Spiel. Weniger Ballast.',
+        text: 'Abgestimmte Profile, kontrollierte Releases und ein Client, der dir die technische Arbeit abnimmt.',
+        points: ['Performance-Profile', 'Stabile Release-Kanäle', 'Systemstatus im Blick'],
+        tone: 'orange'
+    },
+    {
+        icon: FaLayerGroup,
+        eyebrow: 'MODPACK',
+        title: 'Dein Setup bleibt zusammen.',
+        text: 'Mods, Abhängigkeiten und Konfigurationen werden als ein Paket verwaltet und zuverlässig aktualisiert.',
+        points: ['Automatische Synchronisierung', 'Versionsauswahl', 'Integritätsprüfung'],
+        tone: 'cream'
+    },
+    {
+        icon: FaUserGroup,
+        eyebrow: 'COMMUNITY',
+        title: 'Deine Leute sind schon da.',
+        text: 'Spielerprofile, Freunde, Forum und Präsenz greifen ineinander – auf der Website und im Launcher.',
+        points: ['Öffentliche Profile', 'Online-Status', 'Gemeinsame Seriux-ID'],
+        tone: 'peach'
+    },
+    {
+        icon: FaPalette,
+        eyebrow: 'DEIN LOOK',
+        title: 'So individuell wie dein Spielstil.',
+        text: 'Cosmetics und persönliche Einstellungen bleiben mit deinem Minecraft-Profil verbunden.',
+        points: ['Accountgebundene Inhalte', 'Einheitlicher Auftritt', 'Direkte Freischaltung'],
+        tone: 'dark'
+    }
+];
+
+const journey = [
+    {
+        number: '01',
+        title: 'Launcher laden',
+        text: 'SeriuxMod installieren und mit deinem vorhandenen Minecraft-Account starten.'
+    },
+    {
+        number: '02',
+        title: 'Setup auswählen',
+        text: 'Version und Modpack wählen. Den Rest hält der Launcher für dich synchron.'
+    },
+    {
+        number: '03',
+        title: 'Einloggen & spielen',
+        text: 'Dein Profil wird verknüpft und dein SeriuxMod-Erlebnis ist direkt spielbereit.'
+    }
+];
+
 export default function Home() {
     return (
-        <main id="top" className="overflow-hidden bg-[#090a0d] text-white">
-            <section className="relative isolate flex min-h-[100svh] items-center overflow-hidden px-5 pb-28 pt-36 sm:pt-40 lg:px-10">
+        <main id="top" className="home-landing overflow-hidden">
+            <section className="home-hero relative isolate flex min-h-[100svh] items-center overflow-hidden px-5 pb-28 pt-36 text-white sm:pt-40 lg:px-10">
                 <video
-                    className="absolute inset-0 -z-30 h-full w-full scale-[1.04] object-cover blur-[2.5px] brightness-[.52] saturate-[.82]"
+                    className="home-hero-video absolute inset-0 -z-30 h-full w-full scale-[1.035] object-cover"
                     autoPlay
                     muted
                     loop
@@ -48,8 +117,8 @@ export default function Home() {
                 >
                     <source src="/minecraft-parkour-hero.mp4" type="video/mp4" />
                 </video>
-                <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(4,5,8,.18)_42%,rgba(4,5,8,.82)_100%)]" />
-                <div className="absolute inset-0 -z-20 bg-gradient-to-b from-[#050609]/45 via-transparent to-[#090a0d]" />
+                <div className="home-hero-wash absolute inset-0 -z-20" />
+                <div className="home-hero-vignette absolute inset-0 -z-20" />
                 <div className="mx-auto grid w-full max-w-[1480px] items-center gap-14 lg:grid-cols-[0.72fr_1.28fr] xl:gap-20">
                     <div className="relative z-10 flex max-w-xl flex-col items-center text-center lg:items-start lg:text-left">
                         <SystemStatus />
@@ -64,8 +133,8 @@ export default function Home() {
                             </span>
                         </h1>
                         <p className="mt-7 max-w-2xl text-base leading-8 text-zinc-200 drop-shadow-[0_3px_14px_rgba(0,0,0,.9)] sm:text-lg">
-                            SeriuxMod verbindet Performance, Individualität und Community in einem modernen Minecraft
-                            Client – gemacht für dein nächstes Abenteuer.
+                            Mehr Leistung, ein aufgeräumtes Modpack und deine Community in einem Launcher. Installieren,
+                            anmelden und ohne Umwege ins Spiel.
                         </p>
                         <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
                             <a href="#download" className="button-primary">
@@ -79,7 +148,7 @@ export default function Home() {
                             </a>
                         </div>
                         <div className="mt-8 flex flex-wrap justify-center gap-5 text-xs text-zinc-300 lg:justify-start">
-                            {['Kostenlos', 'Sicher', 'Community-first'].map((item) => (
+                            {['Kostenloser Einstieg', 'Automatische Updates', 'Community verbunden'].map((item) => (
                                 <span className="flex items-center gap-1.5" key={item}>
                                     <FaCheck className="text-orange-500" />
                                     {item}
@@ -95,21 +164,76 @@ export default function Home() {
                         </p>
                     </div>
                 </div>
-                <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-b from-transparent via-[#090a0d]/75 to-[#090a0d]" />
+                <div className="home-hero-bridge absolute inset-x-0 bottom-0 h-44" />
             </section>
 
-            <section
-                id="features"
-                className="client-detail-cut relative z-10 -mt-16 px-5 pb-24 pt-40 lg:px-10 lg:pb-32 lg:pt-48"
-            >
+            <section className="home-proof-section relative z-20 px-5 lg:px-10" aria-label="SeriuxMod auf einen Blick">
+                <div className="home-proof-ribbon mx-auto grid max-w-7xl sm:grid-cols-2 lg:grid-cols-4">
+                    {proofPoints.map(({ icon: Icon, value, label }) => (
+                        <div className="home-proof-item" key={label}>
+                            <span>
+                                <Icon />
+                            </span>
+                            <div>
+                                <strong>{value}</strong>
+                                <small>{label}</small>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            <section id="features" className="home-client-light relative px-5 pb-24 pt-28 lg:px-10 lg:pb-32 lg:pt-36">
                 <div className="mx-auto max-w-7xl">
                     <LauncherShowcase />
                 </div>
             </section>
 
+            <section
+                id="benefits"
+                className="home-benefits-section px-5 py-24 lg:px-10 lg:py-32"
+                aria-labelledby="benefits-heading"
+            >
+                <div className="mx-auto max-w-7xl">
+                    <div className="max-w-3xl">
+                        <p className="eyebrow">WARUM SERIUXMOD?</p>
+                        <h2 id="benefits-heading" className="section-title">
+                            Ein Client, der sich nach dir richtet.
+                        </h2>
+                        <p className="section-copy">
+                            Kein technischer Hindernislauf vor dem ersten Block: Die wichtigsten Funktionen sind dort,
+                            wo du sie erwartest – und arbeiten als ein System zusammen.
+                        </p>
+                    </div>
+
+                    <div className="home-benefit-grid mt-14">
+                        {benefits.map(({ icon: Icon, eyebrow, title, text, points, tone }) => (
+                            <article className={`home-benefit-card home-benefit-card-${tone}`} key={title}>
+                                <div className="home-benefit-icon">
+                                    <Icon />
+                                </div>
+                                <p>{eyebrow}</p>
+                                <h3>{title}</h3>
+                                <span>{text}</span>
+                                <ul>
+                                    {points.map((point) => (
+                                        <li key={point}>
+                                            <FaCheck /> {point}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             <HomeBlogSlider />
 
-            <section id="community" className="bg-gradient-to-br from-orange-500 to-[#e33d0b] py-24 text-[#251007]">
+            <section
+                id="community"
+                className="home-community-section relative overflow-hidden py-24 text-[#251007] lg:py-32"
+            >
                 <div className="mx-auto grid max-w-7xl items-center gap-16 px-5 lg:grid-cols-2 lg:px-10">
                     <div>
                         <p className="text-xs font-extrabold tracking-[.18em] text-orange-950/70">
@@ -129,7 +253,7 @@ export default function Home() {
                             Website-Zugang im Launcher aktivieren <FaArrowRight />
                         </a>
                     </div>
-                    <div className="relative mx-auto w-full max-w-lg rounded-3xl border border-white/20 bg-[#101115] p-8 text-white shadow-[0_35px_80px_rgba(78,15,0,.35)]">
+                    <div className="home-community-profile relative mx-auto w-full max-w-lg rounded-3xl p-8 text-white">
                         <div className="flex items-center gap-5">
                             <img
                                 className="h-24 w-24 rounded-2xl object-contain"
@@ -149,20 +273,47 @@ export default function Home() {
                 </div>
             </section>
 
-            <section id="download" className="mx-auto max-w-7xl px-5 py-24 lg:px-10">
-                <div className="relative flex flex-col items-start justify-between gap-10 overflow-hidden rounded-3xl border border-white/10 bg-[#131419] p-8 sm:p-14 lg:flex-row lg:items-center">
-                    <div className="absolute -right-24 h-80 w-80 rounded-full bg-orange-500/20 blur-3xl" />
-                    <div className="relative max-w-2xl">
-                        <p className="eyebrow">BEREIT, WENN DU ES BIST</p>
-                        <h2 className="mt-3 font-display text-4xl font-bold tracking-tight">
-                            Dein nächstes Abenteuer startet hier.
+            <section className="home-journey-section px-5 py-24 lg:px-10 lg:py-32" aria-labelledby="journey-heading">
+                <div className="mx-auto max-w-7xl">
+                    <div className="text-center">
+                        <p className="eyebrow">SO EINFACH GEHT&apos;S</p>
+                        <h2 id="journey-heading" className="section-title">
+                            Vom Download direkt ins Spiel.
                         </h2>
-                        <p className="mt-4 text-sm leading-7 text-zinc-500">
-                            Dein Spielerprofil entsteht beim ersten verifizierten Minecraft-Login. Den optionalen
-                            Website-Zugang mit E-Mail und Passwort aktivierst du anschließend direkt im Launcher.
+                        <p className="section-copy mx-auto max-w-2xl">
+                            Der Launcher führt dich durch die Einrichtung. Keine separate Registrierung auf der Website,
+                            kein manuelles Zusammensuchen deiner Mods.
                         </p>
                     </div>
-                    <a href="#top" className="button-primary relative shrink-0">
+
+                    <div className="home-journey-grid mt-14">
+                        {journey.map(({ number, title, text }) => (
+                            <article className="home-journey-step" key={number}>
+                                <strong>{number}</strong>
+                                <h3>{title}</h3>
+                                <p>{text}</p>
+                            </article>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section id="download" className="home-download-section px-5 pb-24 lg:px-10 lg:pb-32">
+                <div className="home-download-card relative mx-auto flex max-w-7xl flex-col items-start justify-between gap-10 overflow-hidden rounded-[36px] p-8 text-white sm:p-14 lg:flex-row lg:items-center">
+                    <div className="home-download-orb absolute -right-24 h-80 w-80 rounded-full blur-3xl" />
+                    <div className="relative max-w-2xl">
+                        <p className="text-xs font-extrabold tracking-[.18em] text-orange-300">
+                            BEREIT, WENN DU ES BIST
+                        </p>
+                        <h2 className="mt-3 font-display text-4xl font-bold tracking-tight sm:text-5xl">
+                            Dein Minecraft. Nur besser organisiert.
+                        </h2>
+                        <p className="mt-4 text-sm leading-7 text-orange-50/70">
+                            Lade den SeriuxMod Launcher herunter, verbinde deinen Minecraft-Account und starte mit
+                            deinem synchronisierten Setup.
+                        </p>
+                    </div>
+                    <a href="#top" className="home-download-button relative shrink-0">
                         <FaCloudArrowDown /> Launcher herunterladen
                     </a>
                 </div>

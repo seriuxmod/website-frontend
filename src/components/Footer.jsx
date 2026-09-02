@@ -17,7 +17,7 @@ export default function Footer() {
                 <div className="footer-links">
                     <b>Plattform</b>
                     <a href="/#features">Features</a>
-                    <a href="/#platform">Ökosystem</a>
+                    <a href="/#benefits">Vorteile</a>
                     <a href="/#download">Download</a>
                     <Link to="/status">Systemstatus</Link>
                 </div>

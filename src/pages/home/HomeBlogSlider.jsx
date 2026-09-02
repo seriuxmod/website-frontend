@@ -114,7 +114,7 @@ export default function HomeBlogSlider() {
     if (!state.loading && (state.error || slides.length === 0)) return null;
 
     return (
-        <section id="blog" className="px-5 pb-24 lg:px-10 lg:pb-32" aria-labelledby="blog-heading">
+        <section id="blog" className="home-news-section px-5 py-24 lg:px-10 lg:py-32" aria-labelledby="blog-heading">
             <div className="mx-auto max-w-7xl">
                 <div className="max-w-2xl">
                     <p className="eyebrow">SERIUXMOD NEWS</p>
@@ -125,7 +125,7 @@ export default function HomeBlogSlider() {
                 </div>
 
                 {state.loading ? (
-                    <div className="mt-12 h-[520px] animate-pulse rounded-[32px] border border-white/[.07] bg-white/[.035]" />
+                    <div className="home-news-loading mt-12 h-[520px] animate-pulse rounded-[32px]" />
                 ) : (
                     <div
                         className="mt-12"
@@ -269,7 +269,7 @@ export default function HomeBlogSlider() {
                                     <button
                                         key={post.id}
                                         type="button"
-                                        className={`h-2 rounded-full transition-all ${active === index ? 'w-8 bg-orange-500' : 'w-2 bg-white/15 hover:bg-white/30'}`}
+                                        className={`h-2 rounded-full transition-all ${active === index ? 'w-8 bg-orange-500' : 'w-2 bg-[#2f2118]/15 hover:bg-[#2f2118]/30'}`}
                                         onClick={() => selectSlide(index)}
                                         aria-label={`Beitrag ${index + 1}: ${post.title}`}
                                         aria-current={active === index ? 'true' : undefined}

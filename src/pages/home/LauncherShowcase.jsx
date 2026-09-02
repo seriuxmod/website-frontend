@@ -223,11 +223,11 @@ export default function LauncherShowcase() {
         <div>
             <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
                 <div className="max-w-2xl">
-                    <p className="eyebrow">DEIN CLIENT. DEINE WERKZEUGE.</p>
-                    <h2 className="section-title">Alles an einem Ort.</h2>
+                    <p className="eyebrow">ALLES DRIN, WAS DU BRAUCHST</p>
+                    <h2 className="section-title">Dein Setup. Ohne Umwege.</h2>
                     <p className="section-copy">
-                        Vom ersten Download bis zur gemeinsamen Spielsession: Der SeriuxMod Launcher bündelt die
-                        wichtigsten Bereiche des Clients in einer Oberfläche.
+                        Leistung, Versionen, Mods und Community greifen direkt ineinander. Wähle eine Karte und
+                        entdecke, was der SeriuxMod Client für dich übernimmt.
                     </p>
                 </div>
                 <div className="client-module-summary">
