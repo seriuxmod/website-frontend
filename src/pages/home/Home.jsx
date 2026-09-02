@@ -258,13 +258,6 @@ export default function Home() {
                 className="client-detail-cut relative z-10 -mt-16 px-5 pb-24 pt-40 lg:px-10 lg:pb-32 lg:pt-48"
             >
                 <div className="mx-auto max-w-7xl">
-                    <div className="max-w-2xl">
-                        <p className="eyebrow">ALLES, WAS DU BRAUCHST</p>
-                        <h2 className="section-title">Gebaut für dein bestes Spiel.</h2>
-                        <p className="section-copy">
-                            Leistungsstarke Werkzeuge, klares Design und eine Plattform, die mit dir wächst.
-                        </p>
-                    </div>
                     <LauncherShowcase />
                 </div>
             </section>

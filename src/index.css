@@ -935,6 +935,564 @@
     overflow-wrap: anywhere;
 }
 
+.launcher-copy-stat {
+    display: flex;
+    min-height: 4.5rem;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.022);
+}
+.launcher-copy-stat > svg {
+    width: 1rem;
+    flex: 0 0 auto;
+    color: #f97316;
+}
+.launcher-copy-stat strong,
+.launcher-copy-stat small {
+    display: block;
+}
+.launcher-copy-stat strong {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    color: #f4f4f5;
+}
+.launcher-copy-stat small {
+    margin-top: 0.18rem;
+    font-size: 0.58rem;
+    color: #52525b;
+}
+
+.launcher-real-perspective {
+    position: relative;
+    width: 112%;
+    max-width: 930px;
+    margin-left: -4%;
+    perspective: 1700px;
+}
+.launcher-real-perspective::before {
+    content: '';
+    position: absolute;
+    inset: 12% 5% 4%;
+    border-radius: 32px;
+    background: rgba(249, 115, 22, 0.16);
+    filter: blur(70px);
+    transform: translateY(2rem);
+}
+.launcher-real-window {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    color: #d4d4d8;
+    background: #090a0d;
+    box-shadow:
+        0 55px 110px rgba(0, 0, 0, 0.58),
+        0 0 0 1px rgba(249, 115, 22, 0.03);
+    transform: rotateY(-6deg) rotateX(1.2deg) rotateZ(0.35deg);
+    transform-origin: center;
+    transition: transform 0.65s cubic-bezier(0.22, 0.8, 0.26, 1);
+}
+.launcher-real-perspective:hover .launcher-real-window {
+    transform: rotateY(-2deg) rotateX(0.4deg) rotateZ(0deg) translateY(-4px);
+}
+.launcher-real-navbar {
+    display: grid;
+    height: 7.5%;
+    min-height: 38px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(11, 12, 16, 0.98);
+}
+.launcher-real-brand,
+.launcher-real-account {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.8rem;
+}
+.launcher-real-brand {
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+.launcher-real-brand img {
+    width: 1.5rem;
+    height: 1.5rem;
+    object-fit: contain;
+}
+.launcher-real-brand strong {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    color: #fff;
+}
+.launcher-real-navbar nav {
+    display: flex;
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+.launcher-real-navbar nav span {
+    position: relative;
+    display: flex;
+    min-width: max-content;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.6rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(0.39rem, 0.58vw, 0.55rem);
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: #52525b;
+    text-transform: uppercase;
+}
+.launcher-real-navbar nav span svg {
+    width: 0.55rem;
+}
+.launcher-real-navbar nav .launcher-real-nav-active {
+    color: #f97316;
+}
+.launcher-real-navbar nav .launcher-real-nav-active::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: #f97316;
+}
+.launcher-real-account {
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+    font-size: 0.55rem;
+    color: #71717a;
+}
+.launcher-real-account > span {
+    display: grid;
+    width: 1.45rem;
+    height: 1.45rem;
+    place-items: center;
+    border: 1px solid rgba(249, 115, 22, 0.4);
+    border-radius: 3px;
+    color: #f97316;
+    background: rgba(249, 115, 22, 0.12);
+}
+
+.launcher-real-body {
+    display: grid;
+    height: 92.5%;
+    grid-template-columns: 20% 60% 20%;
+}
+.launcher-real-left,
+.launcher-real-right {
+    position: relative;
+    z-index: 5;
+    padding: 1rem;
+    background: rgba(10, 11, 15, 0.94);
+}
+.launcher-real-left {
+    border-right: 1px solid rgba(255, 255, 255, 0.045);
+}
+.launcher-real-right {
+    border-left: 1px solid rgba(255, 255, 255, 0.045);
+}
+.launcher-real-update {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 4.5rem;
+    padding: 0.75rem;
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(249, 115, 22, 0.12), rgba(249, 115, 22, 0.035));
+}
+.launcher-real-update small,
+.launcher-real-update strong {
+    display: block;
+}
+.launcher-real-update small {
+    max-width: 5rem;
+    font-size: 0.5rem;
+    line-height: 1.3;
+    color: #e4e4e7;
+}
+.launcher-real-update strong {
+    margin-top: 0.2rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    color: #fff;
+}
+.launcher-real-update > span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.45rem 0.55rem;
+    border-radius: 5px;
+    font-size: 0.45rem;
+    color: #2a1103;
+    background: #f97316;
+}
+.launcher-real-caption {
+    margin-top: 1rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid #f97316;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.42rem;
+    letter-spacing: 0.19em;
+    color: #71717a;
+}
+.launcher-real-news {
+    margin-top: 0.65rem;
+}
+.launcher-real-news > div {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.48rem;
+}
+.launcher-real-news span {
+    padding: 0.16rem 0.28rem;
+    border: 1px solid rgba(249, 115, 22, 0.35);
+    border-radius: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.31rem;
+    color: #fb923c;
+}
+.launcher-real-news p {
+    overflow: hidden;
+    font-size: 0.49rem;
+    font-weight: 700;
+    color: #d4d4d8;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.launcher-real-connection {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    padding: 0.75rem;
+    border-left: 2px solid #f97316;
+    background: rgba(11, 12, 16, 0.9);
+}
+.launcher-real-connection small,
+.launcher-real-connection strong,
+.launcher-real-connection > span {
+    display: block;
+}
+.launcher-real-connection small {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.34rem;
+    letter-spacing: 0.13em;
+    color: #71717a;
+}
+.launcher-real-connection strong {
+    margin-top: 0.4rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    color: #fff;
+}
+.launcher-real-connection > span {
+    margin-top: 0.18rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.38rem;
+    color: #52525b;
+}
+
+.launcher-real-center {
+    position: relative;
+    overflow: hidden;
+    background:
+        linear-gradient(180deg, rgba(6, 7, 10, 0.24), rgba(6, 7, 10, 0.72)),
+        url('/minecraft-parkour-poster.jpg') center/cover;
+}
+.launcher-real-center::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at 50% 45%, transparent 0, rgba(7, 8, 11, 0.15) 35%, rgba(7, 8, 11, 0.72) 100%),
+        linear-gradient(to top, rgba(7, 8, 11, 0.95), transparent 45%);
+}
+.launcher-real-version-bar {
+    position: absolute;
+    z-index: 5;
+    top: 1.1rem;
+    left: 50%;
+    display: flex;
+    gap: 0.25rem;
+    transform: translateX(-50%);
+}
+.launcher-real-version-bar > span {
+    min-width: 3.2rem;
+    padding: 0.42rem 0.55rem;
+    color: #71717a;
+    background: rgba(4, 5, 8, 0.78);
+    clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+}
+.launcher-real-version-bar small,
+.launcher-real-version-bar strong {
+    display: block;
+}
+.launcher-real-version-bar small {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.3rem;
+}
+.launcher-real-version-bar strong {
+    margin-top: 0.15rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.65rem;
+    color: #e4e4e7;
+}
+.launcher-real-version-bar .launcher-real-version-active {
+    color: rgba(42, 17, 3, 0.65);
+    background: #f97316;
+}
+.launcher-real-version-bar .launcher-real-version-active strong {
+    color: #2a1103;
+}
+.launcher-real-player-glow {
+    position: absolute;
+    z-index: 1;
+    width: 45%;
+    height: 55%;
+    left: 50%;
+    bottom: 12%;
+    border-radius: 999px;
+    background: rgba(249, 115, 22, 0.08);
+    filter: blur(36px);
+    transform: translateX(-50%);
+}
+.launcher-real-player {
+    position: absolute;
+    z-index: 3;
+    height: 72%;
+    left: 50%;
+    bottom: 9%;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 28px 28px rgba(0, 0, 0, 0.65));
+    transform: translateX(-50%);
+}
+.launcher-real-play {
+    position: absolute;
+    z-index: 7;
+    right: 13%;
+    bottom: 7%;
+    left: 13%;
+    display: grid;
+    min-height: 4rem;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.6rem;
+    color: #2a1103;
+    background: #f97316;
+    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    box-shadow: 0 15px 40px rgba(249, 115, 22, 0.2);
+}
+.launcher-real-play > svg {
+    font-size: 1rem;
+}
+.launcher-real-play strong,
+.launcher-real-play small {
+    display: block;
+}
+.launcher-real-play strong {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25rem;
+    letter-spacing: 0.05em;
+}
+.launcher-real-play small {
+    font-size: 0.42rem;
+    opacity: 0.58;
+}
+.launcher-real-play > i {
+    display: grid;
+    align-self: stretch;
+    place-items: center;
+    padding-left: 1rem;
+    border-left: 1px solid rgba(42, 17, 3, 0.22);
+    font-size: 1.1rem;
+    font-style: normal;
+}
+.launcher-real-shortcuts {
+    position: absolute;
+    z-index: 7;
+    right: 0;
+    bottom: 1.15rem;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.32rem;
+    color: #52525b;
+}
+
+.launcher-real-online {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid #f97316;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.4rem;
+    letter-spacing: 0.14em;
+    color: #71717a;
+}
+.launcher-real-online strong {
+    color: #fb923c;
+}
+.launcher-real-online small {
+    margin-left: auto;
+    font-size: 0.35rem;
+    letter-spacing: normal;
+}
+.launcher-real-friend {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 0.7rem;
+    padding: 0.45rem;
+}
+.launcher-real-friend > span {
+    display: grid;
+    width: 1.6rem;
+    height: 1.6rem;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.55rem;
+    color: #f97316;
+    background: #14151a;
+}
+.launcher-real-friend strong,
+.launcher-real-friend small {
+    display: block;
+}
+.launcher-real-friend strong {
+    font-size: 0.52rem;
+    color: #d4d4d8;
+}
+.launcher-real-friend small {
+    margin-top: 0.12rem;
+    font-size: 0.38rem;
+}
+.launcher-real-orange {
+    color: #fb923c;
+}
+.launcher-real-blue {
+    color: #38bdf8;
+}
+.launcher-real-friends-button,
+.launcher-real-clan {
+    margin-top: 0.7rem;
+    padding: 0.58rem;
+    border: 1px solid rgba(255, 255, 255, 0.065);
+    font-size: 0.36rem;
+    text-align: center;
+    color: #71717a;
+}
+.launcher-real-clan {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.45rem;
+    text-align: left;
+}
+.launcher-real-system {
+    position: absolute;
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.launcher-real-system small,
+.launcher-real-system span {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.38rem;
+    color: #3f3f46;
+}
+.launcher-real-system span {
+    margin-top: 0.35rem;
+}
+.launcher-real-system strong {
+    color: #d4d4d8;
+}
+
+@media (max-width: 1023px) {
+    .launcher-real-perspective {
+        width: 100%;
+        max-width: none;
+        margin-left: 0;
+    }
+    .launcher-real-window,
+    .launcher-real-perspective:hover .launcher-real-window {
+        transform: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .launcher-real-window {
+        aspect-ratio: 4 / 5;
+    }
+    .launcher-real-navbar {
+        height: 9%;
+    }
+    .launcher-real-navbar nav {
+        justify-content: center;
+    }
+    .launcher-real-navbar nav span {
+        display: none;
+    }
+    .launcher-real-navbar nav span:first-child,
+    .launcher-real-navbar nav span:nth-child(3),
+    .launcher-real-navbar nav span:nth-child(4) {
+        display: flex;
+        padding-inline: 0.55rem;
+        font-size: 0.42rem;
+    }
+    .launcher-real-brand strong,
+    .launcher-real-account strong {
+        display: none;
+    }
+    .launcher-real-body {
+        height: 91%;
+        grid-template-columns: 1fr;
+    }
+    .launcher-real-left,
+    .launcher-real-right {
+        display: none;
+    }
+    .launcher-real-version-bar {
+        top: 1rem;
+    }
+    .launcher-real-version-bar > span {
+        min-width: 3rem;
+        padding-inline: 0.4rem;
+    }
+    .launcher-real-player {
+        height: 70%;
+        bottom: 13%;
+    }
+    .launcher-real-play {
+        right: 8%;
+        bottom: 8%;
+        left: 8%;
+    }
+}
+
 @media (max-width: 640px) {
     .launcher-headline-stat {
         min-height: 132px;
