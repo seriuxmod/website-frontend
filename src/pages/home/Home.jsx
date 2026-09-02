@@ -5,38 +5,16 @@ import {
     FaCloudArrowDown,
     FaComments,
     FaGamepad,
-    FaLayerGroup,
     FaShieldHalved,
     FaStore,
     FaUserGroup,
-    FaUsers,
     FaWindows
 } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import HomeBlogSlider from './HomeBlogSlider';
+import LauncherShowcase from './LauncherShowcase';
 
 const API = 'https://api.seriuxmod.net/api/v1';
-
-const features = [
-    [
-        FaLayerGroup,
-        'Dein Spiel. Dein Setup.',
-        'Ein Client, der zu dir passt.',
-        'Performance-Module, HUD-Elemente und Quality-of-Life-Features in einem klaren Interface.'
-    ],
-    [
-        FaUsers,
-        'Gemeinsam spielen',
-        'Deine Community immer dabei.',
-        'Profile, Freunde und Social Features verbinden dich über Servergrenzen hinweg.'
-    ],
-    [
-        FaStore,
-        'Ausdruck ohne Grenzen',
-        'Mach deinen Look einzigartig.',
-        'Entdecke Cosmetics und synchronisiere deinen Auftritt über dein SeriuxMod-Konto.'
-    ]
-];
 
 const platformModules = [
     {
@@ -287,30 +265,7 @@ export default function Home() {
                             Leistungsstarke Werkzeuge, klares Design und eine Plattform, die mit dir wächst.
                         </p>
                     </div>
-                    <div className="mt-14 grid gap-5 lg:grid-cols-3">
-                        {features.map(([Icon, eyebrow, title, text]) => (
-                            <article
-                                key={title}
-                                className="group relative min-h-[370px] overflow-hidden rounded-3xl border border-white/[.07] bg-gradient-to-br from-[#16181d] to-[#0e0f12] p-8"
-                            >
-                                <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-orange-500/10 blur-3xl transition group-hover:bg-orange-500/20" />
-                                <div className="grid h-14 w-14 place-items-center rounded-2xl bg-orange-500/10 text-xl text-orange-500">
-                                    <Icon />
-                                </div>
-                                <div className="mt-20">
-                                    <small className="text-zinc-600">{eyebrow}</small>
-                                    <h3 className="mt-2 font-display text-2xl font-bold tracking-tight">{title}</h3>
-                                    <p className="mt-4 text-sm leading-7 text-zinc-500">{text}</p>
-                                </div>
-                                <a
-                                    href="#download"
-                                    className="absolute bottom-8 flex items-center gap-2 text-xs font-bold text-zinc-300"
-                                >
-                                    Mehr erfahren <FaArrowRight />
-                                </a>
-                            </article>
-                        ))}
-                    </div>
+                    <LauncherShowcase />
                 </div>
             </section>
 
