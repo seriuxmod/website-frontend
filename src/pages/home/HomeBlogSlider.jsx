@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FaArrowLeft, FaArrowRight, FaNewspaper } from 'react-icons/fa6';
+import { FaArrowRight, FaNewspaper } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import { blogApi } from '../../lib/communityApi';
 import { playerAvatar, userApi } from '../../lib/userApi';
 
-const SLIDE_DURATION = 8000;
+const SLIDE_DURATION = 20000;
 
 function rankColor(color) {
     if (!Number.isFinite(color)) return '#f97316';
@@ -32,6 +32,9 @@ export default function HomeBlogSlider() {
     const [active, setActive] = useState(0);
     const [paused, setPaused] = useState(false);
     const touchStart = useRef(null);
+    const remainingTime = useRef(SLIDE_DURATION);
+    const timerStartedAt = useRef(null);
+    const timerResetPending = useRef(false);
 
     useEffect(() => {
         let current = true;
@@ -60,9 +63,26 @@ export default function HomeBlogSlider() {
         if (state.posts.length < 2 || paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             return undefined;
         }
-        const timer = window.setInterval(() => setActive((index) => (index + 1) % state.posts.length), SLIDE_DURATION);
-        return () => window.clearInterval(timer);
-    }, [paused, state.posts.length]);
+        timerResetPending.current = false;
+        timerStartedAt.current = window.performance.now();
+        const timer = window.setTimeout(() => {
+            remainingTime.current = SLIDE_DURATION;
+            timerResetPending.current = true;
+            setActive((index) => (index + 1) % state.posts.length);
+        }, remainingTime.current);
+        return () => {
+            window.clearTimeout(timer);
+            if (timerResetPending.current) {
+                timerResetPending.current = false;
+            } else if (timerStartedAt.current != null) {
+                remainingTime.current = Math.max(
+                    0,
+                    remainingTime.current - (window.performance.now() - timerStartedAt.current)
+                );
+            }
+            timerStartedAt.current = null;
+        };
+    }, [active, paused, state.posts.length]);
 
     useEffect(() => {
         if (active >= state.posts.length) setActive(0);
@@ -79,7 +99,16 @@ export default function HomeBlogSlider() {
 
     const move = (direction) => {
         if (slides.length < 2) return;
+        remainingTime.current = SLIDE_DURATION;
+        timerResetPending.current = true;
         setActive((index) => (index + direction + slides.length) % slides.length);
+    };
+
+    const selectSlide = (index) => {
+        if (index === active) return;
+        remainingTime.current = SLIDE_DURATION;
+        timerResetPending.current = true;
+        setActive(index);
     };
 
     if (!state.loading && (state.error || slides.length === 0)) return null;
@@ -87,36 +116,12 @@ export default function HomeBlogSlider() {
     return (
         <section id="blog" className="px-5 pb-24 lg:px-10 lg:pb-32" aria-labelledby="blog-heading">
             <div className="mx-auto max-w-7xl">
-                <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
-                    <div className="max-w-2xl">
-                        <p className="eyebrow">SERIUXMOD NEWS</p>
-                        <h2 id="blog-heading" className="section-title">
-                            Neues aus unserer Welt.
-                        </h2>
-                        <p className="section-copy">
-                            Updates, Einblicke und Release Notes direkt aus dem SeriuxMod-Team.
-                        </p>
-                    </div>
-                    {slides.length > 1 && (
-                        <div className="flex gap-2">
-                            <button
-                                className="home-blog-control"
-                                type="button"
-                                onClick={() => move(-1)}
-                                aria-label="Vorheriger Beitrag"
-                            >
-                                <FaArrowLeft />
-                            </button>
-                            <button
-                                className="home-blog-control"
-                                type="button"
-                                onClick={() => move(1)}
-                                aria-label="Nächster Beitrag"
-                            >
-                                <FaArrowRight />
-                            </button>
-                        </div>
-                    )}
+                <div className="max-w-2xl">
+                    <p className="eyebrow">SERIUXMOD NEWS</p>
+                    <h2 id="blog-heading" className="section-title">
+                        Neues aus unserer Welt.
+                    </h2>
+                    <p className="section-copy">Updates, Einblicke und Release Notes direkt aus dem SeriuxMod-Team.</p>
                 </div>
 
                 {state.loading ? (
@@ -239,10 +244,18 @@ export default function HomeBlogSlider() {
                                                 <button
                                                     type="button"
                                                     className="absolute inset-0 z-20 cursor-pointer"
-                                                    onClick={() => setActive(index)}
+                                                    onClick={() => selectSlide(index)}
                                                     aria-label={`${post.title} in den Vordergrund holen`}
                                                     tabIndex={-1}
                                                 />
+                                            )}
+                                            {isActive && slides.length > 1 && (
+                                                <div className="home-blog-progress-track" aria-hidden="true">
+                                                    <span
+                                                        key={active}
+                                                        className={`home-blog-progress-bar ${paused ? 'home-blog-progress-bar-paused' : ''}`}
+                                                    />
+                                                </div>
                                             )}
                                         </div>
                                     </article>
@@ -257,7 +270,7 @@ export default function HomeBlogSlider() {
                                         key={post.id}
                                         type="button"
                                         className={`h-2 rounded-full transition-all ${active === index ? 'w-8 bg-orange-500' : 'w-2 bg-white/15 hover:bg-white/30'}`}
-                                        onClick={() => setActive(index)}
+                                        onClick={() => selectSlide(index)}
                                         aria-label={`Beitrag ${index + 1}: ${post.title}`}
                                         aria-current={active === index ? 'true' : undefined}
                                     />
