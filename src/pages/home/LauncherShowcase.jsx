@@ -3,7 +3,6 @@ import {
     FaArrowRight,
     FaBolt,
     FaCheck,
-    FaCloudArrowDown,
     FaDownload,
     FaGear,
     FaHouse,
@@ -306,19 +305,6 @@ export default function LauncherShowcase() {
                     </div>
                     <small>Karte anklicken, um das Modul anzusehen</small>
                 </div>
-            </div>
-
-            <div className="client-module-footer">
-                <div>
-                    <FaWifi />
-                    <span>
-                        <strong>Bereit für deinen nächsten Start</strong>
-                        Launcher, Modpack und Seriux-ID arbeiten als ein System zusammen.
-                    </span>
-                </div>
-                <a href="#download" className="button-primary">
-                    <FaCloudArrowDown /> Launcher herunterladen
-                </a>
             </div>
         </div>
     );
