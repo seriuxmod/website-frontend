@@ -39,7 +39,7 @@ import PresenceReporter from './components/PresenceReporter';
 export default function App() {
     useScrollToTop();
     return (
-        <div className="min-h-screen bg-[#090a0d]">
+        <div className="app-shell min-h-screen">
             <PresenceReporter />
             <Navbar />
             <Routes>

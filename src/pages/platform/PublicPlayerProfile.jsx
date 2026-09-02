@@ -230,10 +230,10 @@ export default function PublicPlayerProfile() {
     };
 
     return (
-        <main className="min-h-screen overflow-hidden bg-[#07080b] pb-24 text-white">
+        <main className="profile-page min-h-screen overflow-hidden pb-24 text-white">
             <section className="relative min-h-[610px] overflow-hidden pt-28 sm:pt-32">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_8%,rgba(30,94,163,.46),transparent_48%),linear-gradient(125deg,#19223f_0%,#13233e_48%,#08101c_76%,#07080b_100%)]" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-80 bg-gradient-to-b from-transparent via-[#07080b]/70 to-[#07080b]" />
+                <div className="profile-hero-brand pointer-events-none absolute inset-0" />
+                <div className="profile-hero-fade pointer-events-none absolute inset-x-0 bottom-0 h-80" />
                 <div className="relative mx-auto grid min-h-[480px] max-w-6xl items-end gap-6 px-5 sm:px-8 lg:grid-cols-[390px_minmax(0,1fr)] lg:gap-10">
                     <div className="relative mx-auto flex h-[440px] w-full max-w-[360px] items-end justify-center pb-10">
                         <div className="absolute bottom-10 h-14 w-48 rounded-[50%] bg-black/55 blur-md" />

@@ -236,19 +236,19 @@ export default function Home() {
             >
                 <div className="mx-auto grid max-w-7xl items-center gap-16 px-5 lg:grid-cols-2 lg:px-10">
                     <div>
-                        <p className="text-xs font-extrabold tracking-[.18em] text-orange-950/70">
+                        <p className="text-xs font-extrabold tracking-[.18em] text-white/70">
                             EINE PLATTFORM. EINE IDENTITÄT.
                         </p>
                         <h2 className="mt-4 font-display text-4xl font-bold leading-tight tracking-[-.045em] sm:text-6xl">
                             Deine Welt hört nicht am Serverrand auf.
                         </h2>
-                        <p className="mt-6 max-w-xl leading-8 text-orange-950/70">
+                        <p className="mt-6 max-w-xl leading-8 text-white/75">
                             Account, Freunde und Einstellungen an einem Ort. Forum, Social Hub und Store bilden ein
                             gemeinsames Erlebnis auf dem SeriuxMod-Backend.
                         </p>
                         <a
                             href="#download"
-                            className="mt-8 inline-flex items-center gap-3 rounded-xl bg-white px-5 py-4 text-sm font-bold shadow-xl"
+                            className="mt-8 inline-flex items-center gap-3 rounded-xl bg-white px-5 py-4 text-sm font-bold text-[#351208] shadow-xl transition hover:-translate-y-0.5 hover:bg-orange-50"
                         >
                             Website-Zugang im Launcher aktivieren <FaArrowRight />
                         </a>
