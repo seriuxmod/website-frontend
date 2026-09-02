@@ -12,7 +12,7 @@ import {
 } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
 import HomeBlogSlider from './HomeBlogSlider';
-import LauncherShowcase from './LauncherShowcase';
+import LauncherShowcase, { LauncherWindow } from './LauncherShowcase';
 
 const API = 'https://api.seriuxmod.net/api/v1';
 
@@ -202,7 +202,7 @@ function ForumPreview() {
 export default function Home() {
     return (
         <main id="top" className="overflow-hidden bg-[#090a0d] text-white">
-            <section className="relative isolate flex min-h-[100svh] items-center justify-center overflow-hidden px-5 pb-28 pt-36 text-center sm:pt-40">
+            <section className="relative isolate flex min-h-[100svh] items-center overflow-hidden px-5 pb-28 pt-36 sm:pt-40 lg:px-10">
                 <video
                     className="absolute inset-0 -z-30 h-full w-full scale-[1.04] object-cover blur-[2.5px] brightness-[.52] saturate-[.82]"
                     autoPlay
@@ -217,37 +217,49 @@ export default function Home() {
                 </video>
                 <div className="absolute inset-0 -z-20 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(4,5,8,.18)_42%,rgba(4,5,8,.82)_100%)]" />
                 <div className="absolute inset-0 -z-20 bg-gradient-to-b from-[#050609]/45 via-transparent to-[#090a0d]" />
-                <div className="mx-auto flex max-w-4xl flex-col items-center">
-                    <SystemStatus />
-                    <p className="mt-8 text-xs font-extrabold tracking-[.18em] text-orange-400">
-                        DEIN MINECRAFT. NEU GEDACHT.
-                    </p>
-                    <h1 className="mt-5 font-display text-5xl font-bold leading-[.94] tracking-[-.06em] drop-shadow-[0_8px_35px_rgba(0,0,0,.7)] sm:text-7xl lg:text-8xl">
-                        Mehr als spielen.
-                        <br />
-                        <span className="bg-gradient-to-r from-orange-500 to-amber-300 bg-clip-text text-transparent">
-                            Erlebe Minecraft.
-                        </span>
-                    </h1>
-                    <p className="mt-7 max-w-2xl text-base leading-8 text-zinc-200 drop-shadow-[0_3px_14px_rgba(0,0,0,.9)] sm:text-lg">
-                        SeriuxMod verbindet Performance, Individualität und Community in einem modernen Minecraft Client
-                        – gemacht für dein nächstes Abenteuer.
-                    </p>
-                    <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-                        <a href="#download" className="button-primary">
-                            <FaWindows /> Für Windows herunterladen
-                        </a>
-                        <a href="#features" className="button-secondary border-white/15 bg-black/30 backdrop-blur-xl">
-                            Features entdecken <FaArrowRight />
-                        </a>
-                    </div>
-                    <div className="mt-8 flex flex-wrap justify-center gap-5 text-xs text-zinc-300">
-                        {['Kostenlos', 'Sicher', 'Community-first'].map((item) => (
-                            <span className="flex items-center gap-1.5" key={item}>
-                                <FaCheck className="text-orange-500" />
-                                {item}
+                <div className="mx-auto grid w-full max-w-[1480px] items-center gap-14 lg:grid-cols-[0.72fr_1.28fr] xl:gap-20">
+                    <div className="relative z-10 flex max-w-xl flex-col items-center text-center lg:items-start lg:text-left">
+                        <SystemStatus />
+                        <p className="mt-8 text-xs font-extrabold tracking-[.18em] text-orange-400">
+                            DEIN MINECRAFT. NEU GEDACHT.
+                        </p>
+                        <h1 className="mt-5 font-display text-5xl font-bold leading-[.94] tracking-[-.06em] drop-shadow-[0_8px_35px_rgba(0,0,0,.7)] sm:text-7xl lg:text-7xl xl:text-8xl">
+                            Mehr als spielen.
+                            <br />
+                            <span className="bg-gradient-to-r from-orange-500 to-amber-300 bg-clip-text text-transparent">
+                                Erlebe Minecraft.
                             </span>
-                        ))}
+                        </h1>
+                        <p className="mt-7 max-w-2xl text-base leading-8 text-zinc-200 drop-shadow-[0_3px_14px_rgba(0,0,0,.9)] sm:text-lg">
+                            SeriuxMod verbindet Performance, Individualität und Community in einem modernen Minecraft
+                            Client – gemacht für dein nächstes Abenteuer.
+                        </p>
+                        <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
+                            <a href="#download" className="button-primary">
+                                <FaWindows /> Für Windows herunterladen
+                            </a>
+                            <a
+                                href="#features"
+                                className="button-secondary border-white/15 bg-black/30 backdrop-blur-xl"
+                            >
+                                Client entdecken <FaArrowRight />
+                            </a>
+                        </div>
+                        <div className="mt-8 flex flex-wrap justify-center gap-5 text-xs text-zinc-300 lg:justify-start">
+                            {['Kostenlos', 'Sicher', 'Community-first'].map((item) => (
+                                <span className="flex items-center gap-1.5" key={item}>
+                                    <FaCheck className="text-orange-500" />
+                                    {item}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="landing-launcher relative z-10 mx-auto w-full max-w-[900px]">
+                        <LauncherWindow hero />
+                        <p className="mt-5 text-center text-[9px] font-bold uppercase tracking-[.18em] text-zinc-400/70">
+                            Der aktuelle SeriuxMod Launcher · Modpack v5.2.0
+                        </p>
                     </div>
                 </div>
                 <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-b from-transparent via-[#090a0d]/75 to-[#090a0d]" />

@@ -30,9 +30,57 @@ const launcherNews = [
     ['MAINTENANCE', 'Wartungsfenster angekündigt']
 ];
 
-function LauncherWindow() {
+const clientAreas = [
+    {
+        icon: FaBolt,
+        category: 'PERFORMANCE',
+        title: 'Performance-Profile',
+        text: 'Passe Arbeitsspeicher, Java-Parameter und das Startprofil an dein System an.',
+        details: ['RAM-Profile', 'Java-Konfiguration', 'Systemstatus']
+    },
+    {
+        icon: FaLayerGroup,
+        category: 'VERSIONEN',
+        title: 'Versionsauswahl',
+        text: 'Wechsle kontrolliert zwischen freigegebenen Minecraft- und Modpack-Versionen.',
+        details: ['Stable Channel', 'Release-Auswahl', 'Eigene Instanzen']
+    },
+    {
+        icon: FaCheck,
+        category: 'MODPACK',
+        title: 'Modpack-Manager',
+        text: 'Der Launcher hält Mods, Abhängigkeiten und Konfigurationen automatisch synchron.',
+        details: ['212 Mods', 'Auto-Sync', 'Integritätsprüfung']
+    },
+    {
+        icon: FaUserGroup,
+        category: 'COMMUNITY',
+        title: 'Social Hub',
+        text: 'Sieh Freunde, Online-Status, Clans und gemeinsame Spielsessions direkt im Launcher.',
+        details: ['Freundesliste', 'Clans', 'Presence']
+    },
+    {
+        icon: FaDownload,
+        category: 'DOWNLOADS',
+        title: 'Update-System',
+        text: 'Neue Launcher- und Modpack-Versionen landen nachvollziehbar auf deinem System.',
+        details: ['Update-Kanal', 'Fortschritt', 'Changelog']
+    },
+    {
+        icon: FaGear,
+        category: 'ACCOUNT',
+        title: 'Seriux-ID',
+        text: 'Minecraft-Profil, Website-Zugang und persönliche Einstellungen bleiben verbunden.',
+        details: ['Minecraft-Profil', 'Sichere Session', 'Cloud-Sync']
+    }
+];
+
+export function LauncherWindow({ hero = false }) {
     return (
-        <div className="launcher-real-perspective" aria-label="Vorschau des SeriuxMod Launchers">
+        <div
+            className={`launcher-real-perspective ${hero ? 'launcher-real-perspective-hero' : ''}`}
+            aria-label="Vorschau des SeriuxMod Launchers"
+        >
             <div className="launcher-real-window">
                 <header className="launcher-real-navbar">
                     <div className="launcher-real-brand">
@@ -157,46 +205,65 @@ function LauncherWindow() {
 
 export default function LauncherShowcase() {
     return (
-        <div className="grid items-center gap-14 lg:grid-cols-[0.72fr_1.28fr] xl:gap-20">
-            <div className="relative z-10">
-                <p className="eyebrow">ALLES, WAS DU BRAUCHST</p>
-                <h2 className="section-title max-w-xl">Gebaut für dein bestes Spiel.</h2>
-                <p className="section-copy max-w-xl">
-                    Ein Launcher, der Updates, Modpack, Freunde und deinen Minecraft-Account in einer Oberfläche
-                    zusammenführt – schnell, übersichtlich und direkt spielbereit.
-                </p>
-
-                <div className="mt-8 grid grid-cols-2 gap-3">
-                    {[
-                        [FaLayerGroup, '212 Module', 'Aktuelles Modpack'],
-                        [FaBolt, '1.21.4', 'Minecraft Version'],
-                        [FaCheck, 'Stable', 'Release Channel'],
-                        [FaWifi, 'Online', 'Backend verbunden']
-                    ].map(([Icon, value, label]) => (
-                        <div key={label} className="launcher-copy-stat">
-                            <Icon />
-                            <span>
-                                <strong>{value}</strong>
-                                <small>{label}</small>
-                            </span>
-                        </div>
-                    ))}
+        <div>
+            <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+                <div className="max-w-2xl">
+                    <p className="eyebrow">DEIN CLIENT. DEINE WERKZEUGE.</p>
+                    <h2 className="section-title">Alles an einem Ort.</h2>
+                    <p className="section-copy">
+                        Vom ersten Download bis zur gemeinsamen Spielsession: Der SeriuxMod Launcher bündelt die
+                        wichtigsten Bereiche des Clients in einer Oberfläche.
+                    </p>
                 </div>
-
-                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                    <a href="#download" className="button-primary">
-                        <FaCloudArrowDown /> Launcher herunterladen
-                    </a>
-                    <a href="#platform" className="button-secondary">
-                        Funktionen ansehen <FaArrowRight />
-                    </a>
+                <div className="client-module-summary">
+                    <span>
+                        <strong>212</strong>
+                        Mods im aktuellen Pack
+                    </span>
+                    <i />
+                    <span>
+                        <strong>1.21.4</strong>
+                        Minecraft-Basis
+                    </span>
                 </div>
-                <p className="mt-5 text-[10px] uppercase tracking-[.16em] text-zinc-600">
-                    Abgebildet ist der aktuelle Launcher-Startbildschirm
-                </p>
             </div>
 
-            <LauncherWindow />
+            <div className="client-module-grid">
+                {clientAreas.map(({ icon: Icon, category, title, text, details }, index) => (
+                    <article className="client-module-card" key={title}>
+                        <div className="client-module-card-topline">
+                            <span className="client-module-icon">
+                                <Icon />
+                            </span>
+                            <small>0{index + 1}</small>
+                        </div>
+                        <p>{category}</p>
+                        <h3>{title}</h3>
+                        <div className="client-module-divider" />
+                        <span className="client-module-description">{text}</span>
+                        <div className="client-module-details">
+                            {details.map((detail) => (
+                                <span key={detail}>
+                                    <FaCheck /> {detail}
+                                </span>
+                            ))}
+                        </div>
+                    </article>
+                ))}
+            </div>
+
+            <div className="client-module-footer">
+                <div>
+                    <FaWifi />
+                    <span>
+                        <strong>Bereit für deinen nächsten Start</strong>
+                        Launcher, Modpack und Seriux-ID arbeiten als ein System zusammen.
+                    </span>
+                </div>
+                <a href="#download" className="button-primary">
+                    <FaCloudArrowDown /> Launcher herunterladen
+                </a>
+            </div>
         </div>
     );
 }
