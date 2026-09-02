@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
     FaArrowRight,
     FaBolt,
@@ -204,6 +205,21 @@ export function LauncherWindow({ hero = false }) {
 }
 
 export default function LauncherShowcase() {
+    const [activeModule, setActiveModule] = useState(0);
+    const [carouselPaused, setCarouselPaused] = useState(false);
+
+    useEffect(() => {
+        if (carouselPaused) return undefined;
+        const timer = window.setInterval(() => setActiveModule((current) => (current + 1) % clientAreas.length), 6000);
+        return () => window.clearInterval(timer);
+    }, [activeModule, carouselPaused]);
+
+    const moduleOffset = (index) => {
+        let offset = (index - activeModule + clientAreas.length) % clientAreas.length;
+        if (offset > clientAreas.length / 2) offset -= clientAreas.length;
+        return offset;
+    };
+
     return (
         <div>
             <div className="flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
@@ -228,28 +244,68 @@ export default function LauncherShowcase() {
                 </div>
             </div>
 
-            <div className="client-module-grid">
+            <div
+                className="client-module-carousel"
+                onMouseEnter={() => setCarouselPaused(true)}
+                onMouseLeave={() => setCarouselPaused(false)}
+                onFocusCapture={() => setCarouselPaused(true)}
+                onBlurCapture={() => setCarouselPaused(false)}
+            >
+                <div className="client-module-carousel-glow" />
+                <div className="client-module-carousel-orbit client-module-carousel-orbit-one" />
+                <div className="client-module-carousel-orbit client-module-carousel-orbit-two" />
                 {clientAreas.map(({ icon: Icon, category, title, text, details }, index) => (
-                    <article className="client-module-card" key={title}>
-                        <div className="client-module-card-topline">
-                            <span className="client-module-icon">
+                    <article
+                        className={`client-carousel-card ${index === activeModule ? 'client-carousel-card-active' : ''}`}
+                        key={title}
+                        style={{
+                            '--module-offset': moduleOffset(index),
+                            '--module-distance': Math.abs(moduleOffset(index))
+                        }}
+                        data-distance={Math.abs(moduleOffset(index))}
+                        role="button"
+                        tabIndex={index === activeModule ? 0 : -1}
+                        aria-label={`${title} anzeigen`}
+                        aria-pressed={index === activeModule}
+                        onClick={() => setActiveModule(index)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                setActiveModule(index);
+                            }
+                        }}
+                    >
+                        <div className="client-carousel-card-visual">
+                            <span className="client-carousel-card-index">0{index + 1}</span>
+                            <span className="client-carousel-card-icon">
                                 <Icon />
                             </span>
-                            <small>0{index + 1}</small>
+                            <span className="client-carousel-card-grid" />
                         </div>
-                        <p>{category}</p>
-                        <h3>{title}</h3>
-                        <div className="client-module-divider" />
-                        <span className="client-module-description">{text}</span>
-                        <div className="client-module-details">
-                            {details.map((detail) => (
-                                <span key={detail}>
-                                    <FaCheck /> {detail}
-                                </span>
-                            ))}
+                        <div className="client-carousel-card-content">
+                            <p>{category}</p>
+                            <h3>{title}</h3>
+                            <span className="client-carousel-card-description">{text}</span>
+                            <div className="client-carousel-card-details">
+                                {details.map((detail) => (
+                                    <span key={detail}>
+                                        <FaCheck /> {detail}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </article>
                 ))}
+
+                <div className="client-carousel-status">
+                    <span>
+                        <strong>0{activeModule + 1}</strong> / 0{clientAreas.length}
+                    </span>
+                    <div className="client-carousel-progress">
+                        <i key={activeModule} className={carouselPaused ? 'client-carousel-progress-paused' : ''} />
+                    </div>
+                    <small>Karte anklicken, um das Modul anzusehen</small>
+                </div>
             </div>
 
             <div className="client-module-footer">

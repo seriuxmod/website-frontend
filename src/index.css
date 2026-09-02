@@ -1578,6 +1578,262 @@
 .client-module-details svg {
     color: #f97316;
 }
+.client-module-carousel {
+    position: relative;
+    height: 39rem;
+    margin-top: 3rem;
+    overflow: hidden;
+    perspective: 1350px;
+    perspective-origin: 50% 43%;
+    isolation: isolate;
+}
+.client-module-carousel-glow {
+    position: absolute;
+    z-index: -2;
+    width: min(42rem, 68vw);
+    height: 21rem;
+    left: 50%;
+    bottom: 3rem;
+    border-radius: 999px;
+    background: rgba(249, 115, 22, 0.1);
+    filter: blur(90px);
+    transform: translateX(-50%);
+}
+.client-module-carousel-orbit {
+    position: absolute;
+    z-index: -1;
+    left: 50%;
+    border: 1px solid rgba(249, 115, 22, 0.11);
+    border-radius: 50%;
+    transform: translateX(-50%) rotateX(72deg);
+}
+.client-module-carousel-orbit-one {
+    width: 84%;
+    height: 19rem;
+    bottom: -3.5rem;
+}
+.client-module-carousel-orbit-two {
+    width: 62%;
+    height: 14rem;
+    bottom: -0.75rem;
+    opacity: 0.55;
+}
+.client-carousel-card {
+    position: absolute;
+    z-index: calc(20 - var(--module-distance));
+    width: clamp(15rem, 25vw, 21.5rem);
+    height: 27.5rem;
+    top: 1.5rem;
+    left: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.085);
+    border-radius: 24px;
+    color: #f4f4f5;
+    background: #111217;
+    box-shadow: 0 30px 65px rgba(0, 0, 0, 0.38);
+    cursor: pointer;
+    opacity: calc(1 - var(--module-distance) * 0.2);
+    transform: translateX(calc(-50% + var(--module-offset) * clamp(11rem, 21vw, 18rem)))
+        translateY(calc(var(--module-distance) * 2.25rem)) translateZ(calc(var(--module-distance) * -7rem))
+        rotateY(calc(var(--module-offset) * -16deg)) rotateZ(calc(var(--module-offset) * -1.2deg))
+        scale(calc(1 - var(--module-distance) * 0.055));
+    transform-origin: 50% 88%;
+    transform-style: preserve-3d;
+    transition:
+        transform 0.9s cubic-bezier(0.2, 0.78, 0.2, 1),
+        opacity 0.7s ease,
+        border-color 0.45s ease,
+        box-shadow 0.45s ease;
+}
+.client-carousel-card[data-distance='3'] {
+    pointer-events: none;
+    opacity: 0;
+}
+.client-carousel-card:hover {
+    border-color: rgba(249, 115, 22, 0.35);
+}
+.client-carousel-card-active {
+    border-color: rgba(249, 115, 22, 0.36);
+    box-shadow:
+        0 40px 90px rgba(0, 0, 0, 0.52),
+        0 0 0 1px rgba(249, 115, 22, 0.07),
+        0 0 55px rgba(249, 115, 22, 0.12);
+}
+.client-carousel-card:focus-visible {
+    outline: 2px solid #f97316;
+    outline-offset: 5px;
+}
+.client-carousel-card-visual {
+    position: relative;
+    display: grid;
+    height: 46%;
+    place-items: center;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.065);
+    background:
+        radial-gradient(circle at 50% 45%, rgba(249, 115, 22, 0.28), transparent 35%),
+        linear-gradient(145deg, #22160f, #111217 58%, #0c0d11);
+}
+.client-carousel-card-visual::after {
+    content: '';
+    position: absolute;
+    inset: auto -20% -60% -20%;
+    height: 100%;
+    border: 1px solid rgba(249, 115, 22, 0.16);
+    border-radius: 50%;
+    transform: rotateX(65deg);
+}
+.client-carousel-card-index {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.28);
+}
+.client-carousel-card-icon {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: 5.2rem;
+    height: 5.2rem;
+    place-items: center;
+    border: 1px solid rgba(249, 115, 22, 0.3);
+    border-radius: 24px;
+    font-size: 2rem;
+    color: #fb923c;
+    background: rgba(8, 9, 12, 0.66);
+    box-shadow:
+        0 22px 50px rgba(0, 0, 0, 0.34),
+        inset 0 0 24px rgba(249, 115, 22, 0.08);
+    transform: translateZ(30px);
+}
+.client-carousel-card-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.16;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(to bottom, black, transparent 90%);
+}
+.client-carousel-card-content {
+    padding: 1.4rem 1.5rem;
+}
+.client-carousel-card-content > p {
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.17em;
+    color: #f97316;
+}
+.client-carousel-card-content h3 {
+    margin-top: 0.45rem;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #f4f4f5;
+}
+.client-carousel-card-description {
+    display: block;
+    max-height: 0;
+    margin-top: 0;
+    overflow: hidden;
+    font-size: 0.75rem;
+    line-height: 1.65;
+    color: #71717a;
+    opacity: 0;
+    transition:
+        max-height 0.55s ease,
+        margin 0.55s ease,
+        opacity 0.45s ease;
+}
+.client-carousel-card-active .client-carousel-card-description {
+    max-height: 5rem;
+    margin-top: 0.8rem;
+    opacity: 1;
+}
+.client-carousel-card-details {
+    display: flex;
+    max-height: 0;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+        max-height 0.55s ease,
+        margin 0.55s ease,
+        opacity 0.45s ease;
+}
+.client-carousel-card-active .client-carousel-card-details {
+    max-height: 4rem;
+    margin-top: 0.85rem;
+    opacity: 1;
+}
+.client-carousel-card-details span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.28rem;
+    padding: 0.34rem 0.45rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    font-size: 0.5rem;
+    color: #71717a;
+    background: rgba(0, 0, 0, 0.18);
+}
+.client-carousel-card-details svg {
+    color: #f97316;
+}
+.client-carousel-status {
+    position: absolute;
+    z-index: 40;
+    right: 0;
+    bottom: 0.25rem;
+    left: 0;
+    display: grid;
+    grid-template-columns: auto minmax(8rem, 20rem) auto;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    color: #52525b;
+}
+.client-carousel-status > span {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.55rem;
+}
+.client-carousel-status > span strong {
+    color: #f97316;
+}
+.client-carousel-status > small {
+    font-size: 0.56rem;
+}
+.client-carousel-progress {
+    height: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+}
+.client-carousel-progress i {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, #f97316, #fbbf24);
+    transform-origin: left;
+    animation: client-carousel-progress 6s linear forwards;
+}
+.client-carousel-progress .client-carousel-progress-paused {
+    animation-play-state: paused;
+}
+@keyframes client-carousel-progress {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
 .client-module-footer {
     display: flex;
     align-items: center;
@@ -1630,6 +1886,16 @@
     }
     .client-module-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .client-module-carousel {
+        height: 37rem;
+    }
+    .client-carousel-card {
+        width: clamp(15rem, 38vw, 20rem);
+        transform: translateX(calc(-50% + var(--module-offset) * clamp(10rem, 27vw, 15rem)))
+            translateY(calc(var(--module-distance) * 2rem)) translateZ(calc(var(--module-distance) * -6rem))
+            rotateY(calc(var(--module-offset) * -15deg)) rotateZ(calc(var(--module-offset) * -1deg))
+            scale(calc(1 - var(--module-distance) * 0.06));
     }
 }
 
@@ -1701,6 +1967,53 @@
     }
     .client-module-footer .button-primary {
         width: 100%;
+    }
+    .client-module-carousel {
+        height: 33rem;
+        margin-inline: -1.25rem;
+        margin-top: 2rem;
+        perspective-origin: 50% 40%;
+    }
+    .client-carousel-card {
+        width: 15.5rem;
+        height: 25rem;
+        top: 1rem;
+        transform: translateX(calc(-50% + var(--module-offset) * 10.2rem))
+            translateY(calc(var(--module-distance) * 1.6rem)) translateZ(calc(var(--module-distance) * -5rem))
+            rotateY(calc(var(--module-offset) * -13deg)) rotateZ(calc(var(--module-offset) * -0.8deg))
+            scale(calc(1 - var(--module-distance) * 0.055));
+    }
+    .client-carousel-card-visual {
+        height: 43%;
+    }
+    .client-carousel-card-icon {
+        width: 4.3rem;
+        height: 4.3rem;
+        border-radius: 19px;
+        font-size: 1.6rem;
+    }
+    .client-carousel-card-content {
+        padding: 1.15rem 1.2rem;
+    }
+    .client-carousel-card-content h3 {
+        font-size: 1.3rem;
+    }
+    .client-carousel-card-description {
+        font-size: 0.68rem;
+    }
+    .client-carousel-status {
+        grid-template-columns: auto minmax(8rem, 12rem);
+        gap: 0.75rem;
+        padding-inline: 1.25rem;
+    }
+    .client-carousel-status > small {
+        display: none;
+    }
+    .client-module-carousel-orbit-one {
+        width: 135%;
+    }
+    .client-module-carousel-orbit-two {
+        width: 96%;
     }
 }
 
