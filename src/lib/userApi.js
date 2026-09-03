@@ -24,7 +24,3 @@ export const userApi = {
 export function playerAvatar(playerId, size = 96) {
     return `https://mc-heads.net/avatar/${encodeURIComponent(playerId || 'Steve')}/${size}`;
 }
-
-export function playerBody(username) {
-    return `https://nmsr.nickac.dev/fullbody/${encodeURIComponent(username || 'Steve')}`;
-}

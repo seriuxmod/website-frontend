@@ -15,9 +15,10 @@ import {
     FaUsers
 } from 'react-icons/fa6';
 import { Link, useParams } from 'react-router-dom';
+import MinecraftSkinViewer from '../../components/MinecraftSkinViewer';
 import { forumApi } from '../../lib/forumApi';
 import { getAuthenticatedUser } from '../../lib/auth';
-import { playerAvatar, playerBody, userApi } from '../../lib/userApi';
+import { playerAvatar, userApi } from '../../lib/userApi';
 import { socialApi } from '../../lib/socialApi';
 
 const PRESENCE_LABELS = {
@@ -235,13 +236,8 @@ export default function PublicPlayerProfile() {
                 <div className="profile-hero-brand pointer-events-none absolute inset-0" />
                 <div className="profile-hero-fade pointer-events-none absolute inset-x-0 bottom-0 h-80" />
                 <div className="relative mx-auto grid min-h-[480px] max-w-6xl items-end gap-6 px-5 sm:px-8 lg:grid-cols-[390px_minmax(0,1fr)] lg:gap-10">
-                    <div className="relative mx-auto flex h-[440px] w-full max-w-[360px] items-end justify-center pb-10">
-                        <div className="absolute bottom-10 h-14 w-48 rounded-[50%] bg-black/55 blur-md" />
-                        <img
-                            className="relative z-10 h-[400px] w-full object-contain object-bottom drop-shadow-[0_30px_22px_rgba(0,0,0,.52)] [image-rendering:pixelated]"
-                            src={playerBody(profile.username)}
-                            alt={`Minecraft-Skin von ${profile.username}`}
-                        />
+                    <div className="relative mx-auto h-[440px] w-full max-w-[380px]">
+                        <MinecraftSkinViewer identifier={profile.playerId} username={profile.username} />
                     </div>
 
                     <div className="min-w-0 pb-24 text-center lg:pb-28 lg:text-left">
