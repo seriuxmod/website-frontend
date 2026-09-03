@@ -4,6 +4,8 @@ const USER_PERMISSIONS_URL = 'https://api.seriuxmod.net/api/v1/user/permissions/
 const CLIENT_ID = 'seriuxmod-website';
 const PROFILE_KEY = 'seriux_user_profile';
 const REFRESH_TOKEN_KEY = 'seriux_refresh_token';
+const ACCESS_TOKEN_REFRESH_SKEW_MS = 2 * 60 * 1000;
+const TERMINAL_REFRESH_ERRORS = new Set(['invalid_grant', 'invalid_client', 'unauthorized_client']);
 let refreshRequest = null;
 
 const base64Url = (bytes) =>
@@ -49,9 +51,10 @@ const decodePayload = (token) => {
     }
 };
 
-const accessTokenExpired = (token) => {
+const accessTokenExpired = (token, clockSkewMs = 0) => {
     const payload = decodePayload(token || '');
-    return !payload || (payload.exp && payload.exp * 1000 <= Date.now());
+    const expiresAt = Number(payload?.exp) * 1000;
+    return !Number.isFinite(expiresAt) || expiresAt <= Date.now() + clockSkewMs;
 };
 
 const storeTokens = (payload) => {
@@ -68,6 +71,22 @@ const clearLocalSession = () => {
     sessionStorage.removeItem('seriux_pkce_verifier');
     sessionStorage.removeItem('seriux_oauth_state');
     sessionStorage.removeItem(PROFILE_KEY);
+};
+
+export const hasStoredSession = () => {
+    const accessToken = getAccessToken();
+    return Boolean(
+        sessionStorage.getItem(REFRESH_TOKEN_KEY) ||
+            (accessToken && !accessTokenExpired(accessToken))
+    );
+};
+
+const notifyExpiredSession = () => {
+    window.dispatchEvent(
+        new CustomEvent('seriux-auth-changed', {
+            detail: { authenticated: false, reason: 'session_expired' }
+        })
+    );
 };
 
 export const getAuthenticatedUser = () => {
@@ -94,6 +113,7 @@ async function refreshAccessToken() {
     if (refreshRequest) return refreshRequest;
     const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
     if (!refreshToken) return null;
+    const currentAccessToken = getAccessToken();
 
     refreshRequest = (async () => {
         try {
@@ -106,13 +126,22 @@ async function refreshAccessToken() {
                     refresh_token: refreshToken
                 })
             });
-            const payload = await response.json();
-            if (!response.ok || !payload.access_token) throw new Error('Token refresh failed');
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok || !payload.access_token) {
+                if (TERMINAL_REFRESH_ERRORS.has(payload.error)) {
+                    clearLocalSession();
+                    notifyExpiredSession();
+                    return null;
+                }
+                return accessTokenExpired(currentAccessToken) ? null : currentAccessToken;
+            }
             storeTokens(payload);
+            window.dispatchEvent(new CustomEvent('seriux-auth-changed', { detail: { authenticated: true } }));
             return payload.access_token;
         } catch {
-            clearLocalSession();
-            return null;
+            // Keep the rotating refresh token on transient network or server failures.
+            // A later focus/online event can retry without forcing a new login.
+            return accessTokenExpired(currentAccessToken) ? null : currentAccessToken;
         } finally {
             refreshRequest = null;
         }
@@ -120,9 +149,20 @@ async function refreshAccessToken() {
     return refreshRequest;
 }
 
-export async function fetchAuthenticatedUser() {
+export async function refreshAuthenticatedSession() {
     let accessToken = getAccessToken();
-    if (!accessToken || accessTokenExpired(accessToken)) accessToken = await refreshAccessToken();
+    if (
+        sessionStorage.getItem(REFRESH_TOKEN_KEY) &&
+        (!accessToken || accessTokenExpired(accessToken, ACCESS_TOKEN_REFRESH_SKEW_MS))
+    ) {
+        accessToken = await refreshAccessToken();
+    }
+    return accessToken && !accessTokenExpired(accessToken) ? getAuthenticatedUser() : null;
+}
+
+export async function fetchAuthenticatedUser() {
+    await refreshAuthenticatedSession();
+    let accessToken = getAccessToken();
     let tokenUser = getAuthenticatedUser();
     if (!tokenUser || !accessToken) return null;
 
@@ -188,7 +228,12 @@ export const isAdministrator = (user = getAuthenticatedUser()) =>
 
 export async function authenticatedFetch(input, init = {}) {
     let accessToken = getAccessToken();
-    if (accessToken && accessTokenExpired(accessToken)) accessToken = await refreshAccessToken();
+    if (
+        sessionStorage.getItem(REFRESH_TOKEN_KEY) &&
+        (!accessToken || accessTokenExpired(accessToken, ACCESS_TOKEN_REFRESH_SKEW_MS))
+    ) {
+        accessToken = await refreshAccessToken();
+    }
 
     const request = (token) =>
         fetch(input, {

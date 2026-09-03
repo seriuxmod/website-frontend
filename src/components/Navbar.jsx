@@ -14,7 +14,15 @@ import {
     FaXmark
 } from 'react-icons/fa6';
 import { Link, useLocation } from 'react-router-dom';
-import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isAdministrator, logout } from '../lib/auth';
+import {
+    beginLogin,
+    fetchAuthenticatedUser,
+    getAuthenticatedUser,
+    hasStoredSession,
+    isAdministrator,
+    logout,
+    refreshAuthenticatedSession
+} from '../lib/auth';
 import { communityItems } from '../config/community';
 import NavbarNotifications from './NavbarNotifications';
 import PlayerSearch from './PlayerSearch';
@@ -40,14 +48,38 @@ export default function Navbar() {
         setCommunityOpen(false);
         setProfileOpen(false);
         const tokenUser = getAuthenticatedUser();
-        setUser(tokenUser);
+        if (tokenUser || !hasStoredSession()) setUser(tokenUser);
         fetchAuthenticatedUser().then((profile) => {
-            if (active) setUser(profile);
+            if (active && (profile || !hasStoredSession())) setUser(profile);
         });
         return () => {
             active = false;
         };
     }, [location.pathname]);
+
+    useEffect(() => {
+        let active = true;
+        const synchronizeSession = async () => {
+            const profile = await refreshAuthenticatedSession();
+            if (!active) return;
+            if (profile || !hasStoredSession()) setUser(profile);
+        };
+        const synchronizeVisibleSession = () => {
+            if (document.visibilityState === 'visible') void synchronizeSession();
+        };
+
+        const refreshTimer = window.setInterval(synchronizeVisibleSession, 60_000);
+        document.addEventListener('visibilitychange', synchronizeVisibleSession);
+        window.addEventListener('focus', synchronizeSession);
+        window.addEventListener('online', synchronizeSession);
+        return () => {
+            active = false;
+            window.clearInterval(refreshTimer);
+            document.removeEventListener('visibilitychange', synchronizeVisibleSession);
+            window.removeEventListener('focus', synchronizeSession);
+            window.removeEventListener('online', synchronizeSession);
+        };
+    }, []);
 
     useEffect(() => {
         setProfileContext(null);
@@ -95,7 +127,9 @@ export default function Navbar() {
             setProfileOpen(false);
             setMobileOpen(false);
             setLogoutNotice(
-                event.detail.authServerSessionEnded
+                event.detail.reason === 'session_expired'
+                    ? 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.'
+                    : event.detail.authServerSessionEnded
                     ? 'Du wurdest erfolgreich abgemeldet.'
                     : 'Du bist lokal abgemeldet. Die Authserver-Sitzung konnte nicht beendet werden.'
             );
