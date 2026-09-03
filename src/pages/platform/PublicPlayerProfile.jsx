@@ -18,6 +18,7 @@ import { Link, useParams } from 'react-router-dom';
 import MinecraftSkinViewer from '../../components/MinecraftSkinViewer';
 import { forumApi } from '../../lib/forumApi';
 import { getAuthenticatedUser } from '../../lib/auth';
+import { playerDirectoryApi } from '../../lib/playerDirectoryApi';
 import { playerAvatar, userApi } from '../../lib/userApi';
 import { socialApi } from '../../lib/socialApi';
 
@@ -33,11 +34,11 @@ function rankColor(color) {
 }
 
 function formatMemberSince(value) {
-    if (!value) return 'SeriuxMod Mitglied';
+    if (!value) return 'Unbekannt';
     return `Dabei seit ${new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(new Date(value))}`;
 }
 
-function formatDate(value, fallback = 'Noch nicht erfasst') {
+function formatDate(value, fallback = 'Unbekannt') {
     if (!value) return fallback;
     return new Intl.DateTimeFormat('de-DE', {
         day: '2-digit',
@@ -48,7 +49,7 @@ function formatDate(value, fallback = 'Noch nicht erfasst') {
 
 function formatLastOnline(value, online) {
     if (online) return 'Jetzt';
-    if (!value) return 'Noch nicht erfasst';
+    if (!value) return 'Unbekannt';
     const date = new Date(value);
     const today = new Date();
     const sameDay = date.toDateString() === today.toDateString();
@@ -95,6 +96,8 @@ export default function PublicPlayerProfile() {
     const [state, setState] = useState({
         loading: true,
         profile: null,
+        directoryPlayer: null,
+        hasSeriuxProfile: false,
         forum: null,
         presence: null,
         friends: [],
@@ -106,9 +109,53 @@ export default function PublicPlayerProfile() {
 
     const load = useCallback(
         async (signal) => {
-            setState({ loading: true, profile: null, forum: null, presence: null, friends: [], error: '' });
+            setState({
+                loading: true,
+                profile: null,
+                directoryPlayer: null,
+                hasSeriuxProfile: false,
+                forum: null,
+                presence: null,
+                friends: [],
+                error: ''
+            });
             try {
-                const profile = await userApi.byUsername(username, signal);
+                const directoryPlayer = await playerDirectoryApi.byIdentifier(username, signal);
+                let seriuxProfile = null;
+                try {
+                    seriuxProfile = await userApi.byId(directoryPlayer.uuid, signal);
+                } catch (error) {
+                    if (error.name === 'AbortError') throw error;
+                }
+
+                const profile = seriuxProfile
+                    ? {
+                          ...seriuxProfile,
+                          playerId: directoryPlayer.uuid,
+                          username: directoryPlayer.username || seriuxProfile.username
+                      }
+                    : {
+                          playerId: directoryPlayer.uuid,
+                          username: directoryPlayer.username,
+                          rank: null,
+                          memberSince: null,
+                          lastOnline: null
+                      };
+
+                if (!seriuxProfile) {
+                    setState({
+                        loading: false,
+                        profile,
+                        directoryPlayer,
+                        hasSeriuxProfile: false,
+                        forum: null,
+                        presence: null,
+                        friends: [],
+                        error: ''
+                    });
+                    return;
+                }
+
                 const [forum, presence, friendRelations] = await Promise.all([
                     forumApi.userProfile(profile.playerId, 6).catch(() => null),
                     socialApi.presence.public(profile.playerId, 112, signal).catch(() => null),
@@ -127,12 +174,23 @@ export default function PublicPlayerProfile() {
                         return friend ? { ...friend, friendsSince: relation.friendsSince } : null;
                     })
                     .filter(Boolean);
-                setState({ loading: false, profile, forum, presence, friends, error: '' });
+                setState({
+                    loading: false,
+                    profile,
+                    directoryPlayer,
+                    hasSeriuxProfile: true,
+                    forum,
+                    presence,
+                    friends,
+                    error: ''
+                });
             } catch (error) {
                 if (error.name !== 'AbortError') {
                     setState({
                         loading: false,
                         profile: null,
+                        directoryPlayer: null,
+                        hasSeriuxProfile: false,
                         forum: null,
                         presence: null,
                         friends: [],
@@ -206,7 +264,7 @@ export default function PublicPlayerProfile() {
         );
     }
 
-    const { profile, forum, presence, friends } = state;
+    const { profile, directoryPlayer, hasSeriuxProfile, forum, presence, friends } = state;
     const color = rankColor(profile.rank?.color);
     const online = Boolean(presence?.online);
     const surfaces = presence?.surfaces || [];
@@ -221,7 +279,7 @@ export default function PublicPlayerProfile() {
         ['01', 'Spielername', profile.username],
         ['02', 'Minecraft UUID', profile.playerId],
         ['03', 'Community-Rang', profile.rank?.displayName || 'User'],
-        ['04', 'Mitgliedschaft', formatMemberSince(profile.memberSince)]
+        ['04', 'Mitgliedschaft', hasSeriuxProfile ? formatMemberSince(profile.memberSince) : 'Unbekannt']
     ];
 
     const copyValue = async (value, type) => {
@@ -237,7 +295,11 @@ export default function PublicPlayerProfile() {
                 <div className="profile-hero-fade pointer-events-none absolute inset-x-0 bottom-0 h-80" />
                 <div className="relative mx-auto grid min-h-[480px] max-w-6xl items-end gap-6 px-5 sm:px-8 lg:grid-cols-[390px_minmax(0,1fr)] lg:gap-10">
                     <div className="relative mx-auto h-[440px] w-full max-w-[380px]">
-                        <MinecraftSkinViewer identifier={profile.playerId} username={profile.username} />
+                        <MinecraftSkinViewer
+                            identifier={profile.playerId}
+                            username={profile.username}
+                            player={directoryPlayer}
+                        />
                     </div>
 
                     <div className="min-w-0 pb-24 text-center lg:pb-28 lg:text-left">
@@ -301,7 +363,8 @@ export default function PublicPlayerProfile() {
                                 {profile.rank?.displayName || 'User'}
                             </span>
                             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3.5 py-2 text-xs text-zinc-300">
-                                <FaCalendarDays className="text-orange-400" /> {formatMemberSince(profile.memberSince)}
+                                <FaCalendarDays className="text-orange-400" />{' '}
+                                {hasSeriuxProfile ? formatMemberSince(profile.memberSince) : 'Minecraft-Profil'}
                             </span>
                             <span className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/[.08] px-3.5 py-2 text-xs text-pink-300">
                                 <FaHeart /> {forum?.reactionsReceived ?? 0} Reaktionen
@@ -329,7 +392,9 @@ export default function PublicPlayerProfile() {
                             </div>
                         </div>
                         <p className="mt-5 text-sm leading-7 text-zinc-500">
-                            Verifiziert über den SeriuxMod Launcher und eindeutig mit dieser Minecraft-UUID verbunden.
+                            {hasSeriuxProfile
+                                ? 'Verifiziert über den SeriuxMod Launcher und eindeutig mit dieser Minecraft-UUID verbunden.'
+                                : 'Öffentliches Minecraft-Profil aus dem SeriuxMod Player Directory. Für die Skin-Vorschau ist kein SeriuxMod-Konto erforderlich.'}
                         </p>
                     </div>
                     <div className="forum-panel rounded-3xl p-6">
@@ -346,7 +411,7 @@ export default function PublicPlayerProfile() {
                             <FaChartColumn className="text-sky-400" />
                             <h2 className="font-display text-lg font-bold">SeriuxMod Stats</h2>
                         </header>
-                        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                        <div className="mt-5 grid gap-3 sm:grid-cols-3">
                             <div className="rounded-2xl border border-white/[.055] bg-white/[.025] px-5 py-6 text-center">
                                 <b className="block break-words font-display text-xl tracking-tight text-white sm:text-3xl">
                                     {formatDate(profile.memberSince)}
@@ -363,6 +428,14 @@ export default function PublicPlayerProfile() {
                                     Zuletzt online
                                 </span>
                             </div>
+                            <div className="rounded-2xl border border-white/[.055] bg-white/[.025] px-5 py-6 text-center">
+                                <b className="block break-words font-display text-xl tracking-tight text-white sm:text-3xl">
+                                    {profile.rank?.displayName || 'User'}
+                                </b>
+                                <span className="mt-2 block text-[10px] uppercase tracking-[.12em] text-zinc-600">
+                                    Benutzergruppe
+                                </span>
+                            </div>
                         </div>
                         <div className="mt-3 flex flex-col justify-between gap-4 rounded-2xl border border-white/[.055] bg-black/20 px-5 py-4 sm:flex-row sm:items-center">
                             <div>
@@ -370,7 +443,11 @@ export default function PublicPlayerProfile() {
                                     Aktive Verbindung
                                 </span>
                                 <b className="mt-1 block text-sm text-zinc-200">
-                                    {online ? 'SeriuxMod ist gerade verbunden' : 'Aktuell keine aktive Sitzung'}
+                                    {online
+                                        ? 'SeriuxMod ist gerade verbunden'
+                                        : hasSeriuxProfile
+                                          ? 'Aktuell keine aktive Sitzung'
+                                          : 'Noch kein SeriuxMod-Profil vorhanden'}
                                 </b>
                             </div>
                             <div className="flex flex-wrap gap-2">
@@ -387,110 +464,114 @@ export default function PublicPlayerProfile() {
                                         {surface === 'LAUNCHER' && <FaRocket />}
                                         {surface === 'WEBSITE' && <FaGlobe />}
                                         <FaCircle className="text-[6px]" />
-                                        {PRESENCE_LABELS[surface] || 'Offline'}
+                                        {PRESENCE_LABELS[surface] || (hasSeriuxProfile ? 'Offline' : 'Nicht verknüpft')}
                                     </span>
                                 ))}
                             </div>
                         </div>
                     </section>
 
-                    <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
-                        <header className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
-                                <FaCalendarDays className="text-sky-400" />
-                                <h2 className="font-display text-lg font-bold">Aktivität</h2>
-                            </div>
-                            <span
-                                className={`flex items-center gap-2 text-[10px] font-bold ${online ? 'text-emerald-300' : 'text-zinc-600'}`}
-                            >
-                                <FaCircle className="text-[6px]" /> {online ? 'Online' : 'Offline'}
-                            </span>
-                        </header>
-                        <div className="mt-6 overflow-x-auto pb-2">
-                            <div className="min-w-[570px]">
-                                <div className="mb-2 grid grid-cols-[34px_1fr] gap-3 text-[9px] font-bold uppercase tracking-[.1em] text-zinc-700">
-                                    <span />
-                                    <div className="flex justify-between px-1">
-                                        <span>Vor 4 Monaten</span>
-                                        <span>Heute</span>
+                    {hasSeriuxProfile && (
+                        <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
+                            <header className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <FaCalendarDays className="text-sky-400" />
+                                    <h2 className="font-display text-lg font-bold">Aktivität</h2>
+                                </div>
+                                <span
+                                    className={`flex items-center gap-2 text-[10px] font-bold ${online ? 'text-emerald-300' : 'text-zinc-600'}`}
+                                >
+                                    <FaCircle className="text-[6px]" /> {online ? 'Online' : 'Offline'}
+                                </span>
+                            </header>
+                            <div className="mt-6 overflow-x-auto pb-2">
+                                <div className="min-w-[570px]">
+                                    <div className="mb-2 grid grid-cols-[34px_1fr] gap-3 text-[9px] font-bold uppercase tracking-[.1em] text-zinc-700">
+                                        <span />
+                                        <div className="flex justify-between px-1">
+                                            <span>Vor 4 Monaten</span>
+                                            <span>Heute</span>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-[34px_1fr] gap-3">
+                                        <div className="grid grid-rows-7 gap-1.5 py-0.5 text-[9px] text-zinc-700">
+                                            {['Mo', '', 'Mi', '', 'Fr', '', 'So'].map((day, index) => (
+                                                <span key={`${day}-${index}`} className="flex h-5 items-center">
+                                                    {day}
+                                                </span>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-1.5">
+                                            {weeks.map((week, weekIndex) => (
+                                                <div key={weekIndex} className="grid flex-1 grid-rows-7 gap-1.5">
+                                                    {week.map((day) => (
+                                                        <span
+                                                            key={day.key}
+                                                            title={`${formatDate(day.date)} · ${day.events || 0} Aktivitätspunkte${
+                                                                day.surfaces?.length
+                                                                    ? ` · ${day.surfaces.map((surface) => PRESENCE_LABELS[surface] || surface).join(', ')}`
+                                                                    : ''
+                                                            }`}
+                                                            className={`h-5 min-w-5 rounded-[5px] border border-white/[.025] ${
+                                                                day.future ? 'opacity-20' : activityLevel(day.events)
+                                                            }`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-[34px_1fr] gap-3">
-                                    <div className="grid grid-rows-7 gap-1.5 py-0.5 text-[9px] text-zinc-700">
-                                        {['Mo', '', 'Mi', '', 'Fr', '', 'So'].map((day, index) => (
-                                            <span key={`${day}-${index}`} className="flex h-5 items-center">
-                                                {day}
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-1.5">
-                                        {weeks.map((week, weekIndex) => (
-                                            <div key={weekIndex} className="grid flex-1 grid-rows-7 gap-1.5">
-                                                {week.map((day) => (
-                                                    <span
-                                                        key={day.key}
-                                                        title={`${formatDate(day.date)} · ${day.events || 0} Aktivitätspunkte${
-                                                            day.surfaces?.length
-                                                                ? ` · ${day.surfaces.map((surface) => PRESENCE_LABELS[surface] || surface).join(', ')}`
-                                                                : ''
-                                                        }`}
-                                                        className={`h-5 min-w-5 rounded-[5px] border border-white/[.025] ${
-                                                            day.future ? 'opacity-20' : activityLevel(day.events)
-                                                        }`}
-                                                    />
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
                             </div>
-                        </div>
-                        <div className="mt-4 flex items-center justify-end gap-1.5 text-[9px] text-zinc-700">
-                            <span>Weniger</span>
-                            {[0, 1, 2, 6, 12].map((value) => (
-                                <span key={value} className={`h-3 w-3 rounded-[3px] ${activityLevel(value)}`} />
-                            ))}
-                            <span>Mehr</span>
-                        </div>
-                    </section>
-
-                    <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
-                        <header className="flex items-center gap-3">
-                            <FaUsers className="text-sky-400" />
-                            <h2 className="font-display text-lg font-bold">Freunde</h2>
-                            <span className="rounded-full bg-white/[.06] px-2 py-0.5 text-[10px] font-bold text-zinc-500">
-                                {friends.length}
-                            </span>
-                        </header>
-                        {friends.length === 0 ? (
-                            <p className="mt-5 break-words rounded-2xl border border-dashed border-white/[.07] p-6 text-sm text-zinc-600">
-                                Dieses Profil hat noch keine öffentlichen Freundschaften.
-                            </p>
-                        ) : (
-                            <div className="mt-5 flex flex-wrap gap-2">
-                                {friends.map((friend) => (
-                                    <Link
-                                        key={friend.playerId}
-                                        to={`/@${encodeURIComponent(friend.username)}`}
-                                        className="group inline-flex max-w-full items-center gap-2 rounded-full border border-white/[.075] bg-white/[.025] py-1.5 pl-1.5 pr-3 text-xs font-bold text-zinc-400 transition hover:border-orange-500/25 hover:bg-orange-500/[.07] hover:text-white"
-                                    >
-                                        <img
-                                            className="h-6 w-6 rounded-full bg-black/30 [image-rendering:pixelated]"
-                                            src={playerAvatar(friend.playerId, 48)}
-                                            alt=""
-                                        />
-                                        <span className="truncate">{friend.username}</span>
-                                    </Link>
+                            <div className="mt-4 flex items-center justify-end gap-1.5 text-[9px] text-zinc-700">
+                                <span>Weniger</span>
+                                {[0, 1, 2, 6, 12].map((value) => (
+                                    <span key={value} className={`h-3 w-3 rounded-[3px] ${activityLevel(value)}`} />
                                 ))}
+                                <span>Mehr</span>
                             </div>
-                        )}
-                    </section>
+                        </section>
+                    )}
+
+                    {hasSeriuxProfile && (
+                        <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
+                            <header className="flex items-center gap-3">
+                                <FaUsers className="text-sky-400" />
+                                <h2 className="font-display text-lg font-bold">Freunde</h2>
+                                <span className="rounded-full bg-white/[.06] px-2 py-0.5 text-[10px] font-bold text-zinc-500">
+                                    {friends.length}
+                                </span>
+                            </header>
+                            {friends.length === 0 ? (
+                                <p className="mt-5 break-words rounded-2xl border border-dashed border-white/[.07] p-6 text-sm text-zinc-600">
+                                    Dieses Profil hat noch keine öffentlichen Freundschaften.
+                                </p>
+                            ) : (
+                                <div className="mt-5 flex flex-wrap gap-2">
+                                    {friends.map((friend) => (
+                                        <Link
+                                            key={friend.playerId}
+                                            to={`/@${encodeURIComponent(friend.username)}`}
+                                            className="group inline-flex max-w-full items-center gap-2 rounded-full border border-white/[.075] bg-white/[.025] py-1.5 pl-1.5 pr-3 text-xs font-bold text-zinc-400 transition hover:border-orange-500/25 hover:bg-orange-500/[.07] hover:text-white"
+                                        >
+                                            <img
+                                                className="h-6 w-6 rounded-full bg-black/30 [image-rendering:pixelated]"
+                                                src={playerAvatar(friend.playerId, 48)}
+                                                alt=""
+                                            />
+                                            <span className="truncate">{friend.username}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            )}
+                        </section>
+                    )}
 
                     <section className="forum-panel overflow-hidden rounded-3xl">
                         <header className="flex items-center justify-between border-b border-white/[.06] px-6 py-5">
                             <h2 className="font-display text-lg font-bold">Profilinformationen</h2>
                             <span className="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-600">
-                                Seriux-ID
+                                {hasSeriuxProfile ? 'Seriux-ID' : 'Minecraft'}
                             </span>
                         </header>
                         <div className="space-y-2 p-4">
@@ -511,49 +592,53 @@ export default function PublicPlayerProfile() {
                         </div>
                     </section>
 
-                    <div className="grid gap-4 sm:grid-cols-3">
-                        {stats.map(([Icon, label, value]) => (
-                            <div className="forum-panel rounded-3xl p-6" key={label}>
-                                <Icon className="text-orange-400" />
-                                <b className="mt-5 block font-display text-4xl">{value}</b>
-                                <span className="mt-1 block text-xs text-zinc-600">{label} im Forum</span>
-                            </div>
-                        ))}
-                    </div>
+                    {hasSeriuxProfile && (
+                        <div className="grid gap-4 sm:grid-cols-3">
+                            {stats.map(([Icon, label, value]) => (
+                                <div className="forum-panel rounded-3xl p-6" key={label}>
+                                    <Icon className="text-orange-400" />
+                                    <b className="mt-5 block font-display text-4xl">{value}</b>
+                                    <span className="mt-1 block text-xs text-zinc-600">{label} im Forum</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
-                    <section className="forum-panel overflow-hidden rounded-3xl">
-                        <header className="border-b border-white/[.06] p-6">
-                            <div>
-                                <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-orange-400">
-                                    Community
-                                </p>
-                                <h2 className="mt-2 font-display text-2xl font-bold">Letzte Beiträge</h2>
-                            </div>
-                        </header>
-                        {(forum?.recentPosts ?? []).length === 0 ? (
-                            <p className="p-8 text-sm text-zinc-500">
-                                Noch keine öffentlichen Forenbeiträge vorhanden.
-                            </p>
-                        ) : (
-                            forum.recentPosts.map((post) => (
-                                <Link
-                                    key={post.postId}
-                                    to={`/forum/topic/${post.topicId}#post-${post.postId}`}
-                                    className="block border-b border-white/[.055] p-6 transition last:border-0 hover:bg-white/[.025]"
-                                >
-                                    <div className="flex items-center justify-between gap-4">
-                                        <b className="truncate font-display text-lg">{post.topicTitle}</b>
-                                        <span className="shrink-0 text-[10px] text-zinc-600">
-                                            {post.reactions} Reaktionen
-                                        </span>
-                                    </div>
-                                    <p className="mt-3 line-clamp-2 text-sm leading-7 text-zinc-500">
-                                        {post.contentPreview}
+                    {hasSeriuxProfile && (
+                        <section className="forum-panel overflow-hidden rounded-3xl">
+                            <header className="border-b border-white/[.06] p-6">
+                                <div>
+                                    <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-orange-400">
+                                        Community
                                     </p>
-                                </Link>
-                            ))
-                        )}
-                    </section>
+                                    <h2 className="mt-2 font-display text-2xl font-bold">Letzte Beiträge</h2>
+                                </div>
+                            </header>
+                            {(forum?.recentPosts ?? []).length === 0 ? (
+                                <p className="p-8 text-sm text-zinc-500">
+                                    Noch keine öffentlichen Forenbeiträge vorhanden.
+                                </p>
+                            ) : (
+                                forum.recentPosts.map((post) => (
+                                    <Link
+                                        key={post.postId}
+                                        to={`/forum/topic/${post.topicId}#post-${post.postId}`}
+                                        className="block border-b border-white/[.055] p-6 transition last:border-0 hover:bg-white/[.025]"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <b className="truncate font-display text-lg">{post.topicTitle}</b>
+                                            <span className="shrink-0 text-[10px] text-zinc-600">
+                                                {post.reactions} Reaktionen
+                                            </span>
+                                        </div>
+                                        <p className="mt-3 line-clamp-2 text-sm leading-7 text-zinc-500">
+                                            {post.contentPreview}
+                                        </p>
+                                    </Link>
+                                ))
+                            )}
+                        </section>
+                    )}
                 </div>
             </section>
         </main>

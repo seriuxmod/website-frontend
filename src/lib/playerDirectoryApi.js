@@ -53,5 +53,13 @@ async function request(path, signal) {
 }
 
 export const playerDirectoryApi = {
-    byIdentifier: (identifier, signal) => request(`/players/${encodeURIComponent(identifier)}`, signal)
+    byIdentifier: (identifier, signal) => request(`/players/${encodeURIComponent(identifier)}`, signal),
+    search: async (query, signal) => {
+        try {
+            return [await request(`/players/${encodeURIComponent(query)}`, signal)];
+        } catch (error) {
+            if (error.status === 404) return [];
+            throw error;
+        }
+    }
 };

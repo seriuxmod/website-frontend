@@ -55,7 +55,7 @@ function makeAnimation(runtime, name) {
     return animation;
 }
 
-export default function MinecraftSkinViewer({ identifier, username }) {
+export default function MinecraftSkinViewer({ identifier, username, player = null }) {
     const canvasRef = useRef(null);
     const viewerRef = useRef(null);
     const runtimeRef = useRef(null);
@@ -71,6 +71,10 @@ export default function MinecraftSkinViewer({ identifier, username }) {
     const [capeVisible, setCapeVisible] = useState(true);
 
     useEffect(() => {
+        if (player?.rendering) {
+            setDirectoryState({ loading: false, player, error: '' });
+            return undefined;
+        }
         const controller = new AbortController();
         setDirectoryState({ loading: true, player: null, error: '' });
         playerDirectoryApi
@@ -82,7 +86,7 @@ export default function MinecraftSkinViewer({ identifier, username }) {
                 }
             });
         return () => controller.abort();
-    }, [identifier, username]);
+    }, [identifier, player, username]);
 
     const rendering = directoryState.player?.rendering;
     const availableAnimations = useMemo(
@@ -209,6 +213,7 @@ export default function MinecraftSkinViewer({ identifier, username }) {
 
     const loading = directoryState.loading || viewerStatus === 'loading';
     const hasCape = Boolean(rendering?.capeTextureUrl);
+    const displayModel = rendering?.model || fallbackVariant(username);
 
     return (
         <div className="relative h-[440px] w-full select-none overflow-hidden rounded-[32px]">
@@ -222,7 +227,7 @@ export default function MinecraftSkinViewer({ identifier, username }) {
 
             <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap gap-2">
                 <span className="rounded-full border border-white/[.08] bg-black/35 px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.14em] text-zinc-400 backdrop-blur-md">
-                    3D · {rendering?.model === 'slim' ? 'Slim' : 'Wide'}
+                    3D · {displayModel === 'slim' ? 'Slim' : 'Wide'}
                 </span>
                 {viewerStatus === 'fallback' && (
                     <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.14em] text-amber-300 backdrop-blur-md">

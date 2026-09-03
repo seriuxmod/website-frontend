@@ -1,7 +1,8 @@
 import { forwardRef, useEffect, useRef, useState } from 'react';
 import { FaMagnifyingGlass, FaSpinner, FaUser } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
-import { playerAvatar, userApi } from '../lib/userApi';
+import { playerDirectoryApi } from '../lib/playerDirectoryApi';
+import { playerAvatar } from '../lib/userApi';
 
 const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile = false }, forwardedRef) {
     const [query, setQuery] = useState('');
@@ -30,8 +31,8 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
         const controller = new AbortController();
         const timeout = window.setTimeout(() => {
             setLoading(true);
-            userApi
-                .search(normalized, 8, controller.signal)
+            playerDirectoryApi
+                .search(normalized, controller.signal)
                 .then((profiles) => {
                     setResults(profiles);
                     setActiveIndex(0);
@@ -119,19 +120,19 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
             {open && query.trim().length >= 2 && (
                 <div className="liquid-menu absolute inset-x-0 top-full z-50 mt-3 overflow-hidden rounded-2xl p-2">
                     <p className="px-3 pb-2 pt-1 text-[10px] font-extrabold uppercase tracking-[.18em] text-zinc-600">
-                        Profile
+                        Minecraft-Spieler
                     </p>
                     {!loading && results.length === 0 ? (
                         <div className="flex items-center gap-3 rounded-xl px-3 py-4 text-sm text-zinc-500">
                             <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/[.04]">
                                 <FaUser />
                             </span>
-                            Kein registrierter Spieler gefunden
+                            Kein Minecraft-Spieler gefunden
                         </div>
                     ) : (
                         results.map((profile, index) => (
                             <button
-                                key={profile.playerId}
+                                key={profile.uuid}
                                 type="button"
                                 onPointerMove={() => setActiveIndex(index)}
                                 onClick={() => openProfile(profile)}
@@ -139,13 +140,13 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
                             >
                                 <img
                                     className="h-10 w-10 rounded-xl bg-black/30 [image-rendering:pixelated]"
-                                    src={playerAvatar(profile.playerId, 64)}
+                                    src={playerAvatar(profile.uuid, 64)}
                                     alt=""
                                 />
                                 <span className="min-w-0 flex-1">
                                     <b className="block truncate text-sm text-white">{profile.username}</b>
                                     <small className="mt-0.5 block truncate text-[10px] text-zinc-600">
-                                        {profile.rank?.displayName || 'User'}
+                                        Minecraft-Profil · {profile.rendering?.model === 'slim' ? 'Slim' : 'Wide'}
                                     </small>
                                 </span>
                                 <FaUser className="text-xs text-zinc-600" />
