@@ -82,7 +82,7 @@ function PlayerIdentity({ playerId, subtitle, compact = false }) {
     const username = profile?.username || 'Minecraft-Spieler';
     return (
         <Link
-            to={profile?.username ? `/@${encodeURIComponent(profile.username)}` : '#'}
+            to={profile?.username ? `/players/${encodeURIComponent(playerId)}` : '#'}
             className="flex min-w-0 items-center gap-3 rounded-xl transition hover:opacity-80"
             onClick={(event) => !profile?.username && event.preventDefault()}
         >

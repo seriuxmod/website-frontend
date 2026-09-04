@@ -72,6 +72,7 @@ export default function App() {
                 <Route path="/status" element={<SystemStatus />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="/players/:profileSlug" element={<PublicPlayerProfile />} />
                 <Route path="/:profileSlug" element={<PublicPlayerProfile />} />
                 <Route path="/community/blog" element={<CommunityBlog />} />
                 <Route path="/community/blog/:slug" element={<CommunityBlog />} />

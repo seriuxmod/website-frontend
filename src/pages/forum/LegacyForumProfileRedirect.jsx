@@ -4,14 +4,14 @@ import { userApi } from '../../lib/userApi';
 
 export default function LegacyForumProfileRedirect() {
     const { userId } = useParams();
-    const [username, setUsername] = useState('');
+    const [resolved, setResolved] = useState(false);
     const [failed, setFailed] = useState(false);
 
     useEffect(() => {
         let active = true;
         userApi
             .byId(userId)
-            .then((profile) => active && setUsername(profile.username))
+            .then(() => active && setResolved(true))
             .catch(() => active && setFailed(true));
         return () => {
             active = false;
@@ -19,7 +19,7 @@ export default function LegacyForumProfileRedirect() {
     }, [userId]);
 
     if (failed) return <Navigate to="/forum" replace />;
-    if (username) return <Navigate to={`/@${encodeURIComponent(username)}`} replace />;
+    if (resolved) return <Navigate to={`/players/${encodeURIComponent(userId)}`} replace />;
 
     return <main className="min-h-screen bg-[#07080b]" aria-busy="true" />;
 }

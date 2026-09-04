@@ -4,13 +4,16 @@ import {
     FaChartColumn,
     FaCheck,
     FaCircle,
+    FaClockRotateLeft,
     FaComments,
     FaCopy,
     FaGamepad,
     FaGlobe,
     FaHeart,
     FaMessage,
+    FaPalette,
     FaRocket,
+    FaShirt,
     FaShieldHalved,
     FaUsers
 } from 'react-icons/fa6';
@@ -35,28 +38,75 @@ function rankColor(color) {
 
 function formatMemberSince(value) {
     if (!value) return 'Unbekannt';
-    return `Dabei seit ${new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(new Date(value))}`;
+    return `Dabei seit ${new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(parseDateValue(value))}`;
+}
+
+function parseDateValue(value) {
+    if (value instanceof Date) return value;
+    const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(value) ? `${value.replace(' ', 'T')}Z` : value;
+    return new Date(normalized);
 }
 
 function formatDate(value, fallback = 'Unbekannt') {
     if (!value) return fallback;
+    const date = parseDateValue(value);
+    if (Number.isNaN(date.getTime())) return fallback;
     return new Intl.DateTimeFormat('de-DE', {
         day: '2-digit',
         month: 'short',
         year: 'numeric'
-    }).format(new Date(value));
+    }).format(date);
 }
 
 function formatLastOnline(value, online) {
     if (online) return 'Jetzt';
     if (!value) return 'Unbekannt';
-    const date = new Date(value);
+    const date = parseDateValue(value);
+    if (Number.isNaN(date.getTime())) return 'Unbekannt';
     const today = new Date();
     const sameDay = date.toDateString() === today.toDateString();
     return new Intl.DateTimeFormat(
         'de-DE',
         sameDay ? { hour: '2-digit', minute: '2-digit' } : { day: '2-digit', month: 'short', year: 'numeric' }
     ).format(date);
+}
+
+function historyPeriod(entry) {
+    const start = entry.activeFrom || entry.firstObserved;
+    const end = entry.activeUntil;
+    if (entry.current) {
+        return `${entry.timeAccuracy === 'exact' ? 'Seit' : 'Beobachtet seit'} ${formatDate(start)}`;
+    }
+    if (start && end) return `${formatDate(start)} – ${formatDate(end)}`;
+    if (end) return `Bis ${formatDate(end)}`;
+    return start ? `Beobachtet am ${formatDate(start)}` : 'Zeitraum unbekannt';
+}
+
+function historySort(left, right) {
+    if (left.current !== right.current) return left.current ? -1 : 1;
+    if (left.sequence != null || right.sequence != null) return (right.sequence ?? -1) - (left.sequence ?? -1);
+    return String(right.activeFrom || right.lastObserved || '').localeCompare(
+        String(left.activeFrom || left.lastObserved || '')
+    );
+}
+
+function SkinFace({ textureUrl, name }) {
+    return (
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-black/35" title={`Skin von ${name}`}>
+            <img
+                src={textureUrl}
+                alt=""
+                className="absolute max-w-none [image-rendering:pixelated]"
+                style={{ width: 448, height: 448, left: -56, top: -56 }}
+            />
+            <img
+                src={textureUrl}
+                alt=""
+                className="absolute max-w-none [image-rendering:pixelated]"
+                style={{ width: 448, height: 448, left: -280, top: -56 }}
+            />
+        </div>
+    );
 }
 
 function activityWeeks(activity = []) {
@@ -270,6 +320,9 @@ export default function PublicPlayerProfile() {
     const surfaces = presence?.surfaces || [];
     const lastOnline = presence?.lastSeenAt || profile.lastOnline;
     const weeks = activityWeeks(presence?.activity);
+    const nameHistory = [...(directoryPlayer.history?.names || [])].sort(historySort);
+    const skinHistory = [...(directoryPlayer.history?.skins || [])].sort(historySort);
+    const capeHistory = [...(directoryPlayer.history?.capes || [])].sort(historySort);
     const stats = [
         [FaComments, 'Themen', forum?.topicsCreated ?? 0],
         [FaMessage, 'Beiträge', forum?.postsCreated ?? 0],
@@ -404,9 +457,72 @@ export default function PublicPlayerProfile() {
                     <div className="forum-panel rounded-3xl p-6">
                         <h2 className="font-display text-lg font-bold">Profil teilen</h2>
                         <div className="mt-4 break-all rounded-xl border border-white/[.06] bg-black/20 px-4 py-3 font-mono text-[10px] text-zinc-500">
-                            seriuxmod.net/@{profile.username}
+                            seriuxmod.net/players/{profile.playerId}
                         </div>
                     </div>
+
+                    <section className="forum-panel rounded-3xl p-6">
+                        <header className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <FaPalette className="text-orange-400" />
+                                <h2 className="font-display text-lg font-bold">Skin-Verlauf</h2>
+                            </div>
+                            <span className="rounded-full bg-white/[.06] px-2 py-0.5 text-[10px] font-bold text-zinc-500">
+                                {skinHistory.length}
+                            </span>
+                        </header>
+                        {skinHistory.length === 0 ? (
+                            <p className="mt-5 text-sm leading-6 text-zinc-600">
+                                Für diesen Spieler wurde noch kein Skin-Verlauf synchronisiert.
+                            </p>
+                        ) : (
+                            <div className="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-5 lg:grid-cols-4">
+                                {skinHistory.slice(0, 12).map((skin) => (
+                                    <div className="relative" key={`${skin.hash}-${skin.activeFrom || 'unknown'}`}>
+                                        <SkinFace textureUrl={skin.textureUrl} name={profile.username} />
+                                        {skin.current && (
+                                            <span
+                                                className="absolute right-1 top-1 h-2 w-2 rounded-full border border-[#111318] bg-emerald-400"
+                                                title="Aktueller Skin"
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </section>
+
+                    {capeHistory.length > 0 && (
+                        <section className="forum-panel rounded-3xl p-6">
+                            <header className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                    <FaShirt className="text-orange-400" />
+                                    <h2 className="font-display text-lg font-bold">Cape-Verlauf</h2>
+                                </div>
+                                <span className="rounded-full bg-white/[.06] px-2 py-0.5 text-[10px] font-bold text-zinc-500">
+                                    {capeHistory.length}
+                                </span>
+                            </header>
+                            <div className="mt-5 grid grid-cols-2 gap-2">
+                                {capeHistory.slice(0, 8).map((cape) => (
+                                    <div
+                                        key={`${cape.hash}-${cape.activeFrom || 'unknown'}`}
+                                        className="relative grid min-h-20 place-items-center overflow-hidden rounded-xl border border-white/[.05] bg-black/25 p-2"
+                                        title={cape.alias || 'Minecraft Cape'}
+                                    >
+                                        <img
+                                            src={cape.textureUrl}
+                                            alt=""
+                                            className="max-h-16 w-full object-contain [image-rendering:pixelated]"
+                                        />
+                                        {cape.current && (
+                                            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-emerald-400" />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
                 </aside>
 
                 <div className="min-w-0 space-y-6">
@@ -473,6 +589,61 @@ export default function PublicPlayerProfile() {
                                 ))}
                             </div>
                         </div>
+                    </section>
+
+                    <section className="forum-panel min-w-0 overflow-hidden rounded-3xl">
+                        <header className="flex items-center justify-between gap-4 border-b border-white/[.06] px-6 py-5 sm:px-7">
+                            <div className="flex items-center gap-3">
+                                <FaClockRotateLeft className="text-sky-400" />
+                                <h2 className="font-display text-lg font-bold">Namensverlauf</h2>
+                            </div>
+                            <span className="rounded-full bg-white/[.06] px-2.5 py-1 text-[10px] font-bold text-zinc-500">
+                                {nameHistory.length}
+                            </span>
+                        </header>
+                        {nameHistory.length === 0 ? (
+                            <p className="p-7 text-sm leading-7 text-zinc-600">
+                                Die Namenshistorie dieses Spielers wird noch von den verbundenen Quellen synchronisiert.
+                            </p>
+                        ) : (
+                            <div className="divide-y divide-white/[.05]">
+                                {nameHistory.map((entry, index) => (
+                                    <div
+                                        key={`${entry.name}-${entry.sequence ?? entry.activeFrom ?? index}`}
+                                        className="grid gap-3 px-6 py-5 sm:grid-cols-[42px_minmax(0,1fr)_auto] sm:items-center sm:px-7"
+                                    >
+                                        <span className="font-mono text-xs font-bold text-orange-500/80">
+                                            {entry.sequence != null
+                                                ? String(entry.sequence).padStart(2, '0')
+                                                : String(nameHistory.length - index).padStart(2, '0')}
+                                        </span>
+                                        <div className="min-w-0">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <b className="truncate font-display text-base text-white">
+                                                    {entry.name}
+                                                </b>
+                                                {entry.current && (
+                                                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[.08] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[.1em] text-emerald-300">
+                                                        Aktuell
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="mt-1 text-[11px] text-zinc-600">{historyPeriod(entry)}</p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-1.5 sm:max-w-48 sm:justify-end">
+                                            {(entry.sources || []).map((source) => (
+                                                <span
+                                                    key={source}
+                                                    className="rounded-full border border-white/[.06] bg-white/[.025] px-2 py-1 text-[9px] font-bold uppercase tracking-[.08em] text-zinc-600"
+                                                >
+                                                    {source}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </section>
 
                     {hasSeriuxProfile && (
@@ -555,7 +726,7 @@ export default function PublicPlayerProfile() {
                                     {friends.map((friend) => (
                                         <Link
                                             key={friend.playerId}
-                                            to={`/@${encodeURIComponent(friend.username)}`}
+                                            to={`/players/${encodeURIComponent(friend.playerId)}`}
                                             className="group inline-flex max-w-full items-center gap-2 rounded-full border border-white/[.075] bg-white/[.025] py-1.5 pl-1.5 pr-3 text-xs font-bold text-zinc-400 transition hover:border-orange-500/25 hover:bg-orange-500/[.07] hover:text-white"
                                         >
                                             <img

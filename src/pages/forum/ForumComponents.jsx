@@ -141,7 +141,7 @@ export function UserIdentity({ playerId, compact = false, linked = false, author
         </div>
     );
     return linked && playerId && profile?.username ? (
-        <Link className="block rounded-xl transition hover:opacity-80" to={`/@${encodeURIComponent(profile.username)}`}>
+        <Link className="block rounded-xl transition hover:opacity-80" to={`/players/${encodeURIComponent(playerId)}`}>
             {identity}
         </Link>
     ) : (

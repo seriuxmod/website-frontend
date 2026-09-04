@@ -130,8 +130,8 @@ export default function Navbar() {
                 event.detail.reason === 'session_expired'
                     ? 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.'
                     : event.detail.authServerSessionEnded
-                    ? 'Du wurdest erfolgreich abgemeldet.'
-                    : 'Du bist lokal abgemeldet. Die Authserver-Sitzung konnte nicht beendet werden.'
+                      ? 'Du wurdest erfolgreich abgemeldet.'
+                      : 'Du bist lokal abgemeldet. Die Authserver-Sitzung konnte nicht beendet werden.'
             );
             window.clearTimeout(logoutNoticeTimerRef.current);
             logoutNoticeTimerRef.current = window.setTimeout(() => setLogoutNotice(''), 5000);
@@ -253,7 +253,10 @@ export default function Navbar() {
                         </button>
                         {profileOpen && (
                             <div className="liquid-menu absolute right-0 top-full mt-3 w-56 rounded-2xl p-2">
-                                <Link to={`/@${encodeURIComponent(user.username)}`} className="profile-menu-item">
+                                <Link
+                                    to={`/players/${encodeURIComponent(user.playerId || user.username)}`}
+                                    className="profile-menu-item"
+                                >
                                     <FaUser /> Mein Profil
                                 </Link>
                                 <Link to="/forum/account" className="profile-menu-item">
@@ -399,7 +402,10 @@ export default function Navbar() {
                                 />
                                 <b>{user.username}</b>
                             </div>
-                            <Link className="mobile-nav-item" to={`/@${encodeURIComponent(user.username)}`}>
+                            <Link
+                                className="mobile-nav-item"
+                                to={`/players/${encodeURIComponent(user.playerId || user.username)}`}
+                            >
                                 Mein Profil
                             </Link>
                             <Link className="mobile-nav-item flex items-center justify-between" to="/forum/account">

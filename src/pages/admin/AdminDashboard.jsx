@@ -203,7 +203,7 @@ function OnlineStaff({ staff, available }) {
                         <Link
                             className="flex items-center gap-4 rounded-2xl border border-white/[.055] bg-black/15 p-3 transition hover:border-orange-500/15"
                             key={member.id}
-                            to={`/@${member.username}`}
+                            to={`/players/${encodeURIComponent(member.id)}`}
                         >
                             <img
                                 className="h-11 w-11 rounded-xl [image-rendering:pixelated]"

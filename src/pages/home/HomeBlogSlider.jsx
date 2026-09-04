@@ -210,7 +210,7 @@ export default function HomeBlogSlider() {
                                                         <div>
                                                             {post.author?.username ? (
                                                                 <Link
-                                                                    to={`/@${encodeURIComponent(post.author.username)}`}
+                                                                    to={`/players/${encodeURIComponent(post.author.playerId || post.authorUserId)}`}
                                                                     className="block text-sm font-extrabold transition hover:opacity-75"
                                                                     style={{ color: authorColor }}
                                                                     tabIndex={isActive ? 0 : -1}

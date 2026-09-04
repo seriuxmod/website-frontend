@@ -4,5 +4,5 @@ import { getAuthenticatedUser } from '../../lib/auth';
 export default function Profile() {
     const user = getAuthenticatedUser();
     if (!user) return <Navigate to="/" replace />;
-    return <Navigate to={`/@${encodeURIComponent(user.username)}`} replace />;
+    return <Navigate to={`/players/${encodeURIComponent(user.playerId || user.username)}`} replace />;
 }
