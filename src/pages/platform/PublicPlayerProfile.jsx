@@ -326,7 +326,9 @@ export default function PublicPlayerProfile() {
                                 </span>
                                 {online
                                     ? `Online · ${surfaces.map((surface) => PRESENCE_LABELS[surface] || surface).join(', ')}`
-                                    : 'Offline'}
+                                    : hasSeriuxProfile
+                                      ? 'Offline'
+                                      : 'Nicht verknüpft'}
                             </span>
                         </div>
                         <h1
@@ -366,9 +368,11 @@ export default function PublicPlayerProfile() {
                                 <FaCalendarDays className="text-orange-400" />{' '}
                                 {hasSeriuxProfile ? formatMemberSince(profile.memberSince) : 'Minecraft-Profil'}
                             </span>
-                            <span className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/[.08] px-3.5 py-2 text-xs text-pink-300">
-                                <FaHeart /> {forum?.reactionsReceived ?? 0} Reaktionen
-                            </span>
+                            {hasSeriuxProfile && (
+                                <span className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/[.08] px-3.5 py-2 text-xs text-pink-300">
+                                    <FaHeart /> {forum?.reactionsReceived ?? 0} Reaktionen
+                                </span>
+                            )}
                         </div>
                     </div>
                 </div>
