@@ -8,7 +8,7 @@ const KNOWN_ANIMATIONS = new Set(['idle', 'walk', 'crouch', 'fly']);
 
 function normalizeTextureHash(value) {
     const hash = typeof value === 'string' ? value.trim().toLowerCase() : '';
-    return /^[a-f0-9]{64}$/.test(hash) ? hash : null;
+    return /^[a-f0-9]{32,64}$/.test(hash) ? hash : null;
 }
 
 export function minecraftTextureUrl(hash) {
