@@ -43,6 +43,7 @@ export default function Navbar() {
     const searchRef = useRef(null);
     const communityRef = useRef(null);
     const adminNavigationRef = useRef(null);
+    const adminMenuCloseTimerRef = useRef(null);
     const profileRef = useRef(null);
     const logoutNoticeTimerRef = useRef(null);
 
@@ -99,7 +100,10 @@ export default function Navbar() {
     useEffect(() => {
         const onPointerDown = (event) => {
             if (!communityRef.current?.contains(event.target)) setCommunityOpen(false);
-            if (!adminNavigationRef.current?.contains(event.target)) setAdminMenuOpen(null);
+            if (!adminNavigationRef.current?.contains(event.target)) {
+                window.clearTimeout(adminMenuCloseTimerRef.current);
+                setAdminMenuOpen(null);
+            }
             if (!profileRef.current?.contains(event.target)) setProfileOpen(false);
         };
         const onKeyDown = (event) => {
@@ -109,6 +113,7 @@ export default function Navbar() {
             }
             if (event.key === 'Escape') {
                 setCommunityOpen(false);
+                window.clearTimeout(adminMenuCloseTimerRef.current);
                 setAdminMenuOpen(null);
                 setProfileOpen(false);
                 setMobileOpen(false);
@@ -119,6 +124,7 @@ export default function Navbar() {
         return () => {
             document.removeEventListener('pointerdown', onPointerDown);
             document.removeEventListener('keydown', onKeyDown);
+            window.clearTimeout(adminMenuCloseTimerRef.current);
         };
     }, []);
 
@@ -135,6 +141,7 @@ export default function Navbar() {
             setUser(null);
             setUnreadForumNotifications(0);
             setProfileOpen(false);
+            window.clearTimeout(adminMenuCloseTimerRef.current);
             setAdminMenuOpen(null);
             setMobileOpen(false);
             setLogoutNotice(
@@ -162,6 +169,16 @@ export default function Navbar() {
         setLogoutPending(false);
     };
 
+    const cancelAdminMenuClose = () => {
+        window.clearTimeout(adminMenuCloseTimerRef.current);
+        adminMenuCloseTimerRef.current = null;
+    };
+
+    const scheduleAdminMenuClose = () => {
+        cancelAdminMenuClose();
+        adminMenuCloseTimerRef.current = window.setTimeout(() => setAdminMenuOpen(null), 450);
+    };
+
     const isAdminArea = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
     const showAdminNavigation = isAdminArea && isAdministrator(user);
 
@@ -185,7 +202,11 @@ export default function Navbar() {
                     <div
                         ref={adminNavigationRef}
                         className="ml-auto hidden items-center gap-0.5 lg:flex"
-                        onMouseLeave={() => setAdminMenuOpen(null)}
+                        onBlur={(event) => {
+                            if (!event.currentTarget.contains(event.relatedTarget)) scheduleAdminMenuClose();
+                        }}
+                        onMouseEnter={cancelAdminMenuClose}
+                        onMouseLeave={scheduleAdminMenuClose}
                     >
                         {adminNavigationGroups.map((group) => {
                             const GroupIcon = group.icon;
@@ -193,7 +214,14 @@ export default function Navbar() {
                             const expanded = adminMenuOpen === group.id;
 
                             return (
-                                <div className="static" key={group.id} onMouseEnter={() => setAdminMenuOpen(group.id)}>
+                                <div
+                                    className="static"
+                                    key={group.id}
+                                    onMouseEnter={() => {
+                                        cancelAdminMenuClose();
+                                        setAdminMenuOpen(group.id);
+                                    }}
+                                >
                                     <button
                                         type="button"
                                         className={`nav-item flex items-center gap-2 px-3 ${active || expanded ? 'nav-item-active' : ''}`}
@@ -210,7 +238,11 @@ export default function Navbar() {
                                     </button>
 
                                     {expanded && (
-                                        <div className="absolute left-1/2 top-full w-[min(940px,calc(100vw-3rem))] -translate-x-1/2 pt-4">
+                                        <div
+                                            className="absolute left-1/2 top-full w-[min(940px,calc(100vw-3rem))] -translate-x-1/2 pt-4"
+                                            onMouseEnter={cancelAdminMenuClose}
+                                            onMouseLeave={scheduleAdminMenuClose}
+                                        >
                                             <div className="liquid-menu grid max-h-[min(640px,calc(100vh-120px))] overflow-hidden rounded-[24px] lg:grid-cols-[250px_minmax(0,1fr)]">
                                                 <div className="flex flex-col bg-[linear-gradient(145deg,#f04400,#a92b00)] p-6 text-white">
                                                     <GroupIcon className="text-2xl" />

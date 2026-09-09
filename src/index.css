@@ -458,23 +458,6 @@
     }
 }
 
-.admin-sidebar-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(249, 115, 22, 0.2) transparent;
-}
-
-.admin-sidebar-scroll::-webkit-scrollbar {
-    width: 4px;
-}
-
-.admin-sidebar-scroll::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.admin-sidebar-scroll::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: rgba(249, 115, 22, 0.2);
-}
 .liquid-nav::before,
 .liquid-panel::before {
     content: '';
