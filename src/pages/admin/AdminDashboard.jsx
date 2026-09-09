@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     FaArrowRight,
     FaArrowRotateRight,
@@ -18,6 +18,7 @@ import {
     AdminMetricCard,
     AdminPendingState
 } from '../../components/admin/AdminUi';
+import AdminApiWorldMap from '../../components/admin/AdminApiWorldMap';
 import {
     fetchAuthenticatedUser,
     getAuthenticatedUser,
@@ -132,7 +133,6 @@ export default function AdminDashboard() {
         };
     }, [refreshKey]);
 
-    const serviceGroups = useMemo(() => summarizeServiceGroups(data.status?.services ?? []), [data.status]);
     const monitoredServices = data.status?.monitoredServices ?? data.status?.services?.length ?? 0;
     const healthyServices = data.status?.healthyServices ?? 0;
     const serviceProblem = sourceState.status === 'ready' && healthyServices < monitoredServices;
@@ -236,11 +236,7 @@ export default function AdminDashboard() {
             </section>
 
             <div className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.65fr)]">
-                <ServiceOverview
-                    generatedAt={data.status?.generatedAt}
-                    groups={serviceGroups}
-                    state={sourceState.status}
-                />
+                <AdminApiWorldMap />
                 {isUserAdministrator(user) ? (
                     <OnlineStaff staff={data.users?.onlineStaff ?? []} state={sourceState.users} />
                 ) : (
@@ -304,88 +300,6 @@ export default function AdminDashboard() {
                 </div>
             </section>
         </div>
-    );
-}
-
-function ServiceOverview({ groups, state, generatedAt }) {
-    const ready = state === 'ready';
-    const healthyGroups = groups.filter((group) => group.healthy === group.total).length;
-
-    return (
-        <section className="rounded-[28px] border border-white/[.07] bg-[#111218] p-5 shadow-[0_24px_80px_rgba(0,0,0,.14)] sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <p className="eyebrow">INFRASTRUKTUR</p>
-                    <h3 className="mt-2 font-display text-2xl font-bold">Serviceübersicht</h3>
-                    <p className="mt-2 text-xs text-zinc-600">
-                        Live-Zustand und durchschnittliche Antwortzeit je Gruppe.
-                    </p>
-                </div>
-                {ready && (
-                    <span className="rounded-full border border-white/[.07] bg-black/20 px-3 py-1.5 text-xs font-bold text-zinc-500">
-                        {healthyGroups}/{groups.length} Gruppen stabil
-                    </span>
-                )}
-            </div>
-
-            <div className="mt-6">
-                {!ready ? (
-                    <AdminPendingState
-                        title={state === 'waiting' ? 'Status-Service antwortet nicht' : 'Statusdaten werden geladen'}
-                        text={
-                            state === 'waiting'
-                                ? 'Es liegen noch keine Statusdaten vor. Über „Neu laden“ kann die Quelle erneut abgefragt werden.'
-                                : 'Der Status-Service wird abgefragt. Sobald Werte vorliegen, erscheinen die Servicegruppen hier automatisch.'
-                        }
-                    />
-                ) : groups.length ? (
-                    <div className="grid gap-3 lg:grid-cols-2">
-                        {groups.map((group) => {
-                            const allUp = group.healthy === group.total;
-                            const allDown = group.healthy === 0;
-                            const tone = allDown ? 'red' : allUp ? 'emerald' : 'amber';
-                            return (
-                                <div className="rounded-2xl border border-white/[.06] bg-black/15 p-4" key={group.name}>
-                                    <div className="flex items-center gap-3">
-                                        <span
-                                            className={`h-2.5 w-2.5 shrink-0 rounded-full ${tone === 'red' ? 'bg-red-400' : tone === 'amber' ? 'bg-amber-300' : 'bg-emerald-400'}`}
-                                        />
-                                        <b className="min-w-0 flex-1 truncate text-sm text-zinc-200">{group.name}</b>
-                                        <span className="text-[10px] font-bold text-zinc-600">
-                                            Ø {group.responseTimeMs} ms
-                                        </span>
-                                    </div>
-                                    <div className="mt-4 flex items-center gap-3">
-                                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[.05]">
-                                            <div
-                                                className={`h-full rounded-full ${tone === 'red' ? 'bg-red-400' : tone === 'amber' ? 'bg-amber-300' : 'bg-emerald-400'}`}
-                                                style={{
-                                                    width: `${Math.max(5, (group.healthy / group.total) * 100)}%`
-                                                }}
-                                            />
-                                        </div>
-                                        <span className="text-[10px] font-bold text-zinc-500">
-                                            {group.healthy}/{group.total} erreichbar
-                                        </span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <AdminEmptyState
-                        title="Keine Dienste gemeldet"
-                        text="Der Status-Service ist erreichbar, hat aber aktuell keine Servicegruppen geliefert."
-                    />
-                )}
-            </div>
-
-            {generatedAt && (
-                <p className="mt-5 flex items-center gap-2 border-t border-white/[.05] pt-4 text-[10px] text-zinc-700">
-                    <FaClock /> Statusstand {formatDateTime(generatedAt)}
-                </p>
-            )}
-        </section>
     );
 }
 
@@ -511,32 +425,6 @@ function QuickLink({ icon: Icon, title, copy, to, pending = false, pendingState 
     );
 }
 
-function summarizeServiceGroups(services) {
-    const grouped = new Map();
-    services.forEach((service) => {
-        const name = service.group || 'Weitere Dienste';
-        const current = grouped.get(name) ?? {
-            name,
-            order: service.groupOrder ?? 999,
-            healthy: 0,
-            total: 0,
-            responseTimeTotal: 0
-        };
-        current.total += 1;
-        if (service.state === 'UP') current.healthy += 1;
-        current.responseTimeTotal += Number(service.responseTimeMs) || 0;
-        current.order = Math.min(current.order, service.groupOrder ?? current.order);
-        grouped.set(name, current);
-    });
-
-    return [...grouped.values()]
-        .sort((left, right) => left.order - right.order)
-        .map((group) => ({
-            ...group,
-            responseTimeMs: Math.round(group.responseTimeTotal / Math.max(group.total, 1))
-        }));
-}
-
 function surfaceLabel(surface) {
     return { WEBSITE: 'Web', LAUNCHER: 'Launcher', CLIENT: 'Client' }[surface] ?? surface;
 }
@@ -552,10 +440,6 @@ function formatRevenue(revenueByCurrency) {
 
 function formatTime(value) {
     return new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(value);
-}
-
-function formatDateTime(value) {
-    return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
 function pendingTitle(state) {
