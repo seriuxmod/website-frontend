@@ -60,12 +60,19 @@ export default function App() {
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="system-status" element={<AdminModulePreview module="system-status" />} />
+                    <Route path="team" element={<AdminModulePreview module="team" />} />
+                    <Route path="team/calendar" element={<AdminModulePreview module="team-calendar" />} />
+                    <Route path="team/activity" element={<AdminModulePreview module="team-activity" />} />
+                    <Route path="team/todos" element={<AdminModulePreview module="team-todos" />} />
+                    <Route path="team/notes" element={<AdminModulePreview module="team-notes" />} />
                     <Route path="players" element={<AdminModulePreview module="players" />} />
                     <Route path="permissions" element={<AdminModulePreview module="permissions" />} />
                     <Route path="cosmetics" element={<AdminModulePreview module="cosmetics" />} />
                     <Route path="friends" element={<AdminModulePreview module="friends" />} />
                     <Route path="clans" element={<AdminModulePreview module="clans" />} />
                     <Route path="parties" element={<AdminModulePreview module="parties" />} />
+                    <Route path="public-servers" element={<AdminModulePreview module="public-servers" />} />
+                    <Route path="translations" element={<AdminModulePreview module="translations" />} />
                     <Route path="moderation" element={<AdminModulePreview module="moderation" />} />
                     <Route path="moderation/bans" element={<AdminModulePreview module="bans" />} />
                     <Route path="moderation/mutes" element={<AdminModulePreview module="mutes" />} />

@@ -3,7 +3,9 @@ import {
     FaBagShopping,
     FaBan,
     FaBoxesStacked,
+    FaCalendarDays,
     FaChartColumn,
+    FaChartLine,
     FaCircleCheck,
     FaCircleNodes,
     FaCreditCard,
@@ -11,10 +13,12 @@ import {
     FaFlask,
     FaGear,
     FaGift,
+    FaLanguage,
     FaLayerGroup,
     FaListCheck,
     FaMagnifyingGlass,
     FaMoneyCheckDollar,
+    FaNoteSticky,
     FaObjectGroup,
     FaPeopleGroup,
     FaReceipt,
@@ -34,6 +38,36 @@ const MODULES = {
         title: 'Systemstatus',
         description: 'Zentrale Betriebsansicht für Services, Abhängigkeiten und laufende Störungen.',
         icon: FaServer
+    },
+    team: {
+        section: 'Team',
+        title: 'Teamübersicht',
+        description: 'Termine, Aufgaben, Aktivitäten und interne Hinweise des SeriuxMod-Teams zusammenführen.',
+        icon: FaUserGroup
+    },
+    'team-calendar': {
+        section: 'Team',
+        title: 'Terminkalender',
+        description: 'Interne Termine, Besprechungen und wiederkehrende Teamereignisse übersichtlich planen.',
+        icon: FaCalendarDays
+    },
+    'team-activity': {
+        section: 'Team',
+        title: 'Aktivitätsanalyse',
+        description: 'Bearbeitungsstände und Teamaktivitäten in einem gemeinsamen Verlauf auswerten.',
+        icon: FaChartLine
+    },
+    'team-todos': {
+        section: 'Team',
+        title: 'Todolist',
+        description: 'Gemeinsame Aufgaben erfassen, priorisieren und den zuständigen Teammitgliedern zuordnen.',
+        icon: FaListCheck
+    },
+    'team-notes': {
+        section: 'Team',
+        title: 'Interne Notizen',
+        description: 'Interne Hinweise und Arbeitsnotizen zentral und ausschließlich für das Team festhalten.',
+        icon: FaNoteSticky
     },
     players: {
         section: 'Verwaltung',
@@ -70,6 +104,18 @@ const MODULES = {
         title: 'Parties',
         description: 'Aktive Parties, Mitglieder, Rollen und Einladungen nachvollziehen.',
         icon: FaPeopleGroup
+    },
+    'public-servers': {
+        section: 'Verwaltung',
+        title: 'Öffentliche Serverliste',
+        description: 'Öffentliche Minecraft-Server, deren Metadaten, Sichtbarkeit und Freigabestatus verwalten.',
+        icon: FaServer
+    },
+    translations: {
+        section: 'Verwaltung',
+        title: 'Übersetzungen',
+        description: 'Unterstützte Sprachen und Übersetzungseinträge für die SeriuxMod-Plattform organisieren.',
+        icon: FaLanguage
     },
     moderation: {
         section: 'Moderation',
@@ -198,6 +244,12 @@ const TEST_METRICS = {
         ['14', 'Elemente in der Vorschau'],
         ['12', 'Beispielwerte verfügbar'],
         ['1', 'Hinweis zur Datenquelle'],
+        ['Entwurf', 'aktueller Modulstatus']
+    ],
+    Team: [
+        ['5', 'geplante Teamansichten'],
+        ['0', 'echte Termine angebunden'],
+        ['0', 'echte Aufgaben angebunden'],
         ['Entwurf', 'aktueller Modulstatus']
     ],
     Verwaltung: [

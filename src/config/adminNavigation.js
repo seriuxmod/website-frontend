@@ -2,6 +2,7 @@ import {
     FaBagShopping,
     FaBan,
     FaBoxesStacked,
+    FaCalendarDays,
     FaChartColumn,
     FaChartLine,
     FaCircleNodes,
@@ -9,9 +10,11 @@ import {
     FaCreditCard,
     FaGear,
     FaGift,
+    FaLanguage,
     FaLayerGroup,
     FaListCheck,
     FaMoneyCheckDollar,
+    FaNoteSticky,
     FaObjectGroup,
     FaPeopleGroup,
     FaReceipt,
@@ -43,6 +46,45 @@ export const adminNavigationGroups = [
                 label: 'Systemstatus',
                 description: 'Services, Abhängigkeiten und Störungen prüfen.',
                 icon: FaServer
+            }
+        ]
+    },
+    {
+        id: 'team',
+        label: 'Team',
+        description: 'Zusammenarbeit, Termine und interne Organisation.',
+        icon: FaUserGroup,
+        items: [
+            {
+                to: '/admin/team',
+                label: 'Übersicht',
+                description: 'Aktuelle Teamthemen und Aufgaben zusammenführen.',
+                icon: FaUserGroup,
+                end: true
+            },
+            {
+                to: '/admin/team/calendar',
+                label: 'Terminkalender',
+                description: 'Interne Termine und Besprechungen organisieren.',
+                icon: FaCalendarDays
+            },
+            {
+                to: '/admin/team/activity',
+                label: 'Aktivitätsanalyse',
+                description: 'Teamaktivität und Bearbeitungsstände auswerten.',
+                icon: FaChartLine
+            },
+            {
+                to: '/admin/team/todos',
+                label: 'Todolist',
+                description: 'Interne Aufgaben planen und priorisieren.',
+                icon: FaListCheck
+            },
+            {
+                to: '/admin/team/notes',
+                label: 'Interne Notizen',
+                description: 'Gemeinsame interne Hinweise festhalten.',
+                icon: FaNoteSticky
             }
         ]
     },
@@ -82,6 +124,18 @@ export const adminNavigationGroups = [
                 label: 'Parties',
                 description: 'Aktive Gruppen und Einladungen prüfen.',
                 icon: FaPeopleGroup
+            },
+            {
+                to: '/admin/public-servers',
+                label: 'Öffentliche Serverliste',
+                description: 'Öffentliche Minecraft-Server und deren Freigabe verwalten.',
+                icon: FaServer
+            },
+            {
+                to: '/admin/translations',
+                label: 'Übersetzungen',
+                description: 'Sprachen und Übersetzungseinträge organisieren.',
+                icon: FaLanguage
             }
         ]
     },
