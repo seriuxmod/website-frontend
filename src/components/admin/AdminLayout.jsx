@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
+import { AdminDashboardSkeleton } from './AdminUi';
 import {
     fetchAuthenticatedUser,
     hasStoredSession,
@@ -51,7 +52,9 @@ export default function AdminLayout() {
     return (
         <main className="min-h-screen bg-[#090a0d] px-4 pb-28 pt-28 text-white sm:px-6 sm:pt-32 lg:px-8 xl:px-10">
             <section className="mx-auto min-w-0 max-w-[1800px]">
-                <Outlet />
+                <Suspense fallback={<AdminDashboardSkeleton />}>
+                    <Outlet />
+                </Suspense>
             </section>
         </main>
     );

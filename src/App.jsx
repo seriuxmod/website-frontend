@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -25,7 +26,6 @@ import StoreCheckout from './pages/store/StoreCheckout';
 import StoreAccount from './pages/store/StoreAccount';
 import Security from './pages/platform/Security';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminModulePreview from './pages/admin/AdminModulePreview';
 import AdminLayout from './components/admin/AdminLayout';
 import VerifyEmail from './pages/platform/VerifyEmail';
 import ResetPassword from './pages/platform/ResetPassword';
@@ -33,6 +33,8 @@ import ForgotPassword from './pages/platform/ForgotPassword';
 import SystemStatus from './pages/status/SystemStatus';
 import SocialHub from './pages/social/SocialHub';
 import PresenceReporter from './components/PresenceReporter';
+
+const AdminModulePreview = lazy(() => import('./pages/admin/AdminModulePreview'));
 
 export default function App() {
     useScrollToTop();
