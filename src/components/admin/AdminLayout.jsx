@@ -1,32 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-    FaBagShopping,
-    FaBan,
-    FaBoxesStacked,
-    FaChartColumn,
-    FaChartLine,
-    FaChevronDown,
-    FaCircleNodes,
-    FaComments,
-    FaCreditCard,
-    FaGear,
-    FaGift,
-    FaLayerGroup,
-    FaListCheck,
-    FaMoneyCheckDollar,
-    FaObjectGroup,
-    FaPeopleGroup,
-    FaReceipt,
-    FaServer,
-    FaShieldHalved,
-    FaTags,
-    FaUserGroup,
-    FaUserShield,
-    FaUsers,
-    FaVolumeXmark,
-    FaXmark
-} from 'react-icons/fa6';
+import { FaChevronDown, FaXmark } from 'react-icons/fa6';
 import { Link, Navigate, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { adminGroupIsActive, adminNavigationGroups } from '../../config/adminNavigation';
 import {
     fetchAuthenticatedUser,
     hasStoredSession,
@@ -35,76 +10,6 @@ import {
     isUserAdministrator
 } from '../../lib/auth';
 
-const NAVIGATION_GROUPS = [
-    {
-        id: 'general',
-        label: 'Allgemein',
-        icon: FaChartLine,
-        items: [
-            { to: '/admin', label: 'Übersicht', icon: FaChartLine, end: true },
-            { to: '/admin/system-status', label: 'Systemstatus', icon: FaServer }
-        ]
-    },
-    {
-        id: 'management',
-        label: 'Verwaltung',
-        icon: FaUsers,
-        items: [
-            { to: '/admin/players', label: 'Spieler', icon: FaUsers },
-            { to: '/admin/permissions', label: 'Berechtigungen', icon: FaUserShield },
-            { to: '/admin/cosmetics', label: 'Cosmetics', icon: FaGift },
-            { to: '/admin/friends', label: 'Freunde', icon: FaUserGroup },
-            { to: '/admin/clans', label: 'Clans', icon: FaShieldHalved },
-            { to: '/admin/parties', label: 'Parties', icon: FaPeopleGroup }
-        ]
-    },
-    {
-        id: 'moderation',
-        label: 'Moderation',
-        icon: FaShieldHalved,
-        items: [
-            { to: '/admin/moderation', label: 'Übersicht', icon: FaChartColumn, end: true },
-            { to: '/admin/moderation/bans', label: 'Bans', icon: FaBan },
-            { to: '/admin/moderation/mutes', label: 'Mutes', icon: FaVolumeXmark },
-            { to: '/admin/moderation/settings', label: 'Einstellungen', icon: FaGear }
-        ]
-    },
-    {
-        id: 'forum',
-        label: 'Forum',
-        icon: FaComments,
-        items: [
-            { to: '/admin/forum/analytics', label: 'Nutzungsstatistik', icon: FaChartColumn },
-            { to: '/admin/forum/structure', label: 'Struktur', icon: FaCircleNodes },
-            { to: '/admin/forum/permissions', label: 'Gruppenrechte', icon: FaUserShield },
-            { to: '/admin/forum/labels', label: 'Labels', icon: FaTags },
-            { to: '/admin/forum/reports', label: 'Meldungen', icon: FaBan },
-            { to: '/admin/forum/suggestions', label: 'Vorschläge', icon: FaListCheck },
-            { to: '/admin/forum/blog', label: 'Blog', icon: FaObjectGroup },
-            { to: '/admin/forum/settings', label: 'Einstellungen', icon: FaGear }
-        ]
-    },
-    {
-        id: 'commerce',
-        label: 'E-Commerce',
-        icon: FaBagShopping,
-        items: [
-            { to: '/admin/commerce', label: 'Übersicht', icon: FaChartColumn, end: true },
-            { to: '/admin/commerce/customers', label: 'Kunden', icon: FaUsers },
-            { to: '/admin/commerce/catalog', label: 'Katalog', icon: FaBoxesStacked },
-            { to: '/admin/commerce/fields', label: 'Produktfelder', icon: FaLayerGroup },
-            { to: '/admin/commerce/coupons', label: 'Coupons', icon: FaTags },
-            { to: '/admin/commerce/orders', label: 'Bestellungen', icon: FaReceipt },
-            { to: '/admin/commerce/payment-methods', label: 'Zahlungsmethoden', icon: FaCreditCard },
-            { to: '/admin/commerce/settings', label: 'Einstellungen', icon: FaMoneyCheckDollar }
-        ]
-    }
-];
-
-function itemIsActive(pathname, item) {
-    return item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`);
-}
-
 export default function AdminLayout() {
     const [user, setUser] = useState(null);
     const [checking, setChecking] = useState(() => hasStoredSession());
@@ -112,7 +17,7 @@ export default function AdminLayout() {
     const location = useLocation();
 
     const activeGroup = useMemo(
-        () => NAVIGATION_GROUPS.find((group) => group.items.some((item) => itemIsActive(location.pathname, item)))?.id,
+        () => adminNavigationGroups.find((group) => adminGroupIsActive(location.pathname, group))?.id,
         [location.pathname]
     );
     const [openGroup, setOpenGroup] = useState(activeGroup ?? 'general');
@@ -168,7 +73,7 @@ export default function AdminLayout() {
                 </div>
 
                 <nav className="admin-sidebar-scroll min-h-0 flex-1 overflow-y-auto pr-1" aria-label="Administration">
-                    {NAVIGATION_GROUPS.map((group) => {
+                    {adminNavigationGroups.map((group) => {
                         const GroupIcon = group.icon;
                         const expanded = openGroup === group.id;
                         const containsActiveItem = group.id === activeGroup;

@@ -24,12 +24,15 @@ import {
     refreshAuthenticatedSession
 } from '../lib/auth';
 import { communityItems } from '../config/community';
+import { adminGroupIsActive, adminItemIsActive, adminNavigationGroups } from '../config/adminNavigation';
 import NavbarNotifications from './NavbarNotifications';
 import PlayerSearch from './PlayerSearch';
 
 export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [communityOpen, setCommunityOpen] = useState(false);
+    const [adminMenuOpen, setAdminMenuOpen] = useState(null);
+    const [mobileAdminGroup, setMobileAdminGroup] = useState(null);
     const [profileOpen, setProfileOpen] = useState(false);
     const [user, setUser] = useState(() => getAuthenticatedUser());
     const [logoutPending, setLogoutPending] = useState(false);
@@ -39,6 +42,7 @@ export default function Navbar() {
     const location = useLocation();
     const searchRef = useRef(null);
     const communityRef = useRef(null);
+    const adminNavigationRef = useRef(null);
     const profileRef = useRef(null);
     const logoutNoticeTimerRef = useRef(null);
 
@@ -46,6 +50,10 @@ export default function Navbar() {
         let active = true;
         setMobileOpen(false);
         setCommunityOpen(false);
+        setAdminMenuOpen(null);
+        setMobileAdminGroup(
+            adminNavigationGroups.find((group) => adminGroupIsActive(location.pathname, group))?.id ?? null
+        );
         setProfileOpen(false);
         const tokenUser = getAuthenticatedUser();
         if (tokenUser || !hasStoredSession()) setUser(tokenUser);
@@ -91,6 +99,7 @@ export default function Navbar() {
     useEffect(() => {
         const onPointerDown = (event) => {
             if (!communityRef.current?.contains(event.target)) setCommunityOpen(false);
+            if (!adminNavigationRef.current?.contains(event.target)) setAdminMenuOpen(null);
             if (!profileRef.current?.contains(event.target)) setProfileOpen(false);
         };
         const onKeyDown = (event) => {
@@ -100,6 +109,7 @@ export default function Navbar() {
             }
             if (event.key === 'Escape') {
                 setCommunityOpen(false);
+                setAdminMenuOpen(null);
                 setProfileOpen(false);
                 setMobileOpen(false);
             }
@@ -125,6 +135,7 @@ export default function Navbar() {
             setUser(null);
             setUnreadForumNotifications(0);
             setProfileOpen(false);
+            setAdminMenuOpen(null);
             setMobileOpen(false);
             setLogoutNotice(
                 event.detail.reason === 'session_expired'
@@ -151,6 +162,9 @@ export default function Navbar() {
         setLogoutPending(false);
     };
 
+    const isAdminArea = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
+    const showAdminNavigation = isAdminArea && isAdministrator(user);
+
     return (
         <header
             className={`pointer-events-none fixed inset-x-0 top-0 z-50 px-3 sm:px-6 ${profileContext?.visible ? 'pt-1 sm:pt-1' : 'pt-3 sm:pt-5'}`}
@@ -167,64 +181,174 @@ export default function Navbar() {
                     />
                 </Link>
 
-                <div className="ml-auto hidden items-center gap-1 lg:flex">
-                    <Link to="/" className={`nav-item ${location.pathname === '/' ? 'nav-item-active' : ''}`}>
-                        SeriuxMod
-                    </Link>
-                    <Link
-                        to="/forum"
-                        className={`nav-item ${location.pathname.startsWith('/forum') ? 'nav-item-active' : ''}`}
+                {showAdminNavigation ? (
+                    <div
+                        ref={adminNavigationRef}
+                        className="ml-auto hidden items-center gap-0.5 lg:flex"
+                        onMouseLeave={() => setAdminMenuOpen(null)}
                     >
-                        Forum
-                    </Link>
-                    <Link
-                        to="/store"
-                        className={`nav-item ${location.pathname.startsWith('/store') ? 'nav-item-active' : ''}`}
-                    >
-                        Shop
-                    </Link>
-                    <div ref={communityRef} className="relative">
-                        <button
-                            type="button"
-                            className={`nav-item flex items-center gap-2 ${communityOpen || location.pathname.startsWith('/community/') ? 'nav-item-active' : ''}`}
-                            onClick={() => setCommunityOpen((current) => !current)}
-                            aria-expanded={communityOpen}
-                        >
-                            Community{' '}
-                            <FaChevronDown className={`text-[10px] transition ${communityOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {communityOpen && (
-                            <div className="liquid-menu absolute left-1/2 top-full mt-3 w-[570px] -translate-x-1/2 rounded-2xl p-3">
-                                <div className="px-3 pb-3 pt-1">
-                                    <b className="block text-sm text-white">Community</b>
-                                    <span className="mt-1 block text-[11px] text-zinc-500">
-                                        Spieler verbinden & entdecken
-                                    </span>
+                        {adminNavigationGroups.map((group) => {
+                            const GroupIcon = group.icon;
+                            const active = adminGroupIsActive(location.pathname, group);
+                            const expanded = adminMenuOpen === group.id;
+
+                            return (
+                                <div className="static" key={group.id} onMouseEnter={() => setAdminMenuOpen(group.id)}>
+                                    <button
+                                        type="button"
+                                        className={`nav-item flex items-center gap-2 px-3 ${active || expanded ? 'nav-item-active' : ''}`}
+                                        aria-expanded={expanded}
+                                        onClick={() =>
+                                            setAdminMenuOpen((current) => (current === group.id ? null : group.id))
+                                        }
+                                        onFocus={() => setAdminMenuOpen(group.id)}
+                                    >
+                                        {group.label}
+                                        <FaChevronDown
+                                            className={`text-[9px] transition ${expanded ? 'rotate-180' : ''}`}
+                                        />
+                                    </button>
+
+                                    {expanded && (
+                                        <div className="absolute left-1/2 top-full w-[min(940px,calc(100vw-3rem))] -translate-x-1/2 pt-4">
+                                            <div className="liquid-menu grid max-h-[min(640px,calc(100vh-120px))] overflow-hidden rounded-[24px] lg:grid-cols-[250px_minmax(0,1fr)]">
+                                                <div className="flex flex-col bg-[linear-gradient(145deg,#f04400,#a92b00)] p-6 text-white">
+                                                    <GroupIcon className="text-2xl" />
+                                                    <p className="mt-7 text-[10px] font-black uppercase tracking-[.2em] text-white/60">
+                                                        Teamportal
+                                                    </p>
+                                                    <h2 className="mt-2 font-display text-2xl font-bold">
+                                                        {group.label}
+                                                    </h2>
+                                                    <p className="mt-3 text-xs leading-5 text-white/70">
+                                                        {group.description}
+                                                    </p>
+                                                    <Link
+                                                        className="mt-auto pt-8 text-xs font-extrabold text-white"
+                                                        onClick={() => setAdminMenuOpen(null)}
+                                                        to={group.items[0].to}
+                                                    >
+                                                        Bereich öffnen <span aria-hidden="true">→</span>
+                                                    </Link>
+                                                </div>
+
+                                                <div className="overflow-y-auto p-5 sm:p-6">
+                                                    <div className="flex items-center justify-between border-b border-white/[.06] pb-4">
+                                                        <div>
+                                                            <p className="eyebrow">{group.label}</p>
+                                                            <b className="mt-1 block text-sm text-white">
+                                                                Ziel auswählen
+                                                            </b>
+                                                        </div>
+                                                        <span className="text-[10px] font-bold text-zinc-600">
+                                                            {group.items.length} Bereiche
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-3 grid gap-x-6 sm:grid-cols-2">
+                                                        {group.items.map((item) => {
+                                                            const ItemIcon = item.icon;
+                                                            const itemActive = adminItemIsActive(
+                                                                location.pathname,
+                                                                item
+                                                            );
+                                                            return (
+                                                                <Link
+                                                                    className={`group flex gap-3 border-b border-white/[.045] py-4 transition ${
+                                                                        itemActive
+                                                                            ? 'text-orange-200'
+                                                                            : 'text-zinc-300 hover:text-white'
+                                                                    }`}
+                                                                    key={item.to}
+                                                                    onClick={() => setAdminMenuOpen(null)}
+                                                                    to={item.to}
+                                                                >
+                                                                    <ItemIcon
+                                                                        className={`mt-0.5 w-4 shrink-0 text-sm ${
+                                                                            itemActive
+                                                                                ? 'text-orange-300'
+                                                                                : 'text-zinc-600 group-hover:text-orange-300'
+                                                                        }`}
+                                                                    />
+                                                                    <span className="min-w-0">
+                                                                        <b className="block text-sm">{item.label}</b>
+                                                                        <small className="mt-1 block text-[10px] leading-4 text-zinc-600">
+                                                                            {item.description}
+                                                                        </small>
+                                                                    </span>
+                                                                </Link>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="grid grid-cols-2 gap-1">
-                                    {communityItems.map((item) => {
-                                        const Icon = item.icon;
-                                        return (
-                                            <Link
-                                                key={item.slug}
-                                                to={item.to || `/community/${item.slug}`}
-                                                className="community-dropdown-item"
-                                            >
-                                                <span className="community-nav-icon">
-                                                    <Icon />
-                                                </span>
-                                                <span className="min-w-0">
-                                                    <b className="block">{item.label}</b>
-                                                    <small>{item.description}</small>
-                                                </span>
-                                            </Link>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                            );
+                        })}
                     </div>
-                </div>
+                ) : !isAdminArea ? (
+                    <div className="ml-auto hidden items-center gap-1 lg:flex">
+                        <Link to="/" className={`nav-item ${location.pathname === '/' ? 'nav-item-active' : ''}`}>
+                            SeriuxMod
+                        </Link>
+                        <Link
+                            to="/forum"
+                            className={`nav-item ${location.pathname.startsWith('/forum') ? 'nav-item-active' : ''}`}
+                        >
+                            Forum
+                        </Link>
+                        <Link
+                            to="/store"
+                            className={`nav-item ${location.pathname.startsWith('/store') ? 'nav-item-active' : ''}`}
+                        >
+                            Shop
+                        </Link>
+                        <div ref={communityRef} className="relative">
+                            <button
+                                type="button"
+                                className={`nav-item flex items-center gap-2 ${communityOpen || location.pathname.startsWith('/community/') ? 'nav-item-active' : ''}`}
+                                onClick={() => setCommunityOpen((current) => !current)}
+                                aria-expanded={communityOpen}
+                            >
+                                Community{' '}
+                                <FaChevronDown
+                                    className={`text-[10px] transition ${communityOpen ? 'rotate-180' : ''}`}
+                                />
+                            </button>
+                            {communityOpen && (
+                                <div className="liquid-menu absolute left-1/2 top-full mt-3 w-[570px] -translate-x-1/2 rounded-2xl p-3">
+                                    <div className="px-3 pb-3 pt-1">
+                                        <b className="block text-sm text-white">Community</b>
+                                        <span className="mt-1 block text-[11px] text-zinc-500">
+                                            Spieler verbinden & entdecken
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-1">
+                                        {communityItems.map((item) => {
+                                            const Icon = item.icon;
+                                            return (
+                                                <Link
+                                                    key={item.slug}
+                                                    to={item.to || `/community/${item.slug}`}
+                                                    className="community-dropdown-item"
+                                                >
+                                                    <span className="community-nav-icon">
+                                                        <Icon />
+                                                    </span>
+                                                    <span className="min-w-0">
+                                                        <b className="block">{item.label}</b>
+                                                        <small>{item.description}</small>
+                                                    </span>
+                                                </Link>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ) : null}
 
                 <PlayerSearch
                     ref={searchRef}
@@ -359,38 +483,98 @@ export default function Navbar() {
                 >
                     <PlayerSearch mobile className="mb-3" />
                     <div className="grid gap-1">
-                        <Link className="mobile-nav-item" to="/">
-                            SeriuxMod
-                        </Link>
-                        <Link className="mobile-nav-item" to="/forum">
-                            Forum
-                        </Link>
-                        <Link className="mobile-nav-item" to="/store">
-                            Shop
-                        </Link>
-                        <p className="px-4 pb-1 pt-4 text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-400">
-                            Community
-                        </p>
-                        {communityItems.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <Link
-                                    className="mobile-nav-item flex items-center gap-3"
-                                    to={item.to || `/community/${item.slug}`}
-                                    key={item.slug}
-                                >
-                                    <span className="community-nav-icon">
-                                        <Icon />
-                                    </span>
-                                    <span>
-                                        <b className="block text-sm">{item.label}</b>
-                                        <small className="block text-[10px] font-normal text-zinc-600">
-                                            {item.description}
-                                        </small>
-                                    </span>
+                        {showAdminNavigation ? (
+                            <>
+                                <p className="px-4 pb-2 pt-1 text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-400">
+                                    Administration
+                                </p>
+                                {adminNavigationGroups.map((group) => {
+                                    const GroupIcon = group.icon;
+                                    const expanded = mobileAdminGroup === group.id;
+                                    const active = adminGroupIsActive(location.pathname, group);
+                                    return (
+                                        <section
+                                            className="border-t border-white/[.055] py-1 first:border-t-0"
+                                            key={group.id}
+                                        >
+                                            <button
+                                                className={`mobile-nav-item flex w-full items-center gap-3 text-left ${active ? 'text-orange-200' : ''}`}
+                                                type="button"
+                                                aria-expanded={expanded}
+                                                onClick={() =>
+                                                    setMobileAdminGroup((current) =>
+                                                        current === group.id ? null : group.id
+                                                    )
+                                                }
+                                            >
+                                                <GroupIcon className="w-4 text-xs" />
+                                                <b className="flex-1 text-sm">{group.label}</b>
+                                                <FaChevronDown
+                                                    className={`text-[9px] transition ${expanded ? 'rotate-180' : ''}`}
+                                                />
+                                            </button>
+                                            {expanded && (
+                                                <div className="pb-2 pl-7">
+                                                    {group.items.map((item) => {
+                                                        const ItemIcon = item.icon;
+                                                        const itemActive = adminItemIsActive(location.pathname, item);
+                                                        return (
+                                                            <Link
+                                                                className={`mobile-nav-item flex items-center gap-3 border-l-2 py-2.5 ${
+                                                                    itemActive
+                                                                        ? 'border-orange-400 text-orange-100'
+                                                                        : 'border-transparent'
+                                                                }`}
+                                                                key={item.to}
+                                                                to={item.to}
+                                                            >
+                                                                <ItemIcon className="w-4 text-xs text-zinc-600" />
+                                                                {item.label}
+                                                            </Link>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </section>
+                                    );
+                                })}
+                            </>
+                        ) : !isAdminArea ? (
+                            <>
+                                <Link className="mobile-nav-item" to="/">
+                                    SeriuxMod
                                 </Link>
-                            );
-                        })}
+                                <Link className="mobile-nav-item" to="/forum">
+                                    Forum
+                                </Link>
+                                <Link className="mobile-nav-item" to="/store">
+                                    Shop
+                                </Link>
+                                <p className="px-4 pb-1 pt-4 text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-400">
+                                    Community
+                                </p>
+                                {communityItems.map((item) => {
+                                    const Icon = item.icon;
+                                    return (
+                                        <Link
+                                            className="mobile-nav-item flex items-center gap-3"
+                                            to={item.to || `/community/${item.slug}`}
+                                            key={item.slug}
+                                        >
+                                            <span className="community-nav-icon">
+                                                <Icon />
+                                            </span>
+                                            <span>
+                                                <b className="block text-sm">{item.label}</b>
+                                                <small className="block text-[10px] font-normal text-zinc-600">
+                                                    {item.description}
+                                                </small>
+                                            </span>
+                                        </Link>
+                                    );
+                                })}
+                            </>
+                        ) : null}
                     </div>
                     {user ? (
                         <div className="mt-3 border-t border-white/[.07] pt-3">
