@@ -83,6 +83,7 @@ const MODULE_KINDS = {
 const METRIC_ICONS = [FaDatabase, FaLayerGroup, FaListCheck, FaCircleCheck];
 
 export default function AdminModulePreview({ module }) {
+    const isLiveStatus = module === 'system-status';
     const route = MODULE_ROUTES[module] ?? MODULE_ROUTES.players;
     const group = adminNavigationGroups.find((candidate) => candidate.items.some((item) => item.to === route));
     const item = group?.items.find((candidate) => candidate.to === route);
@@ -96,9 +97,17 @@ export default function AdminModulePreview({ module }) {
             <header className="mb-7 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
                 <div>
                     <div className="flex flex-wrap items-center gap-3">
-                        <p className="eyebrow">{group?.label ?? 'Verwaltung'} · UI-PROTOTYP</p>
-                        <span className="rounded-full border border-amber-400/20 bg-amber-400/[.07] px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.14em] text-amber-200">
-                            Noch nicht implementiert
+                        <p className="eyebrow">
+                            {group?.label ?? 'Verwaltung'} · {isLiveStatus ? 'LIVE-MONITORING' : 'UI-PROTOTYP'}
+                        </p>
+                        <span
+                            className={`rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.14em] ${
+                                isLiveStatus
+                                    ? 'border-emerald-400/20 bg-emerald-400/[.07] text-emerald-300'
+                                    : 'border-amber-400/20 bg-amber-400/[.07] text-amber-200'
+                            }`}
+                        >
+                            {isLiveStatus ? 'Status-Backend verbunden' : 'Noch nicht implementiert'}
                         </span>
                     </div>
                     <h2 className="mt-3 flex items-center gap-4 font-display text-3xl font-bold tracking-[-.04em] sm:text-4xl">
@@ -111,28 +120,30 @@ export default function AdminModulePreview({ module }) {
                 </div>
                 <div className="flex flex-wrap gap-2 text-[9px] font-extrabold uppercase tracking-[.13em] text-zinc-600">
                     <span className="rounded-full border border-white/[.07] bg-white/[.025] px-3 py-2">
-                        UI-Prototyp
+                        {isLiveStatus ? 'REST API' : 'UI-Prototyp'}
                     </span>
                     <span className="rounded-full border border-white/[.07] bg-white/[.025] px-3 py-2">
-                        Keine Backend-Verbindung
+                        {isLiveStatus ? 'Auto-Refresh 15s' : 'Keine Backend-Verbindung'}
                     </span>
                 </div>
             </header>
 
-            <div className="mb-6 flex items-start gap-4 rounded-2xl border border-amber-400/15 bg-amber-400/[.045] p-4 text-amber-100/80">
-                <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-400/10 text-amber-300">
-                    <FaFlask />
-                </span>
-                <div>
-                    <b className="text-sm text-amber-100">Demonstrativer Testdatensatz</b>
-                    <p className="mt-1 text-xs leading-5 text-amber-100/55">
-                        Alle Werte dieser Modulansicht sind lokal erzeugt und eindeutig als Testdaten markiert. Es
-                        werden weder neue Backend-Endpunkte abgefragt noch Änderungen gespeichert.
-                    </p>
+            {!isLiveStatus && (
+                <div className="mb-6 flex items-start gap-4 rounded-2xl border border-amber-400/15 bg-amber-400/[.045] p-4 text-amber-100/80">
+                    <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-amber-400/10 text-amber-300">
+                        <FaFlask />
+                    </span>
+                    <div>
+                        <b className="text-sm text-amber-100">Demonstrativer Testdatensatz</b>
+                        <p className="mt-1 text-xs leading-5 text-amber-100/55">
+                            Alle Werte dieser Modulansicht sind lokal erzeugt und eindeutig als Testdaten markiert. Es
+                            werden weder neue Backend-Endpunkte abgefragt noch Änderungen gespeichert.
+                        </p>
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {module === 'system-status' ? (
+            {isLiveStatus ? (
                 <AdminSystemStatusView />
             ) : (
                 <>

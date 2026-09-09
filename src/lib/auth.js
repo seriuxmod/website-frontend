@@ -212,6 +212,9 @@ export const isForumAdministrator = (user = getAuthenticatedUser()) =>
 export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('store.admin'));
 
+export const isStatusAdministrator = (user = getAuthenticatedUser()) =>
+    Boolean(user?.permissions?.includes('status.admin'));
+
 export const isUserAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(
         user?.permissions?.some(
@@ -224,7 +227,10 @@ export const isUserAdministrator = (user = getAuthenticatedUser()) =>
     );
 
 export const isAdministrator = (user = getAuthenticatedUser()) =>
-    isForumAdministrator(user) || isStoreAdministrator(user) || isUserAdministrator(user);
+    isForumAdministrator(user) ||
+    isStoreAdministrator(user) ||
+    isStatusAdministrator(user) ||
+    isUserAdministrator(user);
 
 export async function authenticatedFetch(input, init = {}) {
     let accessToken = getAccessToken();
