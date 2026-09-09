@@ -494,12 +494,35 @@
 }
 
 .api-world-map-land {
-    opacity: 0.75;
-    filter: drop-shadow(0 0 14px rgba(161, 161, 170, 0.05));
+    opacity: 0.92;
+    filter: drop-shadow(0 0 18px rgba(249, 115, 22, 0.07));
+}
+
+.api-world-map-land-base path {
+    fill: rgba(255, 255, 255, 0.018);
+    stroke: rgba(255, 255, 255, 0.06);
+    stroke-width: 0.8;
+    vector-effect: non-scaling-stroke;
+}
+
+.api-map-land-sweep {
+    mix-blend-mode: screen;
+    opacity: 0.55;
+    animation: api-land-sweep 7.5s linear infinite;
+}
+
+.api-map-connection {
+    opacity: 0.28;
+    transition: opacity 0.45s ease;
+}
+
+.api-map-connection.is-active {
+    opacity: 1;
 }
 
 .api-map-route-base,
-.api-map-route {
+.api-map-route,
+.api-map-route-packet {
     fill: none;
     vector-effect: non-scaling-stroke;
 }
@@ -511,21 +534,38 @@
 
 .api-map-route {
     stroke: url('#api-route-gradient');
-    stroke-width: 1.8;
+    stroke-width: 1.5;
     stroke-linecap: round;
-    stroke-dasharray: 1;
-    stroke-dashoffset: 1;
-    filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.7));
-    animation: api-route-draw 5.6s ease-in-out infinite;
+    stroke-dasharray: 3 6;
+    filter: drop-shadow(0 0 4px rgba(249, 115, 22, 0.62));
+    animation: api-route-flow 1.25s linear infinite;
     animation-delay: var(--route-delay);
 }
 
-.api-map-traveler {
-    fill: #fff1e7;
-    opacity: 0;
-    filter: drop-shadow(0 0 7px #f97316);
-    animation: api-map-traveler 5.6s ease-in-out infinite;
-    animation-delay: var(--route-delay);
+.api-map-route-packet {
+    stroke: #fff3e8;
+    stroke-width: 4.2;
+    stroke-linecap: round;
+    stroke-dasharray: 0.5 99.5;
+    stroke-dashoffset: 100;
+    filter: drop-shadow(0 0 8px #f97316);
+    animation: api-route-packet 2.7s linear infinite;
+    animation-delay: var(--packet-delay);
+}
+
+.api-map-route-packet-secondary {
+    stroke-width: 2.8;
+    opacity: 0.62;
+}
+
+.api-map-radar circle {
+    fill: none;
+    stroke: rgba(251, 146, 60, 0.6);
+    stroke-width: 1.15;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: api-radar-wave 2.7s ease-out infinite;
+    animation-delay: var(--radar-delay);
 }
 
 .api-map-location {
@@ -553,39 +593,72 @@
     stroke: rgba(255, 178, 111, 0.65);
 }
 
+.api-map-location.is-active > circle:nth-last-child(-n + 2) {
+    filter: url('#api-map-glow');
+}
+
+.api-map-location.is-active > circle:nth-child(1) {
+    fill: rgba(249, 115, 22, 0.24);
+    stroke: rgba(255, 178, 111, 0.82);
+}
+
+.api-map-activity {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.26);
+}
+
+.api-map-activity-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #fb923c;
+    box-shadow: 0 0 12px rgba(251, 146, 60, 0.9);
+    animation: api-activity-dot 1s ease-in-out infinite;
+}
+
 .api-map-tooltip {
     transform: translate(-50%, calc(-100% - 18px));
     animation: api-map-tooltip-in 0.18s ease-out both;
 }
 
-@keyframes api-route-draw {
-    0%,
-    12% {
-        opacity: 0;
-        stroke-dashoffset: 1;
-    }
-    30%,
-    72% {
-        opacity: 0.95;
-        stroke-dashoffset: 0;
-    }
-    88%,
-    100% {
-        opacity: 0;
-        stroke-dashoffset: -1;
+@keyframes api-route-flow {
+    to {
+        stroke-dashoffset: -18;
     }
 }
 
-@keyframes api-map-traveler {
-    0%,
-    12%,
-    88%,
+@keyframes api-route-packet {
+    from {
+        stroke-dashoffset: 100;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+@keyframes api-radar-wave {
+    0% {
+        opacity: 0.9;
+        transform: scale(0.65);
+    }
     100% {
         opacity: 0;
+        transform: scale(4.2);
     }
-    22%,
-    78% {
-        opacity: 1;
+}
+
+@keyframes api-land-sweep {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(1450px);
+    }
+}
+
+@keyframes api-activity-dot {
+    50% {
+        opacity: 0.38;
+        transform: scale(0.7);
     }
 }
 
@@ -624,8 +697,11 @@
 
 @media (prefers-reduced-motion: reduce) {
     .api-world-map-scan,
+    .api-map-land-sweep,
     .api-map-route,
-    .api-map-traveler,
+    .api-map-route-packet,
+    .api-map-radar circle,
+    .api-map-activity-dot,
     .api-map-pulse {
         animation: none;
     }

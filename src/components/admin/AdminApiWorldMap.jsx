@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaArrowTrendUp, FaBolt, FaCodeBranch, FaGlobe, FaLocationDot } from 'react-icons/fa6';
 
 const API_ORIGIN = {
@@ -44,8 +44,30 @@ function routePath(route) {
     return `M ${route.x} ${route.y} Q ${centerX} ${centerY} ${API_ORIGIN.x} ${API_ORIGIN.y}`;
 }
 
+function tooltipPosition(location) {
+    return {
+        left: `${Math.min(92, Math.max(8, location.x / 10))}%`,
+        top: `${Math.min(90, Math.max(14, (location.y - 34) / 4.2))}%`
+    };
+}
+
 export default function AdminApiWorldMap() {
     const [activeLocation, setActiveLocation] = useState(null);
+    const [activeRouteIndex, setActiveRouteIndex] = useState(0);
+    const activeRoute = TRAFFIC_ROUTES[activeRouteIndex];
+    const highlightedRouteId =
+        activeLocation && activeLocation.id !== API_ORIGIN.id ? activeLocation.id : activeRoute.id;
+
+    useEffect(() => {
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+        if (reducedMotion.matches) return undefined;
+
+        const interval = window.setInterval(() => {
+            setActiveRouteIndex((current) => (current + 1) % TRAFFIC_ROUTES.length);
+        }, 2400);
+
+        return () => window.clearInterval(interval);
+    }, []);
 
     return (
         <section className="overflow-hidden rounded-[28px] border border-white/[.07] bg-[#0e1015] shadow-[0_24px_80px_rgba(0,0,0,.18)]">
@@ -67,18 +89,25 @@ export default function AdminApiWorldMap() {
                 </div>
             </div>
 
-            <div className="api-world-map relative mt-3 min-h-[390px] overflow-hidden sm:min-h-[430px]">
+            <div className="api-world-map relative mt-3 min-h-[370px] overflow-hidden sm:min-h-[430px]">
                 <div className="api-world-map-scan" />
                 <svg
                     className="absolute inset-0 h-full w-full"
-                    viewBox="0 0 1000 500"
-                    preserveAspectRatio="xMidYMid meet"
+                    viewBox="0 38 1000 424"
+                    preserveAspectRatio="xMidYMid slice"
                     role="img"
                     aria-label="Animierte Weltkarte mit simulierten API-Anfragen"
                 >
                     <defs>
                         <pattern id="api-map-dots" width="8" height="8" patternUnits="userSpaceOnUse">
-                            <circle cx="2" cy="2" r="1.2" fill="rgba(161,161,170,.34)" />
+                            <circle cx="2" cy="2" r="1.25" fill="rgba(212,212,216,.46)">
+                                <animate
+                                    attributeName="opacity"
+                                    values=".48;.92;.48"
+                                    dur="4.8s"
+                                    repeatCount="indefinite"
+                                />
+                            </circle>
                         </pattern>
                         <filter id="api-map-glow" x="-80%" y="-80%" width="260%" height="260%">
                             <feGaussianBlur stdDeviation="5" result="blur" />
@@ -91,41 +120,80 @@ export default function AdminApiWorldMap() {
                             <stop offset="0" stopColor="#ffb26f" />
                             <stop offset="1" stopColor="#f04400" />
                         </linearGradient>
+                        <linearGradient id="api-land-sweep-gradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0" stopColor="#f97316" stopOpacity="0" />
+                            <stop offset=".5" stopColor="#fb923c" stopOpacity=".52" />
+                            <stop offset="1" stopColor="#f97316" stopOpacity="0" />
+                        </linearGradient>
+                        <clipPath id="api-world-land-clip">
+                            {CONTINENTS.map((path, index) => (
+                                <path d={path} key={index} />
+                            ))}
+                        </clipPath>
                     </defs>
 
+                    <g className="api-world-map-land-base">
+                        {CONTINENTS.map((path, index) => (
+                            <path d={path} key={index} />
+                        ))}
+                    </g>
                     <g className="api-world-map-land">
                         {CONTINENTS.map((path, index) => (
                             <path d={path} fill="url(#api-map-dots)" key={index} />
                         ))}
                     </g>
+                    <rect
+                        className="api-map-land-sweep"
+                        x="-420"
+                        y="32"
+                        width="300"
+                        height="440"
+                        fill="url(#api-land-sweep-gradient)"
+                        clipPath="url(#api-world-land-clip)"
+                    />
 
                     <g aria-hidden="true">
                         {TRAFFIC_ROUTES.map((route, index) => {
                             const path = routePath(route);
                             return (
-                                <g key={route.id}>
+                                <g
+                                    className={`api-map-connection ${route.id === highlightedRouteId ? 'is-active' : ''}`}
+                                    key={route.id}
+                                >
                                     <path className="api-map-route-base" d={path} />
                                     <path
                                         className="api-map-route"
                                         d={path}
-                                        pathLength="1"
-                                        style={{ '--route-delay': `${index * 0.72}s` }}
+                                        pathLength="100"
+                                        style={{ '--route-delay': `${index * -0.34}s` }}
                                     />
-                                    <circle
-                                        className="api-map-traveler"
-                                        r="3.2"
-                                        style={{ '--route-delay': `${index * 0.72}s` }}
-                                    >
-                                        <animateMotion
-                                            begin={`${index * 0.72}s`}
-                                            dur="5.6s"
-                                            path={path}
-                                            repeatCount="indefinite"
-                                        />
-                                    </circle>
+                                    <path
+                                        className="api-map-route-packet"
+                                        d={path}
+                                        pathLength="100"
+                                        style={{ '--packet-delay': `${index * -0.41}s` }}
+                                    />
+                                    <path
+                                        className="api-map-route-packet api-map-route-packet-secondary"
+                                        d={path}
+                                        pathLength="100"
+                                        style={{ '--packet-delay': `${index * -0.41 - 1.35}s` }}
+                                    />
                                 </g>
                             );
                         })}
+                    </g>
+
+                    <g className="api-map-radar" aria-hidden="true">
+                        {[0, 1, 2].map((ring) => (
+                            <circle
+                                cx={API_ORIGIN.x}
+                                cy={API_ORIGIN.y}
+                                r="11"
+                                key={ring}
+                                style={{ '--radar-delay': `${ring * 0.9}s` }}
+                            />
+                        ))}
                     </g>
 
                     <g
@@ -145,7 +213,7 @@ export default function AdminApiWorldMap() {
 
                     {TRAFFIC_ROUTES.map((route, index) => (
                         <g
-                            className="api-map-location"
+                            className={`api-map-location ${route.id === highlightedRouteId ? 'is-active' : ''}`}
                             key={route.id}
                             tabIndex="0"
                             role="button"
@@ -172,10 +240,18 @@ export default function AdminApiWorldMap() {
                     <FaLocationDot className="text-orange-300" /> Gateway Frankfurt
                 </div>
 
+                <div className="api-map-activity pointer-events-none absolute bottom-5 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-orange-400/15 bg-[#090a0e]/85 px-3 py-2 text-[9px] font-bold uppercase tracking-[.12em] text-zinc-500 backdrop-blur-xl sm:flex">
+                    <span className="api-map-activity-dot" />
+                    <span className="text-zinc-300">{activeRoute.name}</span>
+                    <span>→</span>
+                    <span className="text-orange-300">Frankfurt</span>
+                    <span className="text-zinc-700">{activeRoute.detail}</span>
+                </div>
+
                 {activeLocation && (
                     <div
                         className="api-map-tooltip pointer-events-none absolute z-10 w-44 rounded-2xl border border-orange-400/20 bg-[#111218]/95 p-3 shadow-2xl backdrop-blur-xl"
-                        style={{ left: `${activeLocation.x / 10}%`, top: `${activeLocation.y / 5}%` }}
+                        style={tooltipPosition(activeLocation)}
                     >
                         <b className="block text-xs text-white">{activeLocation.name}</b>
                         <span className="mt-1 block text-[10px] font-semibold text-orange-300">
