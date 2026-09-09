@@ -121,6 +121,152 @@ export const OVERVIEW_CHARTS = {
     }
 };
 
+export const STATUS_FLOW_SERVICES = [
+    { name: 'DNS Auflösung', status: 'operational', latency: 38 },
+    { name: 'API Gateway', status: 'operational', latency: 46 },
+    { name: 'CDN', status: 'degraded', latency: 612 },
+    { name: 'Database', status: 'operational', latency: 31 },
+    { name: 'Payment Gateway', status: 'operational', latency: 128 },
+    { name: 'Notification Service', status: 'offline', latency: 0 }
+];
+
+export const STATUS_STACKS = [
+    {
+        stack: 'edge_traefik',
+        service: 'Edge Router',
+        replicas: '2 / 2',
+        latency: '18 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'gateway_api-gateway',
+        service: 'API Gateway',
+        replicas: '3 / 3',
+        latency: '46 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'auth_oauth2-server',
+        service: 'OAuth2 Server',
+        replicas: '2 / 2',
+        latency: '44 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'users_user-service',
+        service: 'User Service',
+        replicas: '2 / 2',
+        latency: '51 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'status_status-service',
+        service: 'Status Service',
+        replicas: '2 / 2',
+        latency: '37 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'forum_forum-service',
+        service: 'Forum Service',
+        replicas: '2 / 2',
+        latency: '58 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'store_store-service',
+        service: 'Store Service',
+        replicas: '2 / 2',
+        latency: '684 ms',
+        status: 'delayed'
+    },
+    {
+        stack: 'social_social-service',
+        service: 'Social Service',
+        replicas: '2 / 2',
+        latency: '63 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'data_postgres',
+        service: 'PostgreSQL',
+        replicas: '1 / 1',
+        latency: '31 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'data_redis',
+        service: 'Redis',
+        replicas: '1 / 1',
+        latency: '12 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'payments_payment-gateway',
+        service: 'Payment Gateway',
+        replicas: '1 / 1',
+        latency: '128 ms',
+        status: 'ready'
+    },
+    {
+        stack: 'notifications_notification-service',
+        service: 'Notification Service',
+        replicas: '0 / 1',
+        latency: 'Timeout',
+        status: 'offline'
+    },
+    {
+        stack: 'cdn_r2-edge-worker',
+        service: 'CDN Edge Worker',
+        replicas: '1 / 1',
+        latency: '612 ms',
+        status: 'delayed'
+    },
+    {
+        stack: 'monitor_status-probe',
+        service: 'Status Probe',
+        replicas: '1 / 1',
+        latency: '24 ms',
+        status: 'ready'
+    }
+];
+
+export const STATUS_LOAD_FACTORS = {
+    networking: {
+        label: 'Networking',
+        unit: 'Mbit/s',
+        rows: [
+            { id: 'gateway', label: 'API Gateway', value: 846 },
+            { id: 'cdn', label: 'CDN Edge Worker', value: 712 },
+            { id: 'forum', label: 'Forum Service', value: 438 },
+            { id: 'social', label: 'Social Service', value: 286 },
+            { id: 'auth', label: 'OAuth2 Server', value: 142 }
+        ]
+    },
+    cpu: {
+        label: 'CPU',
+        unit: '%',
+        rows: [
+            { id: 'forum', label: 'Forum Service', value: 78 },
+            { id: 'gateway', label: 'API Gateway', value: 64 },
+            { id: 'users', label: 'User Service', value: 51 },
+            { id: 'store', label: 'Store Service', value: 39 },
+            { id: 'auth', label: 'OAuth2 Server', value: 28 }
+        ]
+    },
+    ram: {
+        label: 'RAM',
+        unit: 'GB',
+        rows: [
+            { id: 'forum', label: 'Forum Service', value: 5.8 },
+            { id: 'users', label: 'User Service', value: 4.6 },
+            { id: 'store', label: 'Store Service', value: 3.9 },
+            { id: 'gateway', label: 'API Gateway', value: 2.8 },
+            { id: 'auth', label: 'OAuth2 Server', value: 2.1 }
+        ]
+    }
+};
+
 export const TABLE_DATA = {
     players: [
         {

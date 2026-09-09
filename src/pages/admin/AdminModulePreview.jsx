@@ -1,6 +1,7 @@
 import { FaCircleCheck, FaDatabase, FaFlask, FaLayerGroup, FaListCheck } from 'react-icons/fa6';
 import { AdminMetricCard } from '../../components/admin/AdminUi';
 import AdminDemoTable from '../../components/admin/AdminDemoTable';
+import AdminSystemStatusView from '../../components/admin/AdminSystemStatusView';
 import {
     ActivityView,
     BoardView,
@@ -131,20 +132,26 @@ export default function AdminModulePreview({ module }) {
                 </div>
             </div>
 
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {metrics.map(([value, label, tone], index) => (
-                    <AdminMetricCard
-                        detail={`${label} · Testdatensatz`}
-                        icon={METRIC_ICONS[index]}
-                        key={label}
-                        label={`Kennzahl 0${index + 1}`}
-                        tone={tone}
-                        value={value}
-                    />
-                ))}
-            </section>
+            {module === 'system-status' ? (
+                <AdminSystemStatusView />
+            ) : (
+                <>
+                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        {metrics.map(([value, label, tone], index) => (
+                            <AdminMetricCard
+                                detail={`${label} · Testdatensatz`}
+                                icon={METRIC_ICONS[index]}
+                                key={label}
+                                label={`Kennzahl 0${index + 1}`}
+                                tone={tone}
+                                value={value}
+                            />
+                        ))}
+                    </section>
 
-            <section className="mt-6">{renderModuleView(module, title)}</section>
+                    <section className="mt-6">{renderModuleView(module, title)}</section>
+                </>
+            )}
         </div>
     );
 }
