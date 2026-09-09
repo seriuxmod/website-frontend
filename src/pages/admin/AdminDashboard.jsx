@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
     FaArrowRight,
     FaArrowRotateRight,
@@ -18,7 +18,6 @@ import {
     AdminMetricCard,
     AdminPendingState
 } from '../../components/admin/AdminUi';
-import AdminApiWorldMap from '../../components/admin/AdminApiWorldMap';
 import {
     fetchAuthenticatedUser,
     getAuthenticatedUser,
@@ -33,6 +32,7 @@ import { userAdminApi } from '../../lib/userAdminApi';
 
 const STATUS_API = 'https://api.seriuxmod.net/api/v1/status/summary';
 const EMPTY_DATA = { users: null, store: null, forum: null, status: null };
+const AdminApiWorldMap = lazy(() => import('../../components/admin/AdminApiWorldMap'));
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(() => getAuthenticatedUser());
@@ -236,7 +236,18 @@ export default function AdminDashboard() {
             </section>
 
             <div className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.65fr)]">
-                <AdminApiWorldMap />
+                <Suspense
+                    fallback={
+                        <section className="grid min-h-[580px] place-items-center rounded-[28px] border border-white/[.07] bg-[#0e1015]">
+                            <div className="text-center">
+                                <FaSpinner className="mx-auto animate-spin text-xl text-orange-300" />
+                                <p className="mt-3 text-xs font-bold text-zinc-500">Weltkarte wird geladen</p>
+                            </div>
+                        </section>
+                    }
+                >
+                    <AdminApiWorldMap />
+                </Suspense>
                 {isUserAdministrator(user) ? (
                     <OnlineStaff staff={data.users?.onlineStaff ?? []} state={sourceState.users} />
                 ) : (

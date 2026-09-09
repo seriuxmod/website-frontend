@@ -493,22 +493,20 @@
     animation: api-map-scan 8s linear infinite;
 }
 
-.api-world-map-land {
-    opacity: 0.92;
-    filter: drop-shadow(0 0 18px rgba(249, 115, 22, 0.07));
+.api-tanstack-world-map {
+    color: #fb923c;
+    opacity: 0.96;
+    filter: drop-shadow(0 0 22px rgba(249, 115, 22, 0.06));
 }
 
-.api-world-map-land-base path {
-    fill: rgba(255, 255, 255, 0.018);
-    stroke: rgba(255, 255, 255, 0.06);
-    stroke-width: 0.8;
-    vector-effect: non-scaling-stroke;
+.api-tanstack-world-map > div,
+.api-tanstack-world-map svg {
+    width: 100% !important;
 }
 
-.api-map-land-sweep {
-    mix-blend-mode: screen;
-    opacity: 0.55;
-    animation: api-land-sweep 7.5s linear infinite;
+.api-map-overlay {
+    z-index: 2;
+    pointer-events: none;
 }
 
 .api-map-connection {
@@ -571,6 +569,7 @@
 .api-map-location {
     cursor: pointer;
     outline: none;
+    pointer-events: auto;
 }
 
 .api-map-location:focus > circle:nth-last-child(-n + 2),
@@ -646,15 +645,6 @@
     }
 }
 
-@keyframes api-land-sweep {
-    0% {
-        transform: translateX(0);
-    }
-    100% {
-        transform: translateX(1450px);
-    }
-}
-
 @keyframes api-activity-dot {
     50% {
         opacity: 0.38;
@@ -697,7 +687,6 @@
 
 @media (prefers-reduced-motion: reduce) {
     .api-world-map-scan,
-    .api-map-land-sweep,
     .api-map-route,
     .api-map-route-packet,
     .api-map-radar circle,

@@ -1,22 +1,76 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Chart } from '@tanstack/charts/react/tooltip';
+import { defineChart } from '@tanstack/charts';
+import { geoShape } from '@tanstack/charts/geo';
+import { tooltip as chartTooltip } from '@tanstack/charts/tooltip';
+import { geoEqualEarth } from 'd3-geo';
+import { scaleQuantize } from 'd3-scale';
+import { feature } from 'topojson-client';
+import worldAtlas from 'world-atlas/countries-110m.json';
 import { FaArrowTrendUp, FaBolt, FaCodeBranch, FaGlobe, FaLocationDot } from 'react-icons/fa6';
+
+const WORLD_SPHERE = { type: 'Sphere' };
+const WORLD_COUNTRIES = feature(worldAtlas, worldAtlas.objects.countries).features;
+const MAP_MARGIN = 12;
 
 const API_ORIGIN = {
     id: 'fra',
     name: 'Frankfurt',
+    country: 'Germany',
     detail: 'SeriuxMod API Gateway',
     requests: 'Zielregion',
-    x: 506,
-    y: 174
+    coordinates: [8.6821, 50.1109]
 };
 
 const TRAFFIC_ROUTES = [
-    { id: 'iad', name: 'Virginia', detail: '/api/v1/user', requests: '3.420 Anfragen', x: 270, y: 192 },
-    { id: 'gru', name: 'São Paulo', detail: '/api/v1/player', requests: '1.180 Anfragen', x: 368, y: 360 },
-    { id: 'dxb', name: 'Dubai', detail: '/oauth2/token', requests: '2.140 Anfragen', x: 615, y: 240 },
-    { id: 'sin', name: 'Singapur', detail: '/api/v1/store', requests: '2.890 Anfragen', x: 762, y: 320 },
-    { id: 'nrt', name: 'Tokio', detail: '/api/v1/status', requests: '1.760 Anfragen', x: 851, y: 205 },
-    { id: 'syd', name: 'Sydney', detail: '/api/v1/social', requests: '1.410 Anfragen', x: 870, y: 392 }
+    {
+        id: 'iad',
+        name: 'Virginia',
+        country: 'United States of America',
+        detail: '/api/v1/user',
+        requests: '3.420 Anfragen',
+        coordinates: [-77.0369, 38.9072]
+    },
+    {
+        id: 'gru',
+        name: 'São Paulo',
+        country: 'Brazil',
+        detail: '/api/v1/player',
+        requests: '1.180 Anfragen',
+        coordinates: [-46.6333, -23.5505]
+    },
+    {
+        id: 'dxb',
+        name: 'Dubai',
+        country: 'United Arab Emirates',
+        detail: '/oauth2/token',
+        requests: '2.140 Anfragen',
+        coordinates: [55.2708, 25.2048]
+    },
+    {
+        id: 'sin',
+        name: 'Singapur',
+        country: 'Singapore',
+        detail: '/api/v1/store',
+        requests: '2.890 Anfragen',
+        coordinates: [103.8198, 1.3521]
+    },
+    {
+        id: 'nrt',
+        name: 'Tokio',
+        country: 'Japan',
+        detail: '/api/v1/status',
+        requests: '1.760 Anfragen',
+        coordinates: [139.6917, 35.6895]
+    },
+    {
+        id: 'syd',
+        name: 'Sydney',
+        country: 'Australia',
+        detail: '/api/v1/social',
+        requests: '1.410 Anfragen',
+        coordinates: [151.2093, -33.8688]
+    }
 ];
 
 const API_METRICS = [
@@ -26,37 +80,135 @@ const API_METRICS = [
     { label: 'Aktive Regionen', value: '6', icon: FaGlobe }
 ];
 
-const CONTINENTS = [
-    'M72 134 96 93 157 75 201 91 236 118 250 154 226 173 216 205 181 211 163 239 132 225 124 196 92 185 65 157Z',
-    'M266 229 310 235 343 269 351 304 383 327 368 381 347 430 323 457 304 417 295 373 273 330 256 279Z',
-    'M421 124 456 105 501 112 521 139 509 164 472 174 444 157Z',
-    'M459 186 514 184 553 211 570 253 551 292 537 348 508 395 480 354 473 303 449 267 430 224Z',
-    'M524 121 578 90 650 82 711 97 758 88 822 106 884 132 929 166 914 203 875 215 848 247 805 241 773 272 737 253 704 281 665 257 630 231 595 209 553 181Z',
-    'M786 338 828 319 883 327 925 358 913 401 875 424 826 409 796 378Z',
-    'M939 424 955 418 965 438 951 451Z',
-    'M281 66 302 39 333 43 350 72 326 91 296 85Z'
-];
+const CHOROPLETH_COLORS = ['#15171d', '#1e1b19', '#2d1d17', '#4d2416', '#813312', '#d94a0b', '#ff721b'];
+const ROUTE_COUNTRY_TRAFFIC = new Map([
+    ['Germany', 5_100],
+    ...TRAFFIC_ROUTES.map((route) => [route.country, Number.parseInt(route.requests.replaceAll('.', ''), 10)])
+]);
 
-function routePath(route) {
-    const centerX = (route.x + API_ORIGIN.x) / 2;
-    const distance = Math.abs(route.x - API_ORIGIN.x);
-    const centerY = Math.min(route.y, API_ORIGIN.y) - Math.max(42, distance * 0.16);
-    return `M ${route.x} ${route.y} Q ${centerX} ${centerY} ${API_ORIGIN.x} ${API_ORIGIN.y}`;
+const countryTraffic = (country, index) => {
+    const countryName = country.properties?.name || `Region ${index + 1}`;
+    const configuredTraffic = ROUTE_COUNTRY_TRAFFIC.get(countryName);
+    const backgroundTraffic =
+        120 +
+        (Array.from(countryName).reduce((total, character) => total + character.codePointAt(0), index * 17) % 920);
+
+    return {
+        ...country,
+        properties: {
+            ...country.properties,
+            name: countryName,
+            testTraffic: configuredTraffic || backgroundTraffic
+        }
+    };
+};
+
+const BASE_TRAFFIC_COUNTRIES = WORLD_COUNTRIES.map(countryTraffic);
+
+function createTrafficChart(activeCountry) {
+    const countries = BASE_TRAFFIC_COUNTRIES.map((country) => ({
+        ...country,
+        properties: {
+            ...country.properties,
+            testTraffic:
+                country.properties.name === activeCountry
+                    ? Math.max(6_500, country.properties.testTraffic + 2_400)
+                    : country.properties.testTraffic
+        }
+    }));
+
+    const projection = {
+        type: geoEqualEarth,
+        fit: 'sphere'
+    };
+
+    return defineChart(
+        {
+            marks: [
+                geoShape(countries, {
+                    id: 'api-country-traffic',
+                    key: (country) => country.id,
+                    projection,
+                    color: (country) => country.properties.testTraffic,
+                    stroke: '#503126',
+                    strokeOpacity: 0.62,
+                    strokeWidth: 0.6
+                }),
+                geoShape([WORLD_SPHERE], {
+                    id: 'api-world-frame',
+                    projection,
+                    fill: 'none',
+                    stroke: '#9a4e2e',
+                    strokeOpacity: 0.38,
+                    strokeWidth: 0.8
+                })
+            ],
+            scales: {
+                x: null,
+                y: null
+            },
+            color: {
+                scale: scaleQuantize,
+                range: CHOROPLETH_COLORS
+            },
+            margin: MAP_MARGIN
+        },
+        {
+            keyboard: true,
+            tooltip: {
+                use: chartTooltip,
+                format: ({ datum }) => {
+                    const properties = datum?.properties;
+                    if (!properties?.name) return 'Globale API-Region';
+                    return `${properties.name} · ${Number(properties.testTraffic || 0).toLocaleString('de-DE')} Test-Anfragen/min`;
+                }
+            }
+        }
+    );
 }
 
-function tooltipPosition(location) {
+function routePath(route, origin) {
+    const centerX = (route.x + origin.x) / 2;
+    const distance = Math.abs(route.x - origin.x);
+    const centerY = Math.min(route.y, origin.y) - Math.max(38, distance * 0.14);
+    return `M ${route.x} ${route.y} Q ${centerX} ${centerY} ${origin.x} ${origin.y}`;
+}
+
+function tooltipPosition(location, mapSize) {
     return {
-        left: `${Math.min(92, Math.max(8, location.x / 10))}%`,
-        top: `${Math.min(90, Math.max(14, (location.y - 34) / 4.2))}%`
+        left: `${Math.min(mapSize.width - 90, Math.max(90, location.x))}px`,
+        top: `${Math.min(mapSize.height - 24, Math.max(74, location.y))}px`
     };
 }
 
 export default function AdminApiWorldMap() {
+    const mapRef = useRef(null);
     const [activeLocation, setActiveLocation] = useState(null);
     const [activeRouteIndex, setActiveRouteIndex] = useState(0);
+    const [mapSize, setMapSize] = useState({ width: 1000, height: 430 });
     const activeRoute = TRAFFIC_ROUTES[activeRouteIndex];
     const highlightedRouteId =
         activeLocation && activeLocation.id !== API_ORIGIN.id ? activeLocation.id : activeRoute.id;
+    const chartDefinition = useMemo(() => createTrafficChart(activeRoute.country), [activeRoute.country]);
+
+    const projectedMap = useMemo(() => {
+        const projection = geoEqualEarth().fitExtent(
+            [
+                [MAP_MARGIN, MAP_MARGIN],
+                [mapSize.width - MAP_MARGIN, mapSize.height - MAP_MARGIN]
+            ],
+            WORLD_SPHERE
+        );
+        const project = (location) => {
+            const [x, y] = projection(location.coordinates) || [0, 0];
+            return { ...location, x, y };
+        };
+
+        return {
+            origin: project(API_ORIGIN),
+            routes: TRAFFIC_ROUTES.map(project)
+        };
+    }, [mapSize]);
 
     useEffect(() => {
         const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -69,6 +221,21 @@ export default function AdminApiWorldMap() {
         return () => window.clearInterval(interval);
     }, []);
 
+    useEffect(() => {
+        const element = mapRef.current;
+        if (!element) return undefined;
+
+        const updateSize = () => {
+            const width = Math.max(320, Math.round(element.getBoundingClientRect().width));
+            setMapSize({ width, height: width < 640 ? 350 : 430 });
+        };
+        const observer = new ResizeObserver(updateSize);
+        observer.observe(element);
+        updateSize();
+
+        return () => observer.disconnect();
+    }, []);
+
     return (
         <section className="overflow-hidden rounded-[28px] border border-white/[.07] bg-[#0e1015] shadow-[0_24px_80px_rgba(0,0,0,.18)]">
             <div className="flex flex-wrap items-start justify-between gap-4 px-5 pb-1 pt-5 sm:px-7 sm:pt-7">
@@ -76,7 +243,7 @@ export default function AdminApiWorldMap() {
                     <p className="eyebrow">GLOBALER API-TRAFFIC</p>
                     <h3 className="mt-2 font-display text-2xl font-bold">API Overview</h3>
                     <p className="mt-2 text-xs text-zinc-600">
-                        Geografische Vorschau eingehender Anfragen an die SeriuxMod-Endpunkte.
+                        Länderbasierte API-Vorschau mit TanStack Charts und animierten Request-Routen.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -89,26 +256,27 @@ export default function AdminApiWorldMap() {
                 </div>
             </div>
 
-            <div className="api-world-map relative mt-3 min-h-[370px] overflow-hidden sm:min-h-[430px]">
+            <div
+                ref={mapRef}
+                className="api-world-map relative mt-3 overflow-hidden"
+                style={{ height: `${mapSize.height}px` }}
+            >
+                <div className="api-tanstack-world-map absolute inset-0">
+                    <Chart
+                        ariaLabel="Länderbasierte Weltkarte mit simuliertem API-Traffic"
+                        definition={chartDefinition}
+                        height={mapSize.height}
+                    />
+                </div>
                 <div className="api-world-map-scan" />
+
                 <svg
-                    className="absolute inset-0 h-full w-full"
-                    viewBox="0 38 1000 424"
-                    preserveAspectRatio="xMidYMid slice"
+                    className="api-map-overlay absolute inset-0 h-full w-full"
+                    viewBox={`0 0 ${mapSize.width} ${mapSize.height}`}
                     role="img"
-                    aria-label="Animierte Weltkarte mit simulierten API-Anfragen"
+                    aria-label="Animierte Verbindungen eingehender API-Anfragen zum Gateway Frankfurt"
                 >
                     <defs>
-                        <pattern id="api-map-dots" width="8" height="8" patternUnits="userSpaceOnUse">
-                            <circle cx="2" cy="2" r="1.25" fill="rgba(212,212,216,.46)">
-                                <animate
-                                    attributeName="opacity"
-                                    values=".48;.92;.48"
-                                    dur="4.8s"
-                                    repeatCount="indefinite"
-                                />
-                            </circle>
-                        </pattern>
                         <filter id="api-map-glow" x="-80%" y="-80%" width="260%" height="260%">
                             <feGaussianBlur stdDeviation="5" result="blur" />
                             <feMerge>
@@ -120,41 +288,11 @@ export default function AdminApiWorldMap() {
                             <stop offset="0" stopColor="#ffb26f" />
                             <stop offset="1" stopColor="#f04400" />
                         </linearGradient>
-                        <linearGradient id="api-land-sweep-gradient" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0" stopColor="#f97316" stopOpacity="0" />
-                            <stop offset=".5" stopColor="#fb923c" stopOpacity=".52" />
-                            <stop offset="1" stopColor="#f97316" stopOpacity="0" />
-                        </linearGradient>
-                        <clipPath id="api-world-land-clip">
-                            {CONTINENTS.map((path, index) => (
-                                <path d={path} key={index} />
-                            ))}
-                        </clipPath>
                     </defs>
 
-                    <g className="api-world-map-land-base">
-                        {CONTINENTS.map((path, index) => (
-                            <path d={path} key={index} />
-                        ))}
-                    </g>
-                    <g className="api-world-map-land">
-                        {CONTINENTS.map((path, index) => (
-                            <path d={path} fill="url(#api-map-dots)" key={index} />
-                        ))}
-                    </g>
-                    <rect
-                        className="api-map-land-sweep"
-                        x="-420"
-                        y="32"
-                        width="300"
-                        height="440"
-                        fill="url(#api-land-sweep-gradient)"
-                        clipPath="url(#api-world-land-clip)"
-                    />
-
                     <g aria-hidden="true">
-                        {TRAFFIC_ROUTES.map((route, index) => {
-                            const path = routePath(route);
+                        {projectedMap.routes.map((route, index) => {
+                            const path = routePath(route, projectedMap.origin);
                             return (
                                 <g
                                     className={`api-map-connection ${route.id === highlightedRouteId ? 'is-active' : ''}`}
@@ -187,8 +325,8 @@ export default function AdminApiWorldMap() {
                     <g className="api-map-radar" aria-hidden="true">
                         {[0, 1, 2].map((ring) => (
                             <circle
-                                cx={API_ORIGIN.x}
-                                cy={API_ORIGIN.y}
+                                cx={projectedMap.origin.x}
+                                cy={projectedMap.origin.y}
                                 r="11"
                                 key={ring}
                                 style={{ '--radar-delay': `${ring * 0.9}s` }}
@@ -201,17 +339,28 @@ export default function AdminApiWorldMap() {
                         tabIndex="0"
                         role="button"
                         aria-label={`${API_ORIGIN.name}: ${API_ORIGIN.detail}`}
-                        onFocus={() => setActiveLocation(API_ORIGIN)}
+                        onFocus={() => setActiveLocation(projectedMap.origin)}
                         onBlur={() => setActiveLocation(null)}
-                        onMouseEnter={() => setActiveLocation(API_ORIGIN)}
+                        onMouseEnter={() => setActiveLocation(projectedMap.origin)}
                         onMouseLeave={() => setActiveLocation(null)}
                     >
-                        <circle className="api-map-pulse" cx={API_ORIGIN.x} cy={API_ORIGIN.y} r="15" />
-                        <circle cx={API_ORIGIN.x} cy={API_ORIGIN.y} r="6" fill="#ff7a24" filter="url(#api-map-glow)" />
-                        <circle cx={API_ORIGIN.x} cy={API_ORIGIN.y} r="2" fill="#fff4ea" />
+                        <circle
+                            className="api-map-pulse"
+                            cx={projectedMap.origin.x}
+                            cy={projectedMap.origin.y}
+                            r="15"
+                        />
+                        <circle
+                            cx={projectedMap.origin.x}
+                            cy={projectedMap.origin.y}
+                            r="6"
+                            fill="#ff7a24"
+                            filter="url(#api-map-glow)"
+                        />
+                        <circle cx={projectedMap.origin.x} cy={projectedMap.origin.y} r="2" fill="#fff4ea" />
                     </g>
 
-                    {TRAFFIC_ROUTES.map((route, index) => (
+                    {projectedMap.routes.map((route, index) => (
                         <g
                             className={`api-map-location ${route.id === highlightedRouteId ? 'is-active' : ''}`}
                             key={route.id}
@@ -236,11 +385,11 @@ export default function AdminApiWorldMap() {
                     ))}
                 </svg>
 
-                <div className="pointer-events-none absolute left-5 top-5 flex items-center gap-2 rounded-full border border-white/[.07] bg-[#0b0c10]/80 px-3 py-2 text-[9px] font-bold uppercase tracking-[.15em] text-zinc-500 backdrop-blur-xl sm:left-7">
+                <div className="pointer-events-none absolute left-5 top-5 z-10 flex items-center gap-2 rounded-full border border-white/[.07] bg-[#0b0c10]/80 px-3 py-2 text-[9px] font-bold uppercase tracking-[.15em] text-zinc-500 backdrop-blur-xl sm:left-7">
                     <FaLocationDot className="text-orange-300" /> Gateway Frankfurt
                 </div>
 
-                <div className="api-map-activity pointer-events-none absolute bottom-5 left-1/2 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-orange-400/15 bg-[#090a0e]/85 px-3 py-2 text-[9px] font-bold uppercase tracking-[.12em] text-zinc-500 backdrop-blur-xl sm:flex">
+                <div className="api-map-activity pointer-events-none absolute bottom-5 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-orange-400/15 bg-[#090a0e]/85 px-3 py-2 text-[9px] font-bold uppercase tracking-[.12em] text-zinc-500 backdrop-blur-xl sm:flex">
                     <span className="api-map-activity-dot" />
                     <span className="text-zinc-300">{activeRoute.name}</span>
                     <span>→</span>
@@ -250,8 +399,8 @@ export default function AdminApiWorldMap() {
 
                 {activeLocation && (
                     <div
-                        className="api-map-tooltip pointer-events-none absolute z-10 w-44 rounded-2xl border border-orange-400/20 bg-[#111218]/95 p-3 shadow-2xl backdrop-blur-xl"
-                        style={tooltipPosition(activeLocation)}
+                        className="api-map-tooltip pointer-events-none absolute z-20 w-44 rounded-2xl border border-orange-400/20 bg-[#111218]/95 p-3 shadow-2xl backdrop-blur-xl"
+                        style={tooltipPosition(activeLocation, mapSize)}
                     >
                         <b className="block text-xs text-white">{activeLocation.name}</b>
                         <span className="mt-1 block text-[10px] font-semibold text-orange-300">
