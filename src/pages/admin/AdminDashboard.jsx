@@ -270,7 +270,7 @@ export default function AdminDashboard() {
                             pending={sourceState.users !== 'ready'}
                             pendingState={sourceState.users}
                             title="Benutzerverwaltung"
-                            to="/admin/users"
+                            to="/admin/players"
                         />
                     )}
                     {isForumAdministrator(user) && (
@@ -284,7 +284,7 @@ export default function AdminDashboard() {
                             pending={sourceState.forum !== 'ready'}
                             pendingState={sourceState.forum}
                             title="Forumverwaltung"
-                            to="/admin/forum"
+                            to="/admin/forum/analytics"
                         />
                     )}
                     {isStoreAdministrator(user) && (
@@ -298,7 +298,7 @@ export default function AdminDashboard() {
                             pending={sourceState.store !== 'ready'}
                             pendingState={sourceState.store}
                             title="Shopverwaltung"
-                            to="/admin/store"
+                            to="/admin/commerce"
                         />
                     )}
                 </div>

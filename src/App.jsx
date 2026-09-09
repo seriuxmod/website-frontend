@@ -15,7 +15,6 @@ import PublicPlayerProfile from './pages/platform/PublicPlayerProfile';
 import ForumIndex from './pages/forum/ForumIndex';
 import ForumBoard from './pages/forum/ForumBoard';
 import ForumTopic from './pages/forum/ForumTopic';
-import ForumAdmin from './pages/forum/ForumAdmin';
 import ForumAccount from './pages/forum/ForumAccount';
 import LegacyForumProfileRedirect from './pages/forum/LegacyForumProfileRedirect';
 import CommunityPage from './pages/community/CommunityPage';
@@ -24,10 +23,9 @@ import CommunityFeedback from './pages/community/CommunityFeedback';
 import StoreIndex from './pages/store/StoreIndex';
 import StoreCheckout from './pages/store/StoreCheckout';
 import StoreAccount from './pages/store/StoreAccount';
-import StoreAdmin from './pages/store/StoreAdmin';
 import Security from './pages/platform/Security';
 import AdminDashboard from './pages/admin/AdminDashboard';
-import UserAdmin from './pages/admin/UserAdmin';
+import AdminModulePreview from './pages/admin/AdminModulePreview';
 import AdminLayout from './components/admin/AdminLayout';
 import VerifyEmail from './pages/platform/VerifyEmail';
 import ResetPassword from './pages/platform/ResetPassword';
@@ -61,9 +59,36 @@ export default function App() {
                 <Route path="/store/account" element={<StoreAccount />} />
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
-                    <Route path="users" element={<UserAdmin />} />
-                    <Route path="forum" element={<ForumAdmin />} />
-                    <Route path="store" element={<StoreAdmin />} />
+                    <Route path="system-status" element={<AdminModulePreview module="system-status" />} />
+                    <Route path="players" element={<AdminModulePreview module="players" />} />
+                    <Route path="permissions" element={<AdminModulePreview module="permissions" />} />
+                    <Route path="cosmetics" element={<AdminModulePreview module="cosmetics" />} />
+                    <Route path="friends" element={<AdminModulePreview module="friends" />} />
+                    <Route path="clans" element={<AdminModulePreview module="clans" />} />
+                    <Route path="parties" element={<AdminModulePreview module="parties" />} />
+                    <Route path="moderation" element={<AdminModulePreview module="moderation" />} />
+                    <Route path="moderation/bans" element={<AdminModulePreview module="bans" />} />
+                    <Route path="moderation/mutes" element={<AdminModulePreview module="mutes" />} />
+                    <Route path="moderation/settings" element={<AdminModulePreview module="moderation-settings" />} />
+                    <Route path="forum/analytics" element={<AdminModulePreview module="forum-analytics" />} />
+                    <Route path="forum/structure" element={<AdminModulePreview module="forum-structure" />} />
+                    <Route path="forum/permissions" element={<AdminModulePreview module="forum-permissions" />} />
+                    <Route path="forum/labels" element={<AdminModulePreview module="forum-labels" />} />
+                    <Route path="forum/reports" element={<AdminModulePreview module="forum-reports" />} />
+                    <Route path="forum/suggestions" element={<AdminModulePreview module="forum-suggestions" />} />
+                    <Route path="forum/blog" element={<AdminModulePreview module="forum-blog" />} />
+                    <Route path="forum/settings" element={<AdminModulePreview module="forum-settings" />} />
+                    <Route path="commerce" element={<AdminModulePreview module="commerce" />} />
+                    <Route path="commerce/customers" element={<AdminModulePreview module="customers" />} />
+                    <Route path="commerce/catalog" element={<AdminModulePreview module="catalog" />} />
+                    <Route path="commerce/fields" element={<AdminModulePreview module="fields" />} />
+                    <Route path="commerce/coupons" element={<AdminModulePreview module="coupons" />} />
+                    <Route path="commerce/orders" element={<AdminModulePreview module="orders" />} />
+                    <Route path="commerce/payment-methods" element={<AdminModulePreview module="payment-methods" />} />
+                    <Route path="commerce/settings" element={<AdminModulePreview module="commerce-settings" />} />
+                    <Route path="users" element={<Navigate to="/admin/players" replace />} />
+                    <Route path="forum" element={<Navigate to="/admin/forum/analytics" replace />} />
+                    <Route path="store" element={<Navigate to="/admin/commerce" replace />} />
                 </Route>
                 <Route path="/account/security" element={<Security />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
