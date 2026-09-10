@@ -186,16 +186,16 @@ export default function AdminSystemStatusView() {
             <LiveStatusBar data={data} error={error} onRefresh={() => load(true)} refreshing={refreshing} />
             <PlatformCapacity platform={data?.platform} />
             <StatusFlow groups={flowGroups} />
+            <section className="grid gap-6 2xl:grid-cols-[minmax(0,1.4fr)_minmax(360px,.6fr)]">
+                <TopologyCard topology={data?.topology} generatedAt={data?.generatedAt} />
+                <ServiceLoadDonut services={data?.swarmServices ?? []} />
+            </section>
             <ServiceInventory
                 services={data?.swarmServices ?? []}
                 stackName={data?.stackName ?? 'seriuxmod'}
                 onScale={handleScale}
                 scaleOperation={scaleOperation}
             />
-            <section className="grid gap-6 2xl:grid-cols-[minmax(0,1.4fr)_minmax(360px,.6fr)]">
-                <TopologyCard topology={data?.topology} generatedAt={data?.generatedAt} />
-                <ServiceLoadDonut services={data?.swarmServices ?? []} />
-            </section>
         </div>
     );
 }
@@ -694,6 +694,10 @@ function ServiceRow({ service, busy, onScale }) {
                             onIncrease={() => changeDraft(1)}
                             value={draftReplicas}
                         />
+                    ) : service.swarmMode === 'global' ? (
+                        <span className="max-w-32 text-right text-[9px] leading-4 text-emerald-400/70">
+                            Automatisch je Manager-Node
+                        </span>
                     ) : (
                         <span className="text-[9px] text-zinc-700">Nicht skalierbar</span>
                     )}
@@ -816,7 +820,7 @@ function TopologyCard({ topology, generatedAt }) {
                     </div>
                     <h3 className="mt-2 font-display text-xl font-bold">Wie SeriuxMod verbunden ist</h3>
                     <p className="mt-2 text-xs leading-5 text-zinc-600">
-                        Force-Directed Network aus Swarm-Services, Overlay-Netzwerken und den aktuell belegten Nodes.
+                        Live-Struktur aus Services, Overlay-Netzwerken, Swarm-Nodes, MongoDB und Redis.
                     </p>
                 </div>
                 <FaCodeBranch className="mt-1 text-orange-300" />
@@ -834,6 +838,8 @@ function TopologyCard({ topology, generatedAt }) {
                         <TopologyLegend color="bg-orange-400" label="Service" />
                         <TopologyLegend color="bg-sky-400" label="Overlay-Netzwerk" />
                         <TopologyLegend color="bg-emerald-400" label="Swarm Node" />
+                        <TopologyLegend color="bg-violet-400" label="MongoDB Node" />
+                        <TopologyLegend color="bg-rose-400" label="Redis Cache" />
                         <TopologyLegend color="bg-red-400" label="Beeinträchtigter Service" />
                     </div>
                 </>
@@ -874,15 +880,18 @@ function buildTopologyLayout(topology) {
             'link',
             d3ForceLink(layoutLinks)
                 .id((node) => node.id)
-                .distance((edge) => (edge.type === 'deployment' ? 92 : 64))
+                .distance((edge) => (edge.type === 'deployment' ? 92 : edge.type === 'network' ? 64 : 105))
                 .strength(0.58)
         )
         .force(
             'charge',
-            forceManyBody().strength((node) => (node.type === 'service' ? -360 : -220))
+            forceManyBody().strength((node) => (node.type === 'service' ? -390 : -240))
         )
         .force('center', forceCenter(0, 0))
-        .force('collision', forceCollide((node) => (node.type === 'service' ? 37 : 27)).strength(0.95))
+        .force(
+            'collision',
+            forceCollide((node) => (node.type === 'service' ? 39 : node.type === 'database' ? 31 : 27)).strength(0.95)
+        )
         .force('x', forceX(0).strength(0.035))
         .force('y', forceY(0).strength(0.035))
         .stop();
@@ -921,16 +930,30 @@ function createTopologyDefinition(graph) {
                 y1: 'y1',
                 x2: 'x2',
                 y2: 'y2',
-                stroke: (edge) => (edge.type === 'deployment' ? '#34d399' : '#52525b'),
+                stroke: (edge) =>
+                    edge.type === 'deployment'
+                        ? '#34d399'
+                        : edge.type === 'database'
+                          ? '#a78bfa'
+                          : edge.type === 'cache'
+                            ? '#fb7185'
+                            : '#52525b',
                 strokeOpacity: 0.5,
-                strokeWidth: (edge) => (edge.type === 'deployment' ? 1.4 : 2)
+                strokeWidth: (edge) => (edge.type === 'network' ? 2 : 1.4)
             }),
             dot(graph.nodes, {
                 id: 'seriuxmod-topology-nodes',
                 x: 'x',
                 y: 'y',
                 color: 'visualGroup',
-                r: (node) => (node.type === 'service' ? 11 : node.type === 'node' ? 9 : 7),
+                r: (node) =>
+                    node.type === 'service'
+                        ? 11
+                        : node.type === 'node'
+                          ? 9
+                          : node.type === 'database' || node.type === 'cache'
+                            ? 8
+                            : 7,
                 stroke: '#111218',
                 strokeWidth: 3
             }),
@@ -951,8 +974,8 @@ function createTopologyDefinition(graph) {
         },
         guides: false,
         color: {
-            domain: ['service', 'service-degraded', 'service-offline', 'network', 'node'],
-            range: ['#f97316', '#fbbf24', '#f87171', '#38bdf8', '#34d399']
+            domain: ['service', 'service-degraded', 'service-offline', 'network', 'node', 'database', 'cache'],
+            range: ['#f97316', '#fbbf24', '#f87171', '#38bdf8', '#34d399', '#a78bfa', '#fb7185']
         },
         margin: 32,
         theme: {
