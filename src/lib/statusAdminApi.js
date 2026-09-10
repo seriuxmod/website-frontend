@@ -10,7 +10,9 @@ async function request(path, options = {}) {
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const error = new Error(payload.message || payload.detail || `Status-Anfrage fehlgeschlagen (${response.status})`);
+        const error = new Error(
+            payload.message || payload.detail || `Status-Anfrage fehlgeschlagen (${response.status})`
+        );
         error.status = response.status;
         throw error;
     }
@@ -18,5 +20,11 @@ async function request(path, options = {}) {
 }
 
 export const statusAdminApi = {
-    summary: (signal) => request('/admin/summary', { signal })
+    summary: (signal) => request('/admin/summary', { signal }),
+    scaleService: (serviceName, replicas) =>
+        request(`/admin/services/${encodeURIComponent(serviceName)}/replicas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ replicas })
+        })
 };
