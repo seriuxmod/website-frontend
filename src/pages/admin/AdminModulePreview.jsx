@@ -2,6 +2,7 @@ import { FaCircleCheck, FaDatabase, FaFlask, FaLayerGroup, FaListCheck } from 'r
 import { AdminMetricCard } from '../../components/admin/AdminUi';
 import AdminDemoTable from '../../components/admin/AdminDemoTable';
 import AdminSystemStatusView from '../../components/admin/AdminSystemStatusView';
+import AdminForumView from '../../components/admin/forum/AdminForumView';
 import {
     ActivityView,
     BoardView,
@@ -83,6 +84,8 @@ const MODULE_KINDS = {
 const METRIC_ICONS = [FaDatabase, FaLayerGroup, FaListCheck, FaCircleCheck];
 
 export default function AdminModulePreview({ module }) {
+    if (module.startsWith('forum-')) return <AdminForumView module={module} />;
+
     const isLiveStatus = module === 'system-status';
     const route = MODULE_ROUTES[module] ?? MODULE_ROUTES.players;
     const group = adminNavigationGroups.find((candidate) => candidate.items.some((item) => item.to === route));

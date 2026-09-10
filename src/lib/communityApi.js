@@ -13,7 +13,9 @@ async function request(path, options = {}) {
     if (response.status === 204) return null;
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
-        const error = new Error(payload.message || payload.error || 'Die Community-Anfrage ist fehlgeschlagen.');
+        const error = new Error(
+            payload.detail || payload.message || payload.error || 'Die Community-Anfrage ist fehlgeschlagen.'
+        );
         error.status = response.status;
         throw error;
     }
@@ -28,12 +30,26 @@ export const blogApi = {
         if (query) params.set('q', query);
         return request(`/blog/posts?${params}`);
     },
+    byId: (id) => request(`/blog/posts/${encodeURIComponent(id)}`),
     bySlug: (slug) => request(`/blog/posts/slug/${encodeURIComponent(slug)}`),
     create: (body) => request('/blog/posts', { method: 'POST', body: JSON.stringify(body) }),
-    update: (id, body) => request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) }),
+    update: (id, body) =>
+        request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) }),
+    patch: (id, body) =>
+        request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
     publish: (id) => request(`/blog/posts/${encodeURIComponent(id)}:publish`, { method: 'POST' }),
     unpublish: (id) => request(`/blog/posts/${encodeURIComponent(id)}:unpublish`, { method: 'POST' }),
-    remove: (id) => request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    remove: (id) => request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    admin: {
+        list: ({ page = 0, size = 20, status = '', category = '', query = '' } = {}) => {
+            const params = new URLSearchParams({ page: String(page), size: String(size) });
+            if (status) params.set('status', status);
+            if (category) params.set('category', category);
+            if (query) params.set('q', query);
+            return request(`/admin/blog/posts?${params}`);
+        },
+        byId: (id) => request(`/admin/blog/posts/${encodeURIComponent(id)}`)
+    }
 };
 
 export const suggestionsApi = {
@@ -60,6 +76,14 @@ export const suggestionsApi = {
     statuses: () => request('/suggestions/statuses'),
     admin: {
         list: () => request('/admin/suggestions'),
+        search: ({ page = 0, size = 25, statusId = '', categoryId = '', deleted, query = '' } = {}) => {
+            const params = new URLSearchParams({ page: String(page), size: String(size) });
+            if (statusId) params.set('statusId', statusId);
+            if (categoryId) params.set('categoryId', categoryId);
+            if (typeof deleted === 'boolean') params.set('deleted', String(deleted));
+            if (query) params.set('q', query);
+            return request(`/admin/suggestions/search?${params}`);
+        },
         patch: (id, body) =>
             request(`/admin/suggestions/${encodeURIComponent(id)}`, {
                 method: 'PATCH',

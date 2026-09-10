@@ -20,6 +20,10 @@ import {
     getAuthenticatedUser,
     hasStoredSession,
     isAdministrator,
+    isForumAdministrator,
+    isStatusAdministrator,
+    isStoreAdministrator,
+    isUserAdministrator,
     logout,
     refreshAuthenticatedSession
 } from '../lib/auth';
@@ -27,6 +31,24 @@ import { communityItems } from '../config/community';
 import { adminGroupIsActive, adminItemIsActive, adminNavigationGroups } from '../config/adminNavigation';
 import NavbarNotifications from './NavbarNotifications';
 import PlayerSearch from './PlayerSearch';
+
+function adminNavigationFor(user) {
+    return adminNavigationGroups
+        .filter((group) => {
+            if (group.id === 'forum') return isForumAdministrator(user);
+            if (group.id === 'commerce') return isStoreAdministrator(user);
+            if (group.id === 'management' || group.id === 'moderation') return isUserAdministrator(user);
+            return true;
+        })
+        .map((group) => ({
+            ...group,
+            items:
+                group.id === 'general'
+                    ? group.items.filter((item) => item.to !== '/admin/system-status' || isStatusAdministrator(user))
+                    : group.items
+        }))
+        .filter((group) => group.items.length > 0);
+}
 
 export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -181,6 +203,7 @@ export default function Navbar() {
 
     const isAdminArea = location.pathname === '/admin' || location.pathname.startsWith('/admin/');
     const showAdminNavigation = isAdminArea && isAdministrator(user);
+    const visibleAdminNavigationGroups = adminNavigationFor(user);
 
     return (
         <header
@@ -208,7 +231,7 @@ export default function Navbar() {
                         onMouseEnter={cancelAdminMenuClose}
                         onMouseLeave={scheduleAdminMenuClose}
                     >
-                        {adminNavigationGroups.map((group) => {
+                        {visibleAdminNavigationGroups.map((group) => {
                             const GroupIcon = group.icon;
                             const active = adminGroupIsActive(location.pathname, group);
                             const expanded = adminMenuOpen === group.id;
@@ -520,7 +543,7 @@ export default function Navbar() {
                                 <p className="px-4 pb-2 pt-1 text-[10px] font-extrabold uppercase tracking-[.2em] text-orange-400">
                                     Administration
                                 </p>
-                                {adminNavigationGroups.map((group) => {
+                                {visibleAdminNavigationGroups.map((group) => {
                                     const GroupIcon = group.icon;
                                     const expanded = mobileAdminGroup === group.id;
                                     const active = adminGroupIsActive(location.pathname, group);

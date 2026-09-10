@@ -16,7 +16,7 @@ async function request(path, options = {}) {
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
         const error = new Error(
-            payload.message || payload.error_description || 'Die Forum-Anfrage ist fehlgeschlagen.'
+            payload.detail || payload.message || payload.error_description || 'Die Forum-Anfrage ist fehlgeschlagen.'
         );
         error.status = response.status;
         throw error;
@@ -93,11 +93,13 @@ export const forumApi = {
         request(`/public/users/${encodeURIComponent(userId)}/profile?recentLimit=${recentLimit}`),
     report: (body) => request('/reports', { method: 'POST', body: JSON.stringify(body) }),
     admin: {
+        analytics: (days = 30) => request(`/admin/analytics?days=${encodeURIComponent(days)}`),
         nodes: () => request('/admin/nodes'),
         createNode: (body) => request('/admin/nodes', { method: 'POST', body: JSON.stringify(body) }),
         updateNode: (nodeId, body) =>
             request(`/admin/nodes/${encodeURIComponent(nodeId)}`, { method: 'PUT', body: JSON.stringify(body) }),
         permissions: (forumId) => request(`/admin/nodes/${encodeURIComponent(forumId)}/permissions`),
+        permissionMatrix: () => request('/admin/permissions'),
         savePermission: (forumId, body) =>
             request(`/admin/nodes/${encodeURIComponent(forumId)}/permissions`, {
                 method: 'PUT',
@@ -109,8 +111,8 @@ export const forumApi = {
             }),
         settings: () => request('/admin/settings'),
         saveSettings: (body) => request('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
-        labels: () => request('/admin/labels'),
-        labelTypes: () => request('/admin/labels/types'),
+        labels: (includeDeleted = false) => request(`/admin/labels?includeDeleted=${includeDeleted}`),
+        labelTypes: (includeDeleted = false) => request(`/admin/labels/types?includeDeleted=${includeDeleted}`),
         saveLabelType: (typeId, body) =>
             request(`/admin/labels/types/${encodeURIComponent(typeId)}`, {
                 method: 'PUT',
@@ -120,10 +122,11 @@ export const forumApi = {
             request(`/admin/labels/${encodeURIComponent(labelId)}`, { method: 'PUT', body: JSON.stringify(body) }),
         reports: (page = 0, size = 20, status = '') =>
             request(`/admin/reports?page=${page}&size=${size}${status ? `&status=${status}` : ''}`),
-        updateReport: (reportId, status) =>
+        report: (reportId) => request(`/admin/reports/${encodeURIComponent(reportId)}`),
+        updateReport: (reportId, body) =>
             request(`/admin/reports/${encodeURIComponent(reportId)}`, {
                 method: 'PATCH',
-                body: JSON.stringify({ status })
+                body: JSON.stringify(typeof body === 'string' ? { status: body } : body)
             })
     }
 };

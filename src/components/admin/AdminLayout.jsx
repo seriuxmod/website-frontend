@@ -5,6 +5,7 @@ import {
     fetchAuthenticatedUser,
     hasStoredSession,
     isForumAdministrator,
+    isStatusAdministrator,
     isStoreAdministrator,
     isUserAdministrator
 } from '../../lib/auth';
@@ -44,7 +45,11 @@ export default function AdminLayout() {
         };
     }, []);
 
-    const allowed = isUserAdministrator(user) || isForumAdministrator(user) || isStoreAdministrator(user);
+    const allowed =
+        isUserAdministrator(user) ||
+        isForumAdministrator(user) ||
+        isStatusAdministrator(user) ||
+        isStoreAdministrator(user);
 
     if (checking) return null;
     if (!allowed) return <Navigate to="/" replace />;

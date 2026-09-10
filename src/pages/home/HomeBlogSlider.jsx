@@ -39,7 +39,7 @@ export default function HomeBlogSlider() {
     useEffect(() => {
         let current = true;
         blogApi
-            .list({ size: 12 })
+            .list({ size: 12, status: 'PUBLISHED' })
             .then(async (data) => {
                 const posts = data.items ?? [];
                 const authorIds = [...new Set(posts.map((post) => post.authorUserId).filter(Boolean))];
@@ -197,7 +197,7 @@ export default function HomeBlogSlider() {
                                                     </h3>
                                                 </Link>
                                                 <p className="mt-3 line-clamp-2 max-w-3xl text-sm leading-7 text-zinc-300 sm:text-base">
-                                                    {post.excerpt || post.content}
+                                                    {post.excerpt || 'Neuigkeiten direkt aus dem SeriuxMod-Team.'}
                                                 </p>
                                                 <div className="mt-6 flex flex-wrap items-center justify-between gap-5">
                                                     <div className="flex items-center gap-3">
