@@ -840,7 +840,7 @@ function TopologyCard({ topology, generatedAt }) {
                         <TopologyLegend color="bg-emerald-400" label="Swarm Node" />
                         <TopologyLegend color="bg-violet-400" label="MongoDB Node" />
                         <TopologyLegend color="bg-rose-400" label="Redis Cache" />
-                        <TopologyLegend color="bg-red-400" label="Beeinträchtigter Service" />
+                        <TopologyLegend color="bg-red-400" label="Beeinträchtigte Komponente" />
                     </div>
                 </>
             ) : (
@@ -974,7 +974,7 @@ function createTopologyDefinition(graph) {
         },
         guides: false,
         color: {
-            domain: ['service', 'service-degraded', 'service-offline', 'network', 'node', 'database', 'cache'],
+            domain: ['service', 'component-degraded', 'component-offline', 'network', 'node', 'database', 'cache'],
             range: ['#f97316', '#fbbf24', '#f87171', '#38bdf8', '#34d399', '#a78bfa', '#fb7185']
         },
         margin: 32,
@@ -988,9 +988,10 @@ function createTopologyDefinition(graph) {
 }
 
 function topologyVisualGroup(node) {
-    if (node.type !== 'service') return node.type;
     const state = normalizeStackState(node.state);
-    return state === 'ready' ? 'service' : state === 'delayed' ? 'service-degraded' : 'service-offline';
+    if (state === 'delayed') return 'component-degraded';
+    if (state === 'offline') return 'component-offline';
+    return node.type;
 }
 
 function ServiceLoadDonut({ services }) {
