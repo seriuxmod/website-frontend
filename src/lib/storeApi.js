@@ -35,11 +35,7 @@ export const storeApi = {
     orders: (page = 0, size = 20) => request(`/orders?page=${page}&size=${size}`, {}, true),
     order: (orderId) => request(`/orders/${encodeURIComponent(orderId)}`, {}, true),
     createPayment: (orderId, gatewayId, paymentMethodId) =>
-        request(
-            '/payments',
-            { method: 'POST', body: JSON.stringify({ orderId, gatewayId, paymentMethodId }) },
-            true
-        ),
+        request('/payments', { method: 'POST', body: JSON.stringify({ orderId, gatewayId, paymentMethodId }) }, true),
     payments: (page = 0, size = 20) => request(`/payments?page=${page}&size=${size}`, {}, true),
     entitlements: () => request('/entitlements', {}, true),
     credits: () => request('/me/credits', {}, true),
@@ -47,8 +43,7 @@ export const storeApi = {
         overview: () => request('/admin/overview', {}, true),
         analytics: (days = 30) => request('/admin/analytics?days=' + encodeURIComponent(days), {}, true),
         settings: () => request('/admin/settings', {}, true),
-        saveSettings: (body) =>
-            request('/admin/settings', { method: 'PUT', body: JSON.stringify(body) }, true),
+        saveSettings: (body) => request('/admin/settings', { method: 'PUT', body: JSON.stringify(body) }, true),
         categories: () => request('/admin/categories', {}, true),
         saveCategory: (id, body) =>
             request(
@@ -100,10 +95,8 @@ export const storeApi = {
                 true
             ),
         order: (id) => request(`/admin/orders/${encodeURIComponent(id)}`, {}, true),
-        cancelOrder: (id) =>
-            request(`/admin/orders/${encodeURIComponent(id)}:cancel`, { method: 'POST' }, true),
-        fulfillOrder: (id) =>
-            request(`/admin/orders/${encodeURIComponent(id)}:fulfill`, { method: 'POST' }, true),
+        cancelOrder: (id) => request(`/admin/orders/${encodeURIComponent(id)}:cancel`, { method: 'POST' }, true),
+        fulfillOrder: (id) => request(`/admin/orders/${encodeURIComponent(id)}:fulfill`, { method: 'POST' }, true),
         payments: (page = 0, size = 25, status = '') =>
             request(
                 `/admin/payments?page=${page}&size=${size}${status ? `&status=${encodeURIComponent(status)}` : ''}`,
@@ -127,8 +120,7 @@ export const storeApi = {
                 },
                 true
             ),
-        entitlements: (page = 0, size = 25) =>
-            request(`/admin/entitlements?page=${page}&size=${size}`, {}, true),
+        entitlements: (page = 0, size = 25) => request(`/admin/entitlements?page=${page}&size=${size}`, {}, true),
         auditLogs: ({ page = 0, size = 25, q = '', action = '', entityType = '', actorUserId = '' } = {}) => {
             const params = new URLSearchParams({ page: String(page), size: String(size) });
             if (q) params.set('q', q);
@@ -136,7 +128,37 @@ export const storeApi = {
             if (entityType) params.set('entityType', entityType);
             if (actorUserId) params.set('actorUserId', actorUserId);
             return request(`/admin/audit-logs?${params}`, {}, true);
-        }
+        },
+        cosmetics: ({ page = 0, size = 25, q = '', type = '', visibility = '', status = '' } = {}) => {
+            const params = new URLSearchParams({ page: String(page), size: String(size) });
+            if (q) params.set('q', q);
+            if (type) params.set('type', type);
+            if (visibility) params.set('visibility', visibility);
+            if (status) params.set('status', status);
+            return request(`/admin/cosmetics?${params}`, {}, true);
+        },
+        cosmetic: (id) => request(`/admin/cosmetics/${encodeURIComponent(id)}`, {}, true),
+        saveCosmetic: (id, body) =>
+            request(
+                id ? `/admin/cosmetics/${encodeURIComponent(id)}` : '/admin/cosmetics',
+                { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) },
+                true
+            ),
+        deleteCosmetic: (id) => request(`/admin/cosmetics/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
+        cosmeticOwners: (id, page = 0, size = 25) =>
+            request(`/admin/cosmetics/${encodeURIComponent(id)}/owners?page=${page}&size=${size}`, {}, true),
+        grantCosmetic: (id, userId, body = {}) =>
+            request(
+                `/admin/cosmetics/${encodeURIComponent(id)}/owners/${encodeURIComponent(userId)}`,
+                { method: 'PUT', body: JSON.stringify(body) },
+                true
+            ),
+        revokeCosmetic: (id, userId) =>
+            request(
+                `/admin/cosmetics/${encodeURIComponent(id)}/owners/${encodeURIComponent(userId)}`,
+                { method: 'DELETE' },
+                true
+            )
     }
 };
 

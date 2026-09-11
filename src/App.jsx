@@ -36,7 +36,12 @@ import PresenceReporter from './components/PresenceReporter';
 
 const AdminModulePreview = lazy(() => import('./pages/admin/AdminModulePreview'));
 const AdminCommerceView = lazy(() => import('./components/admin/commerce/AdminCommerceView'));
+const AdminForumView = lazy(() => import('./components/admin/forum/AdminForumView'));
+const AdminSystemStatusView = lazy(() => import('./components/admin/AdminSystemStatusView'));
 const AdminTeamView = lazy(() => import('./components/admin/team/AdminTeamView'));
+const AdminManagementView = lazy(() => import('./components/admin/management/AdminManagementView'));
+const AdminSocialView = lazy(() => import('./components/admin/management/AdminSocialView'));
+const UserAdministrationView = lazy(() => import('./components/admin/management/UserAdministrationView'));
 
 export default function App() {
     useScrollToTop();
@@ -63,25 +68,28 @@ export default function App() {
                 <Route path="/store/account" element={<StoreAccount />} />
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
-                    <Route path="system-status" element={<AdminModulePreview module="system-status" />} />
+                    <Route path="system-status" element={<AdminSystemStatusView />} />
                     <Route path="team" element={<AdminTeamView module="team" />} />
                     <Route path="team/calendar" element={<AdminTeamView module="team-calendar" />} />
                     <Route path="team/activity" element={<AdminTeamView module="team-activity" />} />
                     <Route path="team/todos" element={<AdminTeamView module="team-todos" />} />
                     <Route path="team/notes" element={<AdminTeamView module="team-notes" />} />
-                    <Route path="players" element={<AdminModulePreview module="players" />} />
-                    <Route path="permissions" element={<AdminModulePreview module="permissions" />} />
-                    <Route path="cosmetics" element={<AdminModulePreview module="cosmetics" />} />
-                    <Route path="friends" element={<AdminModulePreview module="friends" />} />
-                    <Route path="clans" element={<AdminModulePreview module="clans" />} />
-                    <Route path="parties" element={<AdminModulePreview module="parties" />} />
-                    <Route path="public-servers" element={<AdminModulePreview module="public-servers" />} />
-                    <Route path="translations" element={<AdminModulePreview module="translations" />} />
-                    <Route path="moderation" element={<AdminModulePreview module="moderation" />} />
-                    <Route path="moderation/bans" element={<AdminModulePreview module="bans" />} />
-                    <Route path="moderation/mutes" element={<AdminModulePreview module="mutes" />} />
-                    <Route path="moderation/settings" element={<AdminModulePreview module="moderation-settings" />} />
-                    <Route path="forum/analytics" element={<AdminModulePreview module="forum-analytics" />} />
+                    <Route path="players" element={<UserAdministrationView module="players" />} />
+                    <Route path="permissions" element={<UserAdministrationView module="permissions" />} />
+                    <Route path="cosmetics" element={<AdminManagementView module="cosmetics" />} />
+                    <Route path="friends" element={<AdminSocialView module="friends" />} />
+                    <Route path="clans" element={<AdminSocialView module="clans" />} />
+                    <Route path="parties" element={<AdminSocialView module="parties" />} />
+                    <Route path="public-servers" element={<AdminSocialView module="public-servers" />} />
+                    <Route path="translations" element={<AdminManagementView module="translations" />} />
+                    <Route path="moderation" element={<UserAdministrationView module="moderation" />} />
+                    <Route path="moderation/bans" element={<UserAdministrationView module="bans" />} />
+                    <Route path="moderation/mutes" element={<UserAdministrationView module="mutes" />} />
+                    <Route
+                        path="moderation/settings"
+                        element={<UserAdministrationView module="moderation-settings" />}
+                    />
+                    <Route path="forum/analytics" element={<AdminForumView module="forum-analytics" />} />
                     <Route path="forum/structure" element={<AdminModulePreview module="forum-structure" />} />
                     <Route path="forum/permissions" element={<AdminModulePreview module="forum-permissions" />} />
                     <Route path="forum/labels" element={<AdminModulePreview module="forum-labels" />} />

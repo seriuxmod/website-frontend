@@ -127,7 +127,36 @@ export const forumApi = {
             request(`/admin/reports/${encodeURIComponent(reportId)}`, {
                 method: 'PATCH',
                 body: JSON.stringify(typeof body === 'string' ? { status: body } : body)
-            })
+            }),
+        translationsOverview: () => request('/admin/translations/overview'),
+        translationLocales: () => request('/admin/translations/locales'),
+        saveTranslationLocale: (code, body) =>
+            request(code ? `/admin/translations/locales/${encodeURIComponent(code)}` : '/admin/translations/locales', {
+                method: code ? 'PUT' : 'POST',
+                body: JSON.stringify(body)
+            }),
+        disableTranslationLocale: (code) =>
+            request(`/admin/translations/locales/${encodeURIComponent(code)}`, { method: 'DELETE' }),
+        translationEntries: ({ q = '', namespace = '', status = '', page = 0, size = 50 } = {}) => {
+            const params = new URLSearchParams({ page: String(page), size: String(size) });
+            if (q) params.set('q', q);
+            if (namespace) params.set('namespace', namespace);
+            if (status) params.set('status', status);
+            return request(`/admin/translations/entries?${params}`);
+        },
+        translationEntry: (id) => request(`/admin/translations/entries/${encodeURIComponent(id)}`),
+        saveTranslationEntry: (id, body) =>
+            request(id ? `/admin/translations/entries/${encodeURIComponent(id)}` : '/admin/translations/entries', {
+                method: id ? 'PUT' : 'POST',
+                body: JSON.stringify(body)
+            }),
+        setTranslationStatus: (id, status) =>
+            request(`/admin/translations/entries/${encodeURIComponent(id)}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status })
+            }),
+        archiveTranslationEntry: (id) =>
+            request(`/admin/translations/entries/${encodeURIComponent(id)}`, { method: 'DELETE' })
     }
 };
 

@@ -75,10 +75,7 @@ const clearLocalSession = () => {
 
 export const hasStoredSession = () => {
     const accessToken = getAccessToken();
-    return Boolean(
-        sessionStorage.getItem(REFRESH_TOKEN_KEY) ||
-            (accessToken && !accessTokenExpired(accessToken))
-    );
+    return Boolean(sessionStorage.getItem(REFRESH_TOKEN_KEY) || (accessToken && !accessTokenExpired(accessToken)));
 };
 
 const notifyExpiredSession = () => {
@@ -224,6 +221,9 @@ export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
 export const isTeamAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.some((permission) => permission === 'team.admin' || permission.startsWith('team.')));
 
+export const isSocialAdministrator = (user = getAuthenticatedUser()) =>
+    Boolean(user?.permissions?.some((permission) => permission === 'social.admin' || permission.startsWith('social.')));
+
 export const isStatusAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('status.admin'));
 
@@ -242,6 +242,7 @@ export const isAdministrator = (user = getAuthenticatedUser()) =>
     isForumAdministrator(user) ||
     isStoreAdministrator(user) ||
     isTeamAdministrator(user) ||
+    isSocialAdministrator(user) ||
     isStatusAdministrator(user) ||
     isUserAdministrator(user);
 

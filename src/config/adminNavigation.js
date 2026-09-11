@@ -100,48 +100,61 @@ export const adminNavigationGroups = [
         description: 'Spieler, Rechte und soziale Funktionen verwalten.',
         icon: FaUsers,
         items: [
-            { to: '/admin/players', label: 'Spieler', description: 'Konten und Profile verwalten.', icon: FaUsers },
+            {
+                to: '/admin/players',
+                label: 'Spieler',
+                description: 'Konten und Profile verwalten.',
+                icon: FaUsers,
+                permissions: ['users.read.any', 'users.lock', 'permissions.user.write', 'permissions.assignment.write']
+            },
             {
                 to: '/admin/permissions',
                 label: 'Berechtigungen',
                 description: 'Gruppen und Zugriffsrechte steuern.',
-                icon: FaUserShield
+                icon: FaUserShield,
+                permissions: ['permissions.group.read', 'permissions.group.write']
             },
             {
                 to: '/admin/cosmetics',
                 label: 'Cosmetics',
                 description: 'Freischaltungen und Assets verwalten.',
-                icon: FaGift
+                icon: FaGift,
+                permissions: ['store.cosmetics.read']
             },
             {
                 to: '/admin/friends',
                 label: 'Freunde',
                 description: 'Freundschaften und Anfragen prüfen.',
-                icon: FaUserGroup
+                icon: FaUserGroup,
+                permissions: ['social.friends.read']
             },
             {
                 to: '/admin/clans',
                 label: 'Clans',
                 description: 'Clans und Mitglieder organisieren.',
-                icon: FaShieldHalved
+                icon: FaShieldHalved,
+                permissions: ['social.clans.read']
             },
             {
                 to: '/admin/parties',
                 label: 'Parties',
                 description: 'Aktive Gruppen und Einladungen prüfen.',
-                icon: FaPeopleGroup
+                icon: FaPeopleGroup,
+                permissions: ['social.parties.read']
             },
             {
                 to: '/admin/public-servers',
                 label: 'Öffentliche Serverliste',
                 description: 'Öffentliche Minecraft-Server und deren Freigabe verwalten.',
-                icon: FaServer
+                icon: FaServer,
+                permissions: ['social.servers.read']
             },
             {
                 to: '/admin/translations',
                 label: 'Übersetzungen',
                 description: 'Sprachen und Übersetzungseinträge organisieren.',
-                icon: FaLanguage
+                icon: FaLanguage,
+                permissions: ['forum.translations.read']
             }
         ]
     },
@@ -156,20 +169,33 @@ export const adminNavigationGroups = [
                 label: 'Übersicht',
                 description: 'Offene Vorgänge und Maßnahmen bündeln.',
                 icon: FaChartColumn,
-                end: true
+                end: true,
+                allPermissions: ['moderation.ban.read', 'moderation.mute.read']
             },
-            { to: '/admin/moderation/bans', label: 'Bans', description: 'Kontosperren verwalten.', icon: FaBan },
+            {
+                to: '/admin/moderation/bans',
+                label: 'Bans',
+                description: 'Kontosperren verwalten.',
+                icon: FaBan,
+                permissions: ['moderation.ban.read', 'moderation.ban.write']
+            },
             {
                 to: '/admin/moderation/mutes',
                 label: 'Mutes',
                 description: 'Kommunikationssperren verwalten.',
-                icon: FaVolumeXmark
+                icon: FaVolumeXmark,
+                permissions: ['moderation.mute.read', 'moderation.mute.write']
             },
             {
                 to: '/admin/moderation/settings',
                 label: 'Einstellungen',
                 description: 'Ban- und Mute-Gründe konfigurieren.',
-                icon: FaGear
+                icon: FaGear,
+                permissionAlternatives: [
+                    ['moderation.ban.read', 'moderation.mute.read'],
+                    ['moderation.ban.reason.write'],
+                    ['moderation.mute.reason.write']
+                ]
             }
         ]
     },

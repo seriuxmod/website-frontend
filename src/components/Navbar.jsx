@@ -19,6 +19,7 @@ import {
     fetchAuthenticatedUser,
     getAuthenticatedUser,
     hasAnyPermission,
+    hasPermission,
     hasStoredSession,
     isAdministrator,
     isForumAdministrator,
@@ -33,20 +34,34 @@ import { adminGroupIsActive, adminItemIsActive, adminNavigationGroups } from '..
 import NavbarNotifications from './NavbarNotifications';
 import PlayerSearch from './PlayerSearch';
 
+function canSeeAdminItem(user, item) {
+    if (item.permissionAlternatives?.length) {
+        return item.permissionAlternatives.some((permissions) =>
+            permissions.every((permission) => hasPermission(user, permission))
+        );
+    }
+    return (
+        (!item.permissions?.length || hasAnyPermission(user, ...item.permissions)) &&
+        (!item.allPermissions?.length || item.allPermissions.every((permission) => hasPermission(user, permission)))
+    );
+}
+
 function adminNavigationFor(user) {
     return adminNavigationGroups
         .filter((group) => {
             if (group.id === 'forum') return isForumAdministrator(user);
             if (group.id === 'commerce') return isStoreAdministrator(user);
             if (group.id === 'team') return isTeamAdministrator(user);
-            if (group.id === 'management' || group.id === 'moderation') return isUserAdministrator(user);
+            if (group.id === 'moderation') return isUserAdministrator(user);
+            if (group.id === 'management') return true;
             return true;
         })
         .map((group) => ({
             ...group,
-            items: group.items.filter(
-                (item) => !item.permissions?.length || hasAnyPermission(user, ...item.permissions)
-            )
+            // Dashboard and system status are shared entry points for every
+            // authenticated administrator. The status view itself still lets
+            // the backend enforce status.admin for privileged operations.
+            items: group.id === 'general' ? group.items : group.items.filter((item) => canSeeAdminItem(user, item))
         }))
         .filter((group) => group.items.length > 0);
 }

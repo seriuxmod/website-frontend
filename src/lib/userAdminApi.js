@@ -1,64 +1,162 @@
 import { authenticatedFetch } from './auth';
 
-const API = 'https://api.seriuxmod.net/api/v1/user';
+const USER_API = 'https://api.seriuxmod.net/api/v1/user';
 
 async function request(path, options = {}) {
-    const response = await authenticatedFetch(`${API}${path}`, {
+    const response = await authenticatedFetch(`${USER_API}${path}`, {
         ...options,
-        headers: { ...(options.body ? { 'Content-Type': 'application/json' } : {}), ...(options.headers || {}) }
+        headers: {
+            ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+            ...(options.headers || {})
+        }
     });
     if (response.status === 204) return null;
-    const payload = await response.json().catch(() => ({}));
+
+    const contentType = response.headers.get('content-type') || '';
+    const payload = contentType.includes('json')
+        ? await response.json().catch(() => ({}))
+        : await response.text().catch(() => '');
     if (!response.ok) {
-        const error = new Error(payload.message || payload.detail || `Anfrage fehlgeschlagen (${response.status})`);
+        const error = new Error(
+            (typeof payload === 'object' && (payload.message || payload.detail || payload.error)) ||
+                (typeof payload === 'string' && payload.trim()) ||
+                `Die User-Anfrage ist fehlgeschlagen (${response.status}).`
+        );
         error.status = response.status;
+        error.code = typeof payload === 'object' ? payload.code || payload.error : undefined;
+        error.payload = payload;
         throw error;
     }
     return payload;
 }
 
-const json = (method, body) => ({ method, body: JSON.stringify(body) });
+function query(values) {
+    const params = new URLSearchParams();
+    Object.entries(values).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) params.set(key, String(value));
+    });
+    return params.toString();
+}
+
+const json = (method, body, headers) => ({ method, headers, body: JSON.stringify(body) });
+const encoded = (value) => encodeURIComponent(value);
+
+function caseList(type, filters = {}) {
+    return request(
+        `/admin/moderation/${type}?${query({
+            q: filters.q || '',
+            status: filters.status || '',
+            reasonKey: filters.reasonKey || '',
+            page: filters.page ?? 0,
+            size: filters.size ?? 30,
+            sort: filters.sort || 'createdAt',
+            direction: filters.direction || 'desc'
+        })}`
+    );
+}
+
+function createCase(type, body, idempotencyKey) {
+    return request(
+        `/admin/moderation/${type}`,
+        json('POST', body, idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined)
+    );
+}
+
+function saveReason(type, reason, existing = false) {
+    const collection = type === 'ban' ? 'ban-reasons' : 'mute-reasons';
+    const path = existing
+        ? `/admin/moderation/settings/${collection}/${encoded(reason.key)}`
+        : `/admin/moderation/settings/${collection}`;
+    return request(path, json(existing ? 'PUT' : 'POST', reason));
+}
 
 export const userAdminApi = {
+    // Compatibility for AdminDashboard, whose response also contains onlineUsers/onlineStaff.
     overview: () => request('/users/admin/overview'),
-    users: (query = '', page = 0, size = 30) =>
-        request(`/users?q=${encodeURIComponent(query)}&page=${page}&size=${size}`),
-    user: (id) => request(`/users/${encodeURIComponent(id)}`),
-    lock: (id, locked, reason) => request(`/users/${encodeURIComponent(id)}/lock`, json('PATCH', { locked, reason })),
-    permissions: (id) => request(`/permissions/users/${encodeURIComponent(id)}`),
-    setDirectPermissions: (id, permissions) =>
-        request(`/permissions/users/${encodeURIComponent(id)}/direct`, json('PUT', { permissions })),
-    assignGroup: (id, assignment) =>
-        request(`/permissions/users/${encodeURIComponent(id)}/groups`, json('POST', assignment)),
-    removeGroup: (id, key) =>
-        request(`/permissions/users/${encodeURIComponent(id)}/groups/${encodeURIComponent(key)}`, { method: 'DELETE' }),
-    groups: () => request('/permissions/groups'),
-    createGroup: (group) => request('/permissions/groups', json('POST', group)),
-    updateGroup: (key, group) => request(`/permissions/groups/${encodeURIComponent(key)}`, json('PUT', group)),
-    deleteGroup: (key) => request(`/permissions/groups/${encodeURIComponent(key)}`, { method: 'DELETE' }),
-    audits: (id, page = 0) => request(`/users/${encodeURIComponent(id)}/audits?page=${page}&size=30`),
-    banReasons: () => request('/bans/reasons?page=0&size=100'),
-    saveBanReason: (reason, existing = false) =>
+    dashboardOverview: () => request('/users/admin/overview'),
+
+    playersOverview: (days = 30) => request(`/admin/players/overview?days=${encoded(days)}`),
+    players: ({
+        q = '',
+        locked = '',
+        websiteAccessEnabled = '',
+        twoFactorEnabled = '',
+        groupKey = '',
+        page = 0,
+        size = 30,
+        sort = 'createdDate',
+        direction = 'desc'
+    } = {}) =>
         request(
-            `/bans/reasons${existing ? `/${encodeURIComponent(reason.key)}` : ''}`,
-            json(existing ? 'PUT' : 'POST', reason)
+            `/admin/players?${query({
+                q,
+                locked,
+                websiteAccessEnabled,
+                twoFactorEnabled,
+                groupKey,
+                page,
+                size,
+                sort,
+                direction
+            })}`
         ),
-    deleteBanReason: (key) => request(`/bans/reasons/${encodeURIComponent(key)}`, { method: 'DELETE' }),
-    ban: (value) => request('/bans', json('POST', value)),
-    activeBan: (id) => request(`/bans/users/${encodeURIComponent(id)}`),
+    player: (userId) => request(`/admin/players/${encoded(userId)}`),
+    playerAudits: (userId, page = 0, size = 30) =>
+        request(`/admin/players/${encoded(userId)}/audits?${query({ page, size })}`),
+    setPlayerLocked: (userId, locked, reason = '') =>
+        request(`/admin/players/${encoded(userId)}/lock`, json('PATCH', { locked, reason: reason || null })),
+    setDirectPermissions: (userId, permissions) =>
+        request(`/admin/players/${encoded(userId)}/permissions/direct`, json('PUT', { permissions })),
+    assignGroup: (userId, assignment) =>
+        request(`/admin/players/${encoded(userId)}/permissions/groups`, json('POST', assignment)),
+    removeGroup: (userId, groupKey) =>
+        request(`/admin/players/${encoded(userId)}/permissions/groups/${encoded(groupKey)}`, { method: 'DELETE' }),
+
+    permissionsOverview: () => request('/admin/permissions/overview'),
+    permissionGroups: () => request('/admin/permissions/groups'),
+    permissionGroup: (key) => request(`/admin/permissions/groups/${encoded(key)}`),
+    permissionCatalog: () => request('/admin/permissions/catalog'),
+    createPermissionGroup: (group) => request('/admin/permissions/groups', json('POST', group)),
+    updatePermissionGroup: (key, group) => request(`/admin/permissions/groups/${encoded(key)}`, json('PUT', group)),
+    deletePermissionGroup: (key, version) =>
+        request(`/admin/permissions/groups/${encoded(key)}?version=${encoded(version)}`, { method: 'DELETE' }),
+
+    moderationOverview: (days = 30) => request(`/admin/moderation/overview?days=${encoded(days)}`),
+    bans: (filters) => caseList('bans', filters),
+    banCase: (id) => request(`/admin/moderation/bans/${encoded(id)}`),
+    banCaseHistory: (id, page = 0, size = 30) =>
+        request(`/admin/moderation/bans/${encoded(id)}/history?${query({ page, size })}`),
+    createBan: (body, idempotencyKey) => createCase('bans', body, idempotencyKey),
     revokeBan: (id, note = '') =>
-        request(`/bans/${encodeURIComponent(id)}?note=${encodeURIComponent(note)}`, { method: 'DELETE' }),
-    banHistory: (id) => request(`/bans/users/${encodeURIComponent(id)}/history?page=0&size=30`),
-    muteReasons: () => request('/mutes/reasons?page=0&size=100'),
-    saveMuteReason: (reason, existing = false) =>
-        request(
-            `/mutes/reasons${existing ? `/${encodeURIComponent(reason.key)}` : ''}`,
-            json(existing ? 'PUT' : 'POST', reason)
-        ),
-    deleteMuteReason: (key) => request(`/mutes/reasons/${encodeURIComponent(key)}`, { method: 'DELETE' }),
-    mute: (value) => request('/mutes', json('POST', value)),
-    activeMute: (id) => request(`/mutes/users/${encodeURIComponent(id)}`),
+        request(`/admin/moderation/bans/${encoded(id)}?${query({ note })}`, { method: 'DELETE' }),
+    mutes: (filters) => caseList('mutes', filters),
+    muteCase: (id) => request(`/admin/moderation/mutes/${encoded(id)}`),
+    muteCaseHistory: (id, page = 0, size = 30) =>
+        request(`/admin/moderation/mutes/${encoded(id)}/history?${query({ page, size })}`),
+    createMute: (body, idempotencyKey) => createCase('mutes', body, idempotencyKey),
     revokeMute: (id, note = '') =>
-        request(`/mutes/${encodeURIComponent(id)}?note=${encodeURIComponent(note)}`, { method: 'DELETE' }),
-    muteHistory: (id) => request(`/mutes/users/${encodeURIComponent(id)}/history?page=0&size=30`)
+        request(`/admin/moderation/mutes/${encoded(id)}?${query({ note })}`, { method: 'DELETE' }),
+    moderationAudit: ({ type = '', action = '', actorId = '', page = 0, size = 30 } = {}) =>
+        request(`/admin/moderation/audit?${query({ type, action, actorId, page, size })}`),
+    moderationSettings: () => request('/admin/moderation/settings'),
+    saveBanReason: (reason, existing = false) => saveReason('ban', reason, existing),
+    saveMuteReason: (reason, existing = false) => saveReason('mute', reason, existing),
+    deleteBanReason: async (key, version) => {
+        const resolvedVersion =
+            version ??
+            (await userAdminApi.moderationSettings())?.banReasons?.find((reason) => reason.key === key)?.version;
+        if (resolvedVersion == null) throw new Error('Die Version des Ban-Grunds konnte nicht ermittelt werden.');
+        return request(`/admin/moderation/settings/ban-reasons/${encoded(key)}?version=${encoded(resolvedVersion)}`, {
+            method: 'DELETE'
+        });
+    },
+    deleteMuteReason: async (key, version) => {
+        const resolvedVersion =
+            version ??
+            (await userAdminApi.moderationSettings())?.muteReasons?.find((reason) => reason.key === key)?.version;
+        if (resolvedVersion == null) throw new Error('Die Version des Mute-Grunds konnte nicht ermittelt werden.');
+        return request(`/admin/moderation/settings/mute-reasons/${encoded(key)}?version=${encoded(resolvedVersion)}`, {
+            method: 'DELETE'
+        });
+    }
 };

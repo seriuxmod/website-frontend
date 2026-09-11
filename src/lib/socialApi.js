@@ -122,5 +122,68 @@ export const socialApi = {
         history: (partyId, page = 0, size = 20) =>
             request(`/parties/${encodeURIComponent(partyId)}/history?page=${page}&size=${size}`),
         ranks: () => request('/parties/ranks')
+    },
+    admin: {
+        friendsOverview: () => request('/admin/friends/overview'),
+        friendships: ({ q = '', page = 0, size = 25 } = {}) =>
+            request(`/admin/friends?${adminParams({ q, page, size })}`),
+        friendship: (id) => request(`/admin/friends/${encodeURIComponent(id)}`),
+        removeFriendship: (id, reason) =>
+            request(`/admin/friends/${encodeURIComponent(id)}?reason=${encodeURIComponent(reason)}`, {
+                method: 'DELETE'
+            }),
+        friendRequests: ({ q = '', status = '', page = 0, size = 25 } = {}) =>
+            request(`/admin/friends/requests?${adminParams({ q, status, page, size })}`),
+        updateFriendRequest: (id, status, reason) =>
+            request(`/admin/friends/requests/${encodeURIComponent(id)}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status, reason })
+            }),
+        clansOverview: () => request('/admin/clans/overview'),
+        clans: ({ q = '', status = '', page = 0, size = 25 } = {}) =>
+            request(`/admin/clans?${adminParams({ q, status, page, size })}`),
+        clan: (id) => request(`/admin/clans/${encodeURIComponent(id)}`),
+        updateClanStatus: (id, status, reason = '') =>
+            request(`/admin/clans/${encodeURIComponent(id)}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status, reason: reason || null })
+            }),
+        partiesOverview: () => request('/admin/parties/overview'),
+        parties: ({ q = '', status = '', page = 0, size = 25 } = {}) =>
+            request(`/admin/parties?${adminParams({ q, status, page, size })}`),
+        party: (id) => request(`/admin/parties/${encodeURIComponent(id)}`),
+        disbandParty: (id, reason) =>
+            request(`/admin/parties/${encodeURIComponent(id)}:disband`, {
+                method: 'POST',
+                body: JSON.stringify({ reason })
+            }),
+        auditLogs: ({ q = '', action = '', entityType = '', page = 0, size = 25 } = {}) =>
+            request(`/admin/audit-logs?${adminParams({ q, action, entityType, page, size })}`),
+        serversOverview: () => request('/admin/servers/overview'),
+        servers: ({ q = '', category = '', status = '', page = 0, size = 25 } = {}) =>
+            request(`/admin/servers?${adminParams({ q, category, status, page, size })}`),
+        server: (id) => request(`/admin/servers/${encodeURIComponent(id)}`),
+        saveServer: (id, body) =>
+            request(id ? `/admin/servers/${encodeURIComponent(id)}` : '/admin/servers', {
+                method: id ? 'PUT' : 'POST',
+                body: JSON.stringify(body)
+            }),
+        updateServerStatus: (id, status, reviewNote = '') =>
+            request(`/admin/servers/${encodeURIComponent(id)}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status, reviewNote: reviewNote || null })
+            }),
+        deleteServer: (id, reason) =>
+            request(`/admin/servers/${encodeURIComponent(id)}?reason=${encodeURIComponent(reason)}`, {
+                method: 'DELETE'
+            })
     }
 };
+
+function adminParams(values) {
+    const params = new URLSearchParams();
+    Object.entries(values).forEach(([key, value]) => {
+        if (value !== '' && value !== null && value !== undefined) params.set(key, String(value));
+    });
+    return params.toString();
+}
