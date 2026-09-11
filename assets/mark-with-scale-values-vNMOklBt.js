@@ -1,0 +1,1 @@
+import{_ as e,s as t}from"./tooltip-D-e_TXXh.js";function n(n,r,i){return{initialize:a=>{let o=e(n(a)),s=r===void 0||o.motion!==void 0?o:{...o,motion:r};return i===void 0?s:t(s,i)},...r===void 0?{}:{motion:r},...i===void 0?{}:{renderer:i}}}export{n as t};
