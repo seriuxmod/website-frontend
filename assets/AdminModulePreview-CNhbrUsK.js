@@ -1,0 +1,1 @@
+import{h as e}from"./index-DN5b06-U.js";import t from"./AdminSystemStatusView-TKCPWz2H.js";import n from"./AdminForumView-b6nt3XjE.js";var r=e();function i({module:e}){return e.startsWith(`forum-`)?(0,r.jsx)(n,{module:e}):e===`system-status`?(0,r.jsx)(t,{}):null}export{i as default};
