@@ -18,6 +18,7 @@ import {
     beginLogin,
     fetchAuthenticatedUser,
     getAuthenticatedUser,
+    hasAnyPermission,
     hasStoredSession,
     isAdministrator,
     isForumAdministrator,
@@ -39,6 +40,16 @@ function adminNavigationFor(user) {
             if (group.id === 'management' || group.id === 'moderation') return isUserAdministrator(user);
             return true;
         })
+        .map((group) =>
+            group.id === 'commerce'
+                ? {
+                      ...group,
+                      items: group.items.filter(
+                          (item) => !item.permissions?.length || hasAnyPermission(user, ...item.permissions)
+                      )
+                  }
+                : group
+        )
         .filter((group) => group.items.length > 0);
 }
 

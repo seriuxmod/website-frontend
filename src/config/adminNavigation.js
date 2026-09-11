@@ -234,49 +234,57 @@ export const adminNavigationGroups = [
                 label: 'Übersicht',
                 description: 'Umsatz und Shop-Hinweise überblicken.',
                 icon: FaChartColumn,
-                end: true
+                end: true,
+                permissions: ['store.dashboard.read']
             },
             {
                 to: '/admin/commerce/customers',
                 label: 'Kunden',
                 description: 'Kunden und Kaufverläufe einsehen.',
-                icon: FaUsers
+                icon: FaUsers,
+                permissions: ['store.customers.read']
             },
             {
                 to: '/admin/commerce/catalog',
                 label: 'Katalog',
                 description: 'Produkte und Kategorien pflegen.',
-                icon: FaBoxesStacked
+                icon: FaBoxesStacked,
+                permissions: ['store.catalog.read']
             },
             {
                 to: '/admin/commerce/fields',
                 label: 'Produktfelder',
                 description: 'Zusätzliche Produktangaben definieren.',
-                icon: FaLayerGroup
+                icon: FaLayerGroup,
+                permissions: ['store.catalog.read']
             },
             {
                 to: '/admin/commerce/coupons',
                 label: 'Coupons',
                 description: 'Rabattcodes und Limits verwalten.',
-                icon: FaTags
+                icon: FaTags,
+                permissions: ['store.catalog.read']
             },
             {
                 to: '/admin/commerce/orders',
                 label: 'Bestellungen',
                 description: 'Bestellstatus und Auslieferung verfolgen.',
-                icon: FaReceipt
+                icon: FaReceipt,
+                permissions: ['store.orders.read']
             },
             {
                 to: '/admin/commerce/payment-methods',
                 label: 'Zahlungsmethoden',
                 description: 'Anbieter und Zahlarten konfigurieren.',
-                icon: FaCreditCard
+                icon: FaCreditCard,
+                permissions: ['store.settings.read']
             },
             {
                 to: '/admin/commerce/settings',
                 label: 'Einstellungen',
                 description: 'Firmendaten und Checkout konfigurieren.',
-                icon: FaMoneyCheckDollar
+                icon: FaMoneyCheckDollar,
+                permissions: ['store.settings.read']
             }
         ]
     }

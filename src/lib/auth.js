@@ -206,11 +206,20 @@ export async function fetchAuthenticatedUser() {
 }
 
 export const isAuthenticated = () => Boolean(getAuthenticatedUser());
+export const hasPermission = (user = getAuthenticatedUser(), permission) => {
+    if (!permission || !Array.isArray(user?.permissions)) return false;
+    const domain = permission.split('.')[0];
+    return user.permissions.includes(permission) || user.permissions.includes(domain + '.admin');
+};
+
+export const hasAnyPermission = (user = getAuthenticatedUser(), ...permissions) =>
+    permissions.some((permission) => hasPermission(user, permission));
+
 export const isForumAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('forum.admin'));
 
 export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
-    Boolean(user?.permissions?.includes('store.admin'));
+    Boolean(user?.permissions?.some((permission) => permission === 'store.admin' || permission.startsWith('store.')));
 
 export const isStatusAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('status.admin'));

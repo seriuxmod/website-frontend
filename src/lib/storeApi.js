@@ -45,6 +45,7 @@ export const storeApi = {
     credits: () => request('/me/credits', {}, true),
     admin: {
         overview: () => request('/admin/overview', {}, true),
+        analytics: (days = 30) => request('/admin/analytics?days=' + encodeURIComponent(days), {}, true),
         settings: () => request('/admin/settings', {}, true),
         saveSettings: (body) =>
             request('/admin/settings', { method: 'PUT', body: JSON.stringify(body) }, true),
@@ -92,19 +93,31 @@ export const storeApi = {
                 true
             ),
         deleteCoupon: (id) => request(`/admin/coupons/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
-        orders: (page = 0, status = '') =>
+        orders: (page = 0, size = 25, status = '') =>
             request(
-                `/admin/orders?page=${page}&size=25${status ? `&status=${encodeURIComponent(status)}` : ''}`,
+                `/admin/orders?page=${page}&size=${size}${status ? `&status=${encodeURIComponent(status)}` : ''}`,
                 {},
                 true
             ),
-        payments: (page = 0, status = '') =>
+        order: (id) => request(`/admin/orders/${encodeURIComponent(id)}`, {}, true),
+        cancelOrder: (id) =>
+            request(`/admin/orders/${encodeURIComponent(id)}:cancel`, { method: 'POST' }, true),
+        fulfillOrder: (id) =>
+            request(`/admin/orders/${encodeURIComponent(id)}:fulfill`, { method: 'POST' }, true),
+        payments: (page = 0, size = 25, status = '') =>
             request(
-                `/admin/payments?page=${page}&size=25${status ? `&status=${encodeURIComponent(status)}` : ''}`,
+                `/admin/payments?page=${page}&size=${size}${status ? `&status=${encodeURIComponent(status)}` : ''}`,
                 {},
                 true
             ),
-        customers: (page = 0) => request(`/admin/customers?page=${page}&size=25`, {}, true),
+        customers: (page = 0, size = 25, query = '') =>
+            request(
+                `/admin/customers?page=${page}&size=${size}${query ? `&q=${encodeURIComponent(query)}` : ''}`,
+                {},
+                true
+            ),
+        customer: (id, limit = 50) =>
+            request(`/admin/customers/${encodeURIComponent(id)}?limit=${encodeURIComponent(limit)}`, {}, true),
         adjustCredits: (id, deltaCents) =>
             request(
                 `/admin/customers/${encodeURIComponent(id)}/credits`,
@@ -114,7 +127,15 @@ export const storeApi = {
                 },
                 true
             ),
-        entitlements: (page = 0) => request(`/admin/entitlements?page=${page}&size=25`, {}, true)
+        entitlements: (page = 0, size = 25) =>
+            request(`/admin/entitlements?page=${page}&size=${size}`, {}, true),
+        auditLogs: ({ page = 0, size = 25, action = '', entityType = '', actorUserId = '' } = {}) => {
+            const params = new URLSearchParams({ page: String(page), size: String(size) });
+            if (action) params.set('action', action);
+            if (entityType) params.set('entityType', entityType);
+            if (actorUserId) params.set('actorUserId', actorUserId);
+            return request(`/admin/audit-logs?${params}`, {}, true);
+        }
     }
 };
 
