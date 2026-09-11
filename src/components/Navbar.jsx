@@ -21,7 +21,6 @@ import {
     hasStoredSession,
     isAdministrator,
     isForumAdministrator,
-    isStatusAdministrator,
     isStoreAdministrator,
     isUserAdministrator,
     logout,
@@ -40,13 +39,6 @@ function adminNavigationFor(user) {
             if (group.id === 'management' || group.id === 'moderation') return isUserAdministrator(user);
             return true;
         })
-        .map((group) => ({
-            ...group,
-            items:
-                group.id === 'general'
-                    ? group.items.filter((item) => item.to !== '/admin/system-status' || isStatusAdministrator(user))
-                    : group.items
-        }))
         .filter((group) => group.items.length > 0);
 }
 

@@ -292,10 +292,13 @@ function createDistributionDefinition(rows) {
                         cornerRadius: 8,
                         color: 'key'
                     })
-                ]
+                ],
+                scales: { angle: null, radius: null }
             })
         ],
-        scales: { color: { range: COLORS } },
+        scales: { x: null, y: null },
+        color: { domain: rows.map((row) => row.key), range: COLORS },
+        margin: 0,
         theme: chartTheme(COLORS)
     });
 }
