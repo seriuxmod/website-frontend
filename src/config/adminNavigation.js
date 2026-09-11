@@ -45,7 +45,8 @@ export const adminNavigationGroups = [
                 to: '/admin/system-status',
                 label: 'Systemstatus',
                 description: 'Services, Abhängigkeiten und Störungen prüfen.',
-                icon: FaServer
+                icon: FaServer,
+                permissions: ['status.admin']
             }
         ]
     },
@@ -60,31 +61,36 @@ export const adminNavigationGroups = [
                 label: 'Übersicht',
                 description: 'Aktuelle Teamthemen und Aufgaben zusammenführen.',
                 icon: FaUserGroup,
+                permissions: ['team.overview.read'],
                 end: true
             },
             {
                 to: '/admin/team/calendar',
                 label: 'Terminkalender',
                 description: 'Interne Termine und Besprechungen organisieren.',
-                icon: FaCalendarDays
+                icon: FaCalendarDays,
+                permissions: ['team.calendar.read']
             },
             {
                 to: '/admin/team/activity',
                 label: 'Aktivitätsanalyse',
                 description: 'Teamaktivität und Bearbeitungsstände auswerten.',
-                icon: FaChartLine
+                icon: FaChartLine,
+                permissions: ['team.activity.read']
             },
             {
                 to: '/admin/team/todos',
                 label: 'Todolist',
                 description: 'Interne Aufgaben planen und priorisieren.',
-                icon: FaListCheck
+                icon: FaListCheck,
+                permissions: ['team.todos.read']
             },
             {
                 to: '/admin/team/notes',
                 label: 'Interne Notizen',
                 description: 'Gemeinsame interne Hinweise festhalten.',
-                icon: FaNoteSticky
+                icon: FaNoteSticky,
+                permissions: ['team.notes.read']
             }
         ]
     },

@@ -35,6 +35,8 @@ import SocialHub from './pages/social/SocialHub';
 import PresenceReporter from './components/PresenceReporter';
 
 const AdminModulePreview = lazy(() => import('./pages/admin/AdminModulePreview'));
+const AdminCommerceView = lazy(() => import('./components/admin/commerce/AdminCommerceView'));
+const AdminTeamView = lazy(() => import('./components/admin/team/AdminTeamView'));
 
 export default function App() {
     useScrollToTop();
@@ -62,11 +64,11 @@ export default function App() {
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="system-status" element={<AdminModulePreview module="system-status" />} />
-                    <Route path="team" element={<AdminModulePreview module="team" />} />
-                    <Route path="team/calendar" element={<AdminModulePreview module="team-calendar" />} />
-                    <Route path="team/activity" element={<AdminModulePreview module="team-activity" />} />
-                    <Route path="team/todos" element={<AdminModulePreview module="team-todos" />} />
-                    <Route path="team/notes" element={<AdminModulePreview module="team-notes" />} />
+                    <Route path="team" element={<AdminTeamView module="team" />} />
+                    <Route path="team/calendar" element={<AdminTeamView module="team-calendar" />} />
+                    <Route path="team/activity" element={<AdminTeamView module="team-activity" />} />
+                    <Route path="team/todos" element={<AdminTeamView module="team-todos" />} />
+                    <Route path="team/notes" element={<AdminTeamView module="team-notes" />} />
                     <Route path="players" element={<AdminModulePreview module="players" />} />
                     <Route path="permissions" element={<AdminModulePreview module="permissions" />} />
                     <Route path="cosmetics" element={<AdminModulePreview module="cosmetics" />} />
@@ -87,14 +89,14 @@ export default function App() {
                     <Route path="forum/suggestions" element={<AdminModulePreview module="forum-suggestions" />} />
                     <Route path="forum/blog" element={<AdminModulePreview module="forum-blog" />} />
                     <Route path="forum/settings" element={<AdminModulePreview module="forum-settings" />} />
-                    <Route path="commerce" element={<AdminModulePreview module="commerce" />} />
-                    <Route path="commerce/customers" element={<AdminModulePreview module="customers" />} />
-                    <Route path="commerce/catalog" element={<AdminModulePreview module="catalog" />} />
-                    <Route path="commerce/fields" element={<AdminModulePreview module="fields" />} />
-                    <Route path="commerce/coupons" element={<AdminModulePreview module="coupons" />} />
-                    <Route path="commerce/orders" element={<AdminModulePreview module="orders" />} />
-                    <Route path="commerce/payment-methods" element={<AdminModulePreview module="payment-methods" />} />
-                    <Route path="commerce/settings" element={<AdminModulePreview module="commerce-settings" />} />
+                    <Route path="commerce" element={<AdminCommerceView module="commerce" />} />
+                    <Route path="commerce/customers" element={<AdminCommerceView module="customers" />} />
+                    <Route path="commerce/catalog" element={<AdminCommerceView module="catalog" />} />
+                    <Route path="commerce/fields" element={<AdminCommerceView module="fields" />} />
+                    <Route path="commerce/coupons" element={<AdminCommerceView module="coupons" />} />
+                    <Route path="commerce/orders" element={<AdminCommerceView module="orders" />} />
+                    <Route path="commerce/payment-methods" element={<AdminCommerceView module="payment-methods" />} />
+                    <Route path="commerce/settings" element={<AdminCommerceView module="commerce-settings" />} />
                     <Route path="users" element={<Navigate to="/admin/players" replace />} />
                     <Route path="forum" element={<Navigate to="/admin/forum/analytics" replace />} />
                     <Route path="store" element={<Navigate to="/admin/commerce" replace />} />

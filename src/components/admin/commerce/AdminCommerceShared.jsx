@@ -46,7 +46,17 @@ export function useCommerceResource(loader, dependencies = []) {
     };
 }
 
-export function CommerceAdminPage({ eyebrow, title, description, icon: Icon, loading, error, onRetry, actions, children }) {
+export function CommerceAdminPage({
+    eyebrow,
+    title,
+    description,
+    icon: Icon,
+    loading,
+    error,
+    onRetry,
+    actions,
+    children
+}) {
     const backendState = error
         ? { label: 'Store-Backend nicht erreichbar', style: 'border-red-400/20 bg-red-400/[.07] text-red-300' }
         : loading
@@ -59,7 +69,12 @@ export function CommerceAdminPage({ eyebrow, title, description, icon: Icon, loa
                 <div>
                     <div className="flex flex-wrap items-center gap-3">
                         <p className="eyebrow">E-COMMERCE · {eyebrow}</p>
-                        <span className={'rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.14em] ' + backendState.style}>
+                        <span
+                            className={
+                                'rounded-full border px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[.14em] ' +
+                                backendState.style
+                            }
+                        >
                             {backendState.label}
                         </span>
                     </div>
@@ -86,7 +101,7 @@ export function CommerceAdminPage({ eyebrow, title, description, icon: Icon, loa
 }
 
 export function CommerceError({ message, retry }) {
-    const denied = /berechtigung|zugriff|forbidden|unauthorized/i.test(message);
+    const denied = /berechtigung|zugriff|access denied|forbidden|unauthorized/i.test(message);
     return (
         <div className="flex min-h-56 items-center justify-center rounded-[26px] border border-red-400/15 bg-red-400/[.035] px-6 py-10 text-center">
             <div>

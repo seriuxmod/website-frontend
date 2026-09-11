@@ -27,10 +27,26 @@ const REQUIRED_PERMISSIONS = {
     'commerce-settings': ['store.settings.read']
 };
 
+const MODULE_ROUTES = {
+    commerce: '/admin/commerce',
+    customers: '/admin/commerce/customers',
+    catalog: '/admin/commerce/catalog',
+    fields: '/admin/commerce/fields',
+    coupons: '/admin/commerce/coupons',
+    orders: '/admin/commerce/orders',
+    'payment-methods': '/admin/commerce/payment-methods',
+    'commerce-settings': '/admin/commerce/settings'
+};
+
 export default function AdminCommerceView({ module }) {
     const user = getAuthenticatedUser();
-    if (!isStoreAdministrator(user)) return <Navigate replace to="/" />;
-    if (!hasAnyPermission(user, ...(REQUIRED_PERMISSIONS[module] || []))) return <Navigate replace to="/admin" />;
     const View = VIEWS[module];
-    return View ? <View user={user} /> : <Navigate replace to="/admin/commerce" />;
+    if (!isStoreAdministrator(user)) return <Navigate replace to="/admin" />;
+    const fallbackRoute = Object.keys(VIEWS)
+        .filter((candidate) => candidate !== module)
+        .find((candidate) => hasAnyPermission(user, ...REQUIRED_PERMISSIONS[candidate]));
+    if (!View || !hasAnyPermission(user, ...REQUIRED_PERMISSIONS[module])) {
+        return <Navigate replace to={fallbackRoute ? MODULE_ROUTES[fallbackRoute] : '/admin'} />;
+    }
+    return <View user={user} />;
 }

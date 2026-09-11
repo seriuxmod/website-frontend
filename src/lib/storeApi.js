@@ -129,8 +129,9 @@ export const storeApi = {
             ),
         entitlements: (page = 0, size = 25) =>
             request(`/admin/entitlements?page=${page}&size=${size}`, {}, true),
-        auditLogs: ({ page = 0, size = 25, action = '', entityType = '', actorUserId = '' } = {}) => {
+        auditLogs: ({ page = 0, size = 25, q = '', action = '', entityType = '', actorUserId = '' } = {}) => {
             const params = new URLSearchParams({ page: String(page), size: String(size) });
+            if (q) params.set('q', q);
             if (action) params.set('action', action);
             if (entityType) params.set('entityType', entityType);
             if (actorUserId) params.set('actorUserId', actorUserId);
@@ -139,5 +140,12 @@ export const storeApi = {
     }
 };
 
-export const formatStorePrice = (cents, currency = 'EUR') =>
-    new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format((cents || 0) / 100);
+export function formatStorePrice(cents, currency = 'EUR') {
+    const amount = Number(cents);
+    if (!Number.isFinite(amount) || !currency) return 'Nicht verfügbar';
+    try {
+        return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(amount / 100);
+    } catch {
+        return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(amount / 100)} ${currency}`;
+    }
+}

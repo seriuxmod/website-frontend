@@ -35,8 +35,8 @@ const EMPTY_CATEGORY = {
 const EMPTY_PRODUCT = {
     categoryId: '',
     name: '',
-    price: '0.00',
-    currency: 'EUR',
+    price: '',
+    currency: '',
     description: '',
     imageUrl: '',
     hidden: false,
@@ -45,6 +45,7 @@ const EMPTY_PRODUCT = {
     fieldIds: [],
     requiredProductIds: [],
     requiredGroupIdsText: '',
+    paymentType: 1,
     globalLimit: 0,
     globalInterval: 1,
     globalPeriod: 'no_period',
@@ -250,7 +251,9 @@ export function CommerceCatalogView({ user }) {
 
 function CategoryEditor({ category, categories, canWrite, onChanged }) {
     const [message, setMessage] = useState('');
-    const defaults = category ? { ...EMPTY_CATEGORY, ...category, parentCategoryId: category.parentCategoryId || '' } : EMPTY_CATEGORY;
+    const defaults = category
+        ? { ...EMPTY_CATEGORY, ...category, parentCategoryId: category.parentCategoryId || '' }
+        : { ...EMPTY_CATEGORY };
     const form = useForm({
         defaultValues: defaults,
         onSubmit: async ({ value }) => {
@@ -277,7 +280,7 @@ function CategoryEditor({ category, categories, canWrite, onChanged }) {
         }
     };
     return (
-        <Editor title={category ? 'Kategorie bearbeiten' : 'Kategorie anlegen'} onDelete={canWrite && category ? remove : null}>
+        <Editor readOnly={!canWrite} title={category ? 'Kategorie bearbeiten' : 'Kategorie anlegen'} onDelete={canWrite && category ? remove : null}>
             <form onSubmit={submitForm(form)}>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <TextField form={form} label="Name" name="name" required />
@@ -311,7 +314,7 @@ function ProductEditor({ product, products, categories, fields, canWrite, onChan
         ? {
               ...EMPTY_PRODUCT,
               ...product,
-              price: ((product.priceCents || 0) / 100).toFixed(2),
+              price: ((product.priceCents ?? 0) / 100).toFixed(2),
               fieldIds: product.fieldIds || [],
               requiredProductIds: [...(product.requiredProductIds || [])],
               requiredGroupIdsText: [...(product.requiredGroupIds || [])].join('\n'),
@@ -327,19 +330,34 @@ function ProductEditor({ product, products, categories, fields, canWrite, onChan
         defaultValues: defaults,
         onSubmit: async ({ value }) => {
             setMessage('');
+            const price = Number(value.price);
+            const currency = value.currency.trim().toUpperCase();
+            const paymentType = Number(value.paymentType);
+            if (!Number.isFinite(price) || price < 0) {
+                setMessage('Bitte einen gültigen Bruttopreis eingeben.');
+                return;
+            }
+            if (!/^[A-Z]{3}$/.test(currency)) {
+                setMessage('Die Währung muss als dreistelliger ISO-Code angegeben werden.');
+                return;
+            }
+            if (!Number.isInteger(paymentType) || paymentType < 1) {
+                setMessage('Die Zahlungsart-ID muss eine positive Ganzzahl sein.');
+                return;
+            }
             try {
                 await storeApi.admin.saveProduct(product?.id, {
                     categoryId: value.categoryId,
                     name: value.name,
-                    priceCents: Math.round(Number(value.price) * 100),
-                    currency: value.currency.toUpperCase(),
+                    priceCents: Math.round(price * 100),
+                    currency,
                     description: value.description,
                     imageUrl: value.imageUrl,
                     globalLimit: limit(value.globalLimit, value.globalInterval, value.globalPeriod),
                     userLimit: limit(value.userLimit, value.userInterval, value.userPeriod),
                     requiredProductIds: value.requiredProductIds,
                     requiredGroupIds: lines(value.requiredGroupIdsText),
-                    paymentType: 1,
+                    paymentType,
                     hidden: value.hidden,
                     disabled: value.disabled,
                     order: Number(value.order),
@@ -361,7 +379,7 @@ function ProductEditor({ product, products, categories, fields, canWrite, onChan
         }
     };
     return (
-        <Editor title={product ? 'Produkt bearbeiten' : 'Produkt anlegen'} onDelete={canWrite && product ? remove : null}>
+        <Editor readOnly={!canWrite} title={product ? 'Produkt bearbeiten' : 'Produkt anlegen'} onDelete={canWrite && product ? remove : null}>
             <form onSubmit={submitForm(form)}>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <TextField form={form} label="Produktname" name="name" required />
@@ -375,6 +393,7 @@ function ProductEditor({ product, products, categories, fields, canWrite, onChan
                     />
                     <NumberField form={form} label="Bruttopreis" name="price" min="0" step="0.01" required />
                     <TextField form={form} label="Währung" name="currency" required />
+                    <NumberField form={form} label="Zahlungsart-ID (1 = einmalig)" min="1" name="paymentType" required />
                     <NumberField form={form} label="Position" name="order" />
                     <TextField form={form} label="Bild-URL" name="imageUrl" />
                     <div className="sm:col-span-2"><AreaField form={form} label="Beschreibung" name="description" /></div>
@@ -488,7 +507,9 @@ export function CommerceFieldsView({ user }) {
 
 function FieldEditor({ field, canWrite, onChanged }) {
     const [message, setMessage] = useState('');
-    const defaults = field ? { ...EMPTY_FIELD, ...field, optionsText: (field.options || []).join('\n') } : EMPTY_FIELD;
+    const defaults = field
+        ? { ...EMPTY_FIELD, ...field, optionsText: (field.options || []).join('\n') }
+        : { ...EMPTY_FIELD };
     const form = useForm({
         defaultValues: defaults,
         onSubmit: async ({ value }) => {
@@ -522,7 +543,7 @@ function FieldEditor({ field, canWrite, onChanged }) {
         }
     };
     return (
-        <Editor title={field ? 'Produktfeld bearbeiten' : 'Produktfeld anlegen'} onDelete={canWrite && field ? remove : null}>
+        <Editor readOnly={!canWrite} title={field ? 'Produktfeld bearbeiten' : 'Produktfeld anlegen'} onDelete={canWrite && field ? remove : null}>
             <form onSubmit={submitForm(form)}>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <TextField form={form} label="Identifier" name="identifier" required />
@@ -638,31 +659,54 @@ function CouponEditor({ coupon, products, canWrite, onChanged }) {
         ? {
               ...EMPTY_COUPON,
               ...coupon,
-              minimumOrder: ((coupon.minimumOrderCents || 0) / 100).toFixed(2),
+              minimumOrder: ((coupon.minimumOrderCents ?? 0) / 100).toFixed(2),
               productIds: [...(coupon.productIds || [])],
               startsAt: localDateTime(coupon.startsAt),
               expiresAt: localDateTime(coupon.expiresAt)
           }
-        : EMPTY_COUPON;
+        : { ...EMPTY_COUPON };
     const form = useForm({
         defaultValues: defaults,
         onSubmit: async ({ value }) => {
             setMessage('');
-            if (value.type === 'PERCENT' && Number(value.value) > 100) {
+            const couponAmount = Number(value.value);
+            const minimumOrder = Number(value.minimumOrder);
+            const maxRedemptions = Number(value.maxRedemptions);
+            if (!/^[A-Z0-9_-]{3,40}$/.test(value.code.trim().toUpperCase())) {
+                setMessage('Der Coupon-Code muss 3–40 Buchstaben, Ziffern, _ oder - enthalten.');
+                return;
+            }
+            if (!Number.isInteger(couponAmount) || couponAmount < 1) {
+                setMessage('Bitte einen positiven ganzzahligen Rabattwert eingeben.');
+                return;
+            }
+            if (value.type === 'PERCENT' && couponAmount > 100) {
                 setMessage('Ein prozentualer Rabatt darf höchstens 100 % betragen.');
+                return;
+            }
+            if (!Number.isFinite(minimumOrder) || minimumOrder < 0) {
+                setMessage('Bitte einen gültigen Mindestbestellwert eingeben.');
+                return;
+            }
+            if (!Number.isInteger(maxRedemptions) || maxRedemptions < 0) {
+                setMessage('Die maximale Anzahl an Einlösungen muss eine nichtnegative Ganzzahl sein.');
+                return;
+            }
+            if (value.startsAt && value.expiresAt && new Date(value.startsAt) >= new Date(value.expiresAt)) {
+                setMessage('Das Ablaufdatum muss nach dem Startdatum liegen.');
                 return;
             }
             try {
                 await storeApi.admin.saveCoupon(coupon?.id, {
-                    code: value.code.toUpperCase(),
+                    code: value.code.trim().toUpperCase(),
                     type: value.type,
-                    value: Number(value.value),
-                    minimumOrderCents: Math.round(Number(value.minimumOrder) * 100),
+                    value: couponAmount,
+                    minimumOrderCents: Math.round(minimumOrder * 100),
                     productIds: value.productIds,
                     enabled: value.enabled,
                     startsAt: value.startsAt ? new Date(value.startsAt).toISOString() : null,
                     expiresAt: value.expiresAt ? new Date(value.expiresAt).toISOString() : null,
-                    maxRedemptions: Number(value.maxRedemptions)
+                    maxRedemptions
                 });
                 await onChanged();
             } catch (error) {
@@ -680,13 +724,13 @@ function CouponEditor({ coupon, products, canWrite, onChanged }) {
         }
     };
     return (
-        <Editor title={coupon ? 'Coupon bearbeiten' : 'Coupon anlegen'} onDelete={canWrite && coupon ? remove : null}>
+        <Editor readOnly={!canWrite} title={coupon ? 'Coupon bearbeiten' : 'Coupon anlegen'} onDelete={canWrite && coupon ? remove : null}>
             <form onSubmit={submitForm(form)}>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <TextField form={form} label="Code" name="code" required />
-                    <SelectField form={form} label="Rabattart" name="type" options={[['PERCENT', 'Prozent'], ['FIXED', 'Fester Betrag in Cent']]} />
+                    <SelectField form={form} label="Rabattart" name="type" options={[['PERCENT', 'Prozent'], ['FIXED', 'Fester Betrag']]} />
                     <NumberField form={form} label="Rabattwert" min="1" name="value" required />
-                    <NumberField form={form} label="Mindestbestellwert in EUR" min="0" name="minimumOrder" step="0.01" />
+                    <NumberField form={form} label="Mindestbestellwert in Store-Währung" min="0" name="minimumOrder" step="0.01" />
                     <TextField form={form} label="Gültig ab" name="startsAt" type="datetime-local" />
                     <TextField form={form} label="Gültig bis" name="expiresAt" type="datetime-local" />
                     <NumberField form={form} label="Max. Einlösungen (0 = unbegrenzt)" min="0" name="maxRedemptions" />
@@ -704,7 +748,7 @@ function CouponEditor({ coupon, products, canWrite, onChanged }) {
     );
 }
 
-function Editor({ title, onDelete, children }) {
+function Editor({ title, onDelete, readOnly, children }) {
     return (
         <CommercePanel
             actions={
@@ -723,7 +767,9 @@ function Editor({ title, onDelete, children }) {
             eyebrow="EDITOR"
             title={title}
         >
-            <div className="p-5 sm:p-6">{children}</div>
+            <fieldset className="p-5 disabled:opacity-75 sm:p-6" disabled={readOnly}>
+                {children}
+            </fieldset>
         </CommercePanel>
     );
 }
@@ -920,10 +966,12 @@ function fieldType(value) {
     return ({ 1: 'Text', 2: 'Mehrzeilig', 3: 'Auswahl', 4: 'Zahl' })[Number(value)] || 'Unbekannt';
 }
 function couponValue(coupon) {
-    return coupon.type === 'PERCENT' ? coupon.value + ' %' : formatStorePrice(coupon.value);
+    return coupon.type === 'PERCENT'
+        ? coupon.value + ' %'
+        : `${new Intl.NumberFormat('de-DE').format(coupon.value)} kleinste Währungseinheiten`;
 }
 function redemptionText(coupon) {
-    return (coupon.redemptions || 0) + ' / ' + (coupon.maxRedemptions || '∞');
+    return (coupon.redemptions ?? 0) + ' / ' + (coupon.maxRedemptions || '∞');
 }
 function couponStatus(coupon) {
     const now = Date.now();

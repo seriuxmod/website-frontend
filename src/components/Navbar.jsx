@@ -23,6 +23,7 @@ import {
     isAdministrator,
     isForumAdministrator,
     isStoreAdministrator,
+    isTeamAdministrator,
     isUserAdministrator,
     logout,
     refreshAuthenticatedSession
@@ -37,19 +38,16 @@ function adminNavigationFor(user) {
         .filter((group) => {
             if (group.id === 'forum') return isForumAdministrator(user);
             if (group.id === 'commerce') return isStoreAdministrator(user);
+            if (group.id === 'team') return isTeamAdministrator(user);
             if (group.id === 'management' || group.id === 'moderation') return isUserAdministrator(user);
             return true;
         })
-        .map((group) =>
-            group.id === 'commerce'
-                ? {
-                      ...group,
-                      items: group.items.filter(
-                          (item) => !item.permissions?.length || hasAnyPermission(user, ...item.permissions)
-                      )
-                  }
-                : group
-        )
+        .map((group) => ({
+            ...group,
+            items: group.items.filter(
+                (item) => !item.permissions?.length || hasAnyPermission(user, ...item.permissions)
+            )
+        }))
         .filter((group) => group.items.length > 0);
 }
 

@@ -20,6 +20,7 @@ import { formatStorePrice, storeApi } from '../../../lib/storeApi';
 import {
     CommerceAdminPage,
     CommerceEmpty,
+    CommerceError,
     CommerceLoading,
     CommercePagination,
     CommercePanel,
@@ -71,7 +72,7 @@ export function CommerceCustomersView({ user }) {
                 }),
                 columnHelper.accessor('creditsCents', {
                     header: 'Credits',
-                    cell: (context) => <b className="text-xs text-orange-200">{formatStorePrice(context.getValue())}</b>
+                    cell: (context) => <b className="text-xs text-orange-200">{formatCredits(context.getValue())}</b>
                 }),
                 columnHelper.accessor('lastOrderAt', {
                     header: 'Letzter Kauf',
@@ -171,17 +172,17 @@ function CustomerDetail({ resource, selected, selectedId, canAdjust, onChanged }
             </CommercePanel>
         );
     }
+    if (resource.error) {
+        return (
+            <CommercePanel className="h-fit" eyebrow="DETAILS" title="Kundenkonto">
+                <div className="p-5 sm:p-6"><CommerceError message={resource.error} retry={resource.reload} /></div>
+            </CommercePanel>
+        );
+    }
     if (resource.loading || !resource.data) {
         return (
             <CommercePanel className="h-fit" eyebrow="DETAILS" title="Kundenkonto">
                 <div className="p-6"><CommerceLoading title="Kundendetails werden geladen" /></div>
-            </CommercePanel>
-        );
-    }
-    if (resource.error) {
-        return (
-            <CommercePanel className="h-fit" eyebrow="DETAILS" title="Kundenkonto">
-                <div className="p-6 text-sm text-red-300">{resource.error}</div>
             </CommercePanel>
         );
     }
@@ -198,7 +199,7 @@ function CustomerDetail({ resource, selected, selectedId, canAdjust, onChanged }
                         </div>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-3">
-                        <DetailMetric label="Credits" value={formatStorePrice(customer.creditsCents)} />
+                        <DetailMetric label="Credits" value={formatCredits(customer.creditsCents)} />
                         <DetailMetric label="Lifetime-Umsatz" value={formatCurrencyMap(customer.lifetimeRevenueByCurrency)} />
                         <DetailMetric label="Bestellungen" value={formatNumber(customer.orderCount)} />
                         <DetailMetric label="Freischaltungen" value={formatNumber(customer.entitlementCount)} />
@@ -224,7 +225,7 @@ function CreditForm({ customer, onChanged }) {
                 return;
             }
             const direction = deltaCents > 0 ? 'gutschreiben' : 'abziehen';
-            if (!window.confirm(formatStorePrice(Math.abs(deltaCents)) + ' für ' + (customer.username || customer.id) + ' ' + direction + '?')) return;
+            if (!window.confirm(formatCredits(Math.abs(deltaCents)) + ' für ' + (customer.username || customer.id) + ' ' + direction + '?')) return;
             setMessage('');
             try {
                 await storeApi.admin.adjustCredits(customer.id, deltaCents);
@@ -250,13 +251,13 @@ function CreditForm({ customer, onChanged }) {
             <form.Field name="amount">
                 {(field) => (
                     <label className="mt-3 flex gap-2">
-                        <span className="sr-only">Betrag in Euro</span>
+                        <span className="sr-only">Betrag in Credits</span>
                         <input
                             className="forum-input !mt-0 min-w-0 flex-1"
                             inputMode="decimal"
                             onBlur={field.handleBlur}
                             onChange={(event) => field.handleChange(event.target.value)}
-                            placeholder="± EUR"
+                            placeholder="± Credits"
                             required
                             value={field.state.value}
                         />
@@ -312,7 +313,13 @@ function VirtualCustomerTimeline({ data }) {
                                             <span className="mt-1 block truncate font-mono text-[9px] text-zinc-600">{shortId(entry.item.id)}</span>
                                         </div>
                                         <div className="text-right">
-                                            <StatusPill value={entry.item.status || (entry.type === 'Freischaltung' ? 'Aktiv' : '')} />
+                                            {entry.item.status ? (
+                                                <StatusPill value={entry.item.status} />
+                                            ) : (
+                                                <span className="text-[9px] font-bold text-zinc-500">
+                                                    {formatNumber(entry.item.quantity)}× gewährt
+                                                </span>
+                                            )}
                                             <time className="mt-1 block text-[8px] text-zinc-700">{formatDate(eventDate(entry.item))}</time>
                                         </div>
                                     </div>
@@ -468,6 +475,13 @@ function OrderDetail({ resource, selectedId, canWrite, mutation, onAction }) {
             </CommercePanel>
         );
     }
+    if (resource.error) {
+        return (
+            <CommercePanel className="h-fit" eyebrow="DETAILS" title="Bestellung">
+                <div className="p-5 sm:p-6"><CommerceError message={resource.error} retry={resource.reload} /></div>
+            </CommercePanel>
+        );
+    }
     if (resource.loading || !resource.data) {
         return (
             <CommercePanel className="h-fit" eyebrow="DETAILS" title="Bestellung">
@@ -475,14 +489,7 @@ function OrderDetail({ resource, selectedId, canWrite, mutation, onAction }) {
             </CommercePanel>
         );
     }
-    if (resource.error) {
-        return (
-            <CommercePanel className="h-fit" eyebrow="DETAILS" title="Bestellung">
-                <div className="p-6 text-sm text-red-300">{resource.error}</div>
-            </CommercePanel>
-        );
-    }
-    const order = resource.data.order || resource.data;
+    const order = resource.data.order;
     const payments = resource.data.payments || [];
     const entitlements = resource.data.entitlements || [];
     const cancelAllowed = order.status === 'CREATED';
@@ -509,8 +516,8 @@ function OrderDetail({ resource, selectedId, canWrite, mutation, onAction }) {
                     <div className="mt-3 space-y-3">
                         {(order.items || []).map((item, index) => (
                             <div className="flex items-start justify-between gap-4 text-xs" key={item.productId || index}>
-                                <span className="text-zinc-400">{item.quantity || 1}× {item.name || item.productName || item.productId}</span>
-                                <b>{formatStorePrice(item.totalCents ?? item.unitPriceCents * (item.quantity || 1), order.currency)}</b>
+                                <span className="text-zinc-400">{item.quantity}× {item.name || item.productId || 'Nicht verfügbar'}</span>
+                                <b>{formatStorePrice(item.unitPriceCents * item.quantity, order.currency)}</b>
                             </div>
                         ))}
                     </div>
@@ -546,7 +553,11 @@ function RelatedList({ icon: Icon, items, title }) {
                     {items.map((item) => (
                         <div className="flex items-center justify-between gap-3 rounded-xl border border-white/[.045] px-3 py-2 text-[10px]" key={item.id}>
                             <span className="font-mono text-zinc-500">{shortId(item.id)}</span>
-                            <StatusPill value={item.status || 'Aktiv'} />
+                            {item.status ? (
+                                <StatusPill value={item.status} />
+                            ) : (
+                                <span className="font-bold text-zinc-500">{formatNumber(item.quantity)}× gewährt</span>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -583,7 +594,7 @@ function DetailMetric({ label, value }) {
 function normalizeCustomerDetail(payload) {
     if (!payload) return { customer: {}, orders: [], payments: [], entitlements: [] };
     return {
-        customer: payload.customer || payload,
+        customer: payload.customer || {},
         orders: payload.orders || [],
         payments: payload.payments || [],
         entitlements: payload.entitlements || []
@@ -591,7 +602,7 @@ function normalizeCustomerDetail(payload) {
 }
 
 function pageItems(payload) {
-    return payload?.items || payload?.content || [];
+    return payload?.items || [];
 }
 function pageNumber(payload, fallback = 0) {
     return Number.isFinite(Number(payload?.page)) ? Number(payload.page) : fallback;
@@ -600,16 +611,20 @@ function pageSize(payload) {
     return Number(payload?.size) || PAGE_SIZE;
 }
 function pageTotal(payload) {
-    return Number(payload?.total ?? payload?.totalElements) || 0;
+    return Number(payload?.total) || 0;
 }
 function eventDate(item) {
     return item.createdAt || item.completedAt || item.grantedAt || item.updatedAt;
 }
 function formatCurrencyMap(values) {
-    if (!values || typeof values !== 'object' || !Object.keys(values).length) return formatStorePrice(0);
+    if (!values || typeof values !== 'object' || !Object.keys(values).length) return 'Kein Umsatz';
     return Object.entries(values)
         .map(([currency, cents]) => formatStorePrice(cents, currency))
         .join(' · ');
+}
+function formatCredits(cents) {
+    if (!Number.isFinite(Number(cents))) return 'Nicht verfügbar';
+    return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(Number(cents) / 100)} Credits`;
 }
 function humanize(value) {
     return String(value || '').replace(/[._-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());

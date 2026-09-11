@@ -221,6 +221,9 @@ export const isForumAdministrator = (user = getAuthenticatedUser()) =>
 export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.some((permission) => permission === 'store.admin' || permission.startsWith('store.')));
 
+export const isTeamAdministrator = (user = getAuthenticatedUser()) =>
+    Boolean(user?.permissions?.some((permission) => permission === 'team.admin' || permission.startsWith('team.')));
+
 export const isStatusAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('status.admin'));
 
@@ -238,6 +241,7 @@ export const isUserAdministrator = (user = getAuthenticatedUser()) =>
 export const isAdministrator = (user = getAuthenticatedUser()) =>
     isForumAdministrator(user) ||
     isStoreAdministrator(user) ||
+    isTeamAdministrator(user) ||
     isStatusAdministrator(user) ||
     isUserAdministrator(user);
 

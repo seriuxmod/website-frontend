@@ -7,6 +7,7 @@ import {
     isForumAdministrator,
     isStatusAdministrator,
     isStoreAdministrator,
+    isTeamAdministrator,
     isUserAdministrator
 } from '../../lib/auth';
 
@@ -49,6 +50,7 @@ export default function AdminLayout() {
         isUserAdministrator(user) ||
         isForumAdministrator(user) ||
         isStatusAdministrator(user) ||
+        isTeamAdministrator(user) ||
         isStoreAdministrator(user);
 
     if (checking) return null;

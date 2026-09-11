@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { areaY, barY, defineChart, lineY } from '@tanstack/charts';
 import { pie, polar, radialArc } from '@tanstack/charts/polar';
 import { Chart } from '@tanstack/charts/react/tooltip';
@@ -11,10 +11,13 @@ import {
     FaReceipt,
     FaUsers
 } from 'react-icons/fa6';
+import { hasAnyPermission } from '../../../lib/auth';
 import { formatStorePrice, storeApi } from '../../../lib/storeApi';
 import { AdminEmptyState, AdminMetricCard } from '../AdminUi';
 import {
     CommerceAdminPage,
+    CommerceEmpty,
+    CommerceError,
     CommerceLoading,
     CommercePanel,
     LiveDataTable,
@@ -29,13 +32,23 @@ import {
 const PERIODS = [7, 30, 90];
 const COLORS = ['#ff721b', '#38bdf8', '#a78bfa', '#34d399', '#fbbf24', '#fb7185', '#f87171'];
 
-export default function CommerceOverviewView() {
+export default function CommerceOverviewView({ user }) {
     const [days, setDays] = useState(30);
+    const canReadOrders = hasAnyPermission(user, 'store.orders.read');
+    const canReadAudit = hasAnyPermission(user, 'store.audit.read');
     const overview = useCommerceResource(useCallback(() => storeApi.admin.overview(), []), []);
     const analyticsLoader = useCallback(() => storeApi.admin.analytics(days), [days]);
     const analytics = useCommerceResource(analyticsLoader, [analyticsLoader]);
-    const orders = useCommerceResource(useCallback(() => storeApi.admin.orders(0, 8), []), []);
-    const audits = useCommerceResource(useCallback(() => storeApi.admin.auditLogs({ page: 0, size: 8 }), []), []);
+    const ordersLoader = useCallback(
+        () => (canReadOrders ? storeApi.admin.orders(0, 8) : Promise.resolve(null)),
+        [canReadOrders]
+    );
+    const auditLoader = useCallback(
+        () => (canReadAudit ? storeApi.admin.auditLogs({ page: 0, size: 8 }) : Promise.resolve(null)),
+        [canReadAudit]
+    );
+    const orders = useCommerceResource(ordersLoader, [ordersLoader]);
+    const audits = useCommerceResource(auditLoader, [auditLoader]);
     const data = useMemo(() => normalizeAnalytics(analytics.data), [analytics.data]);
     const loading = overview.loading || analytics.loading;
     const error = overview.error || analytics.error;
@@ -76,8 +89,9 @@ export default function CommerceOverviewView() {
             ) : (
                 <>
                     <Metrics overview={overview.data} period={data.period} previous={data.previousPeriod} />
+                    <InventorySnapshot overview={overview.data} />
                     <section className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.65fr)]">
-                        <ActivityChart rows={data.activity} />
+                        <ActivityChart currencies={data.currencies} rows={data.activity} />
                         <StatusOverview orders={data.orderStatuses} payments={data.paymentStatuses} />
                     </section>
                     <section className="mt-6 grid gap-6 xl:grid-cols-2">
@@ -90,8 +104,8 @@ export default function CommerceOverviewView() {
                         <TopProductsChart rows={data.topProducts} />
                     </section>
                     <section className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,.75fr)]">
-                        <RecentOrders resource={orders} />
-                        <RecentAudits resource={audits} generatedAt={data.generatedAt} />
+                        <RecentOrders authorized={canReadOrders} resource={orders} />
+                        <RecentAudits authorized={canReadAudit} resource={audits} generatedAt={data.generatedAt} />
                     </section>
                 </>
             )}
@@ -100,49 +114,103 @@ export default function CommerceOverviewView() {
 }
 
 function Metrics({ overview, period, previous }) {
-    const revenue = period.revenueCents ?? sumCurrencies(period.revenueByCurrency) ?? sumCurrencies(overview.revenueByCurrency);
-    const orderCount = period.orders ?? overview.orders;
-    const completed = period.completedPayments ?? overview.completedPayments;
-    const customers = period.newCustomers ?? period.customers ?? overview.customers;
-    const average = period.averageOrderValueCents ?? (orderCount > 0 ? revenue / orderCount : 0);
     return (
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <AdminMetricCard
-                detail={comparison(revenue, previous.revenueCents, 'zum vorherigen Zeitraum')}
+                detail={currencyComparison(period.revenueByCurrency, previous.revenueByCurrency)}
                 icon={FaCoins}
                 label="Umsatz"
                 tone="orange"
-                value={formatStorePrice(revenue)}
+                value={formatCurrencyMap(period.revenueByCurrency, 'Kein Umsatz')}
             />
             <AdminMetricCard
-                detail={comparison(orderCount, previous.orders, 'zum vorherigen Zeitraum')}
+                detail={`${comparison(period.orders, previous.orders)} · ${formatNumber(overview.orders)} insgesamt`}
                 icon={FaReceipt}
                 label="Bestellungen"
                 tone="sky"
-                value={formatNumber(orderCount)}
+                value={formatNumber(period.orders)}
             />
             <AdminMetricCard
-                detail={formatNumber(completed) + ' erfolgreiche Zahlungen'}
+                detail={`${comparison(period.completedPayments, previous.completedPayments)} · ${formatNumber(overview.completedPayments)} insgesamt`}
                 icon={FaCircleCheck}
-                label="Ø Bestellwert"
+                label="Erfolgreiche Zahlungen"
                 tone="emerald"
-                value={formatStorePrice(average)}
+                value={formatNumber(period.completedPayments)}
             />
             <AdminMetricCard
-                detail={comparison(customers, previous.newCustomers ?? previous.customers, 'zum vorherigen Zeitraum')}
+                detail={`${comparison(period.newCustomers, previous.newCustomers)} · ${formatNumber(overview.customers)} insgesamt`}
                 icon={FaUsers}
                 label="Neue Kunden"
                 tone="violet"
-                value={formatNumber(customers)}
+                value={formatNumber(period.newCustomers)}
             />
         </section>
     );
 }
 
-function ActivityChart({ rows }) {
-    const definition = useMemo(() => (rows.length ? activityDefinition(rows) : null), [rows]);
+function InventorySnapshot({ overview }) {
+    const entries = [
+        ['Kategorien', overview.categories],
+        ['Produkte', overview.products],
+        ['Produktfelder', overview.fields],
+        ['Coupons', overview.coupons],
+        ['Zahlungen', overview.payments],
+        ['Freischaltungen', overview.entitlements],
+        ['Audit-Einträge', overview.auditLogs]
+    ];
+    return (
+        <div className="mt-6">
+            <CommercePanel
+                description="Aktueller Gesamtbestand der persistierten Store-Ressourcen."
+                eyebrow="BESTAND"
+                title="Store-Datenbestand"
+            >
+                <dl className="grid gap-px overflow-hidden rounded-b-[25px] bg-white/[.055] sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
+                    {entries.map(([label, value]) => (
+                        <div className="bg-[#111218] px-5 py-4" key={label}>
+                            <dt className="text-[8px] font-extrabold uppercase tracking-wider text-zinc-600">{label}</dt>
+                            <dd className="mt-1 font-display text-xl font-bold text-zinc-200">{formatNumber(value)}</dd>
+                        </div>
+                    ))}
+                </dl>
+            </CommercePanel>
+        </div>
+    );
+}
+
+function ActivityChart({ rows, currencies }) {
+    const [currency, setCurrency] = useState(currencies[0] || '');
+    useEffect(() => {
+        if (!currencies.includes(currency)) setCurrency(currencies[0] || '');
+    }, [currencies, currency]);
+    const chartRows = useMemo(
+        () => rows.map((row) => ({ ...row, revenue: Number(row.revenueByCurrency?.[currency] ?? 0) / 100 })),
+        [currency, rows]
+    );
+    const definition = useMemo(
+        () => (
+            currency && rows.some((row) => Object.prototype.hasOwnProperty.call(row.revenueByCurrency, currency))
+                ? activityDefinition(chartRows, currency)
+                : null
+        ),
+        [chartRows, currency, rows]
+    );
     return (
         <CommercePanel
+            actions={
+                currencies.length > 1 ? (
+                    <label className="text-[9px] font-extrabold uppercase tracking-wider text-zinc-600">
+                        Währung
+                        <select
+                            className="admin-forum-select-compact !mt-1"
+                            onChange={(event) => setCurrency(event.target.value)}
+                            value={currency}
+                        >
+                            {currencies.map((value) => <option key={value} value={value}>{value}</option>)}
+                        </select>
+                    </label>
+                ) : null
+            }
             description="Tagesgenaue Umsatzentwicklung im ausgewählten Vergleichszeitraum."
             eyebrow="ZEITREIHE"
             title="Umsatzentwicklung"
@@ -160,7 +228,7 @@ function ActivityChart({ rows }) {
     );
 }
 
-function activityDefinition(rows) {
+function activityDefinition(rows, currency) {
     return defineChart({
         marks: [
             areaY(rows, {
@@ -181,7 +249,7 @@ function activityDefinition(rows) {
         ],
         scales: {
             x: { scale: () => scalePoint().padding(0.22), axis: { label: 'Datum' } },
-            y: { scale: scaleLinear, nice: true, grid: true, axis: { label: 'Umsatz in EUR' } }
+            y: { scale: scaleLinear, nice: true, grid: true, axis: { label: `Umsatz in ${currency}` } }
         },
         gradients: [
             {
@@ -350,7 +418,7 @@ function topProductsDefinition(rows) {
     });
 }
 
-function RecentOrders({ resource }) {
+function RecentOrders({ resource, authorized }) {
     const rows = pageItems(resource.data);
     const columns = useMemo(
         () =>
@@ -380,10 +448,15 @@ function RecentOrders({ resource }) {
     );
     return (
         <CommercePanel description="Die zuletzt im Store erstellten Vorgänge." eyebrow="LIVE-BESTELLUNGEN" title="Letzte Bestellungen">
-            {resource.loading ? (
+            {!authorized ? (
+                <CommerceEmpty
+                    title="Keine Leseberechtigung"
+                    text="Für die Bestellliste wird store.orders.read benötigt."
+                />
+            ) : resource.loading ? (
                 <div className="p-6"><CommerceLoading title="Bestellungen werden geladen" /></div>
             ) : resource.error ? (
-                <div className="p-6 text-sm text-red-300">{resource.error}</div>
+                <div className="p-5 sm:p-6"><CommerceError message={resource.error} retry={resource.reload} /></div>
             ) : (
                 <LiveDataTable
                     columns={columns}
@@ -398,7 +471,7 @@ function RecentOrders({ resource }) {
     );
 }
 
-function RecentAudits({ resource, generatedAt }) {
+function RecentAudits({ resource, generatedAt, authorized }) {
     const rows = pageItems(resource.data);
     return (
         <CommercePanel
@@ -406,10 +479,15 @@ function RecentAudits({ resource, generatedAt }) {
             eyebrow="ÄNDERUNGSVERLAUF"
             title="Letzte Store-Aktionen"
         >
-            {resource.loading ? (
+            {!authorized ? (
+                <CommerceEmpty
+                    title="Keine Leseberechtigung"
+                    text="Für den Änderungsverlauf wird store.audit.read benötigt."
+                />
+            ) : resource.loading ? (
                 <div className="p-6"><CommerceLoading title="Änderungsverlauf wird geladen" /></div>
             ) : resource.error ? (
-                <div className="p-6 text-sm text-red-300">{resource.error}</div>
+                <div className="p-5 sm:p-6"><CommerceError message={resource.error} retry={resource.reload} /></div>
             ) : rows.length ? (
                 <div className="divide-y divide-white/[.05]">
                     {rows.map((row) => (
@@ -438,73 +516,78 @@ function normalizeAnalytics(payload) {
     const period = payload?.period || {};
     const previousPeriod = payload?.previousPeriod || {};
     const activity = (payload?.activity || []).map((row) => ({
-        ...row,
-        label: row.label || shortDate(row.date || row.day || row.recordedAt),
-        revenue: moneyValue(row.revenueCents ?? row.amountCents ?? row.revenue),
-        orders: numeric(row.orders ?? row.orderCount)
+        date: row.date,
+        label: shortDate(row.date),
+        orders: row.orders,
+        completedPayments: row.completedPayments,
+        newCustomers: row.newCustomers,
+        revenueByCurrency: row.revenueByCurrency || {}
     }));
+    const currentCurrencies = Array.from(
+        new Set([
+            ...Object.keys(period.revenueByCurrency || {}),
+            ...activity.flatMap((row) => Object.keys(row.revenueByCurrency))
+        ])
+    ).sort();
+    const previousOnlyCurrencies = Object.keys(previousPeriod.revenueByCurrency || {})
+        .filter((currency) => !currentCurrencies.includes(currency))
+        .sort();
+    const currencies = [...currentCurrencies, ...previousOnlyCurrencies];
     return {
         generatedAt: payload?.generatedAt,
-        period: {
-            ...period,
-            revenueCents: numericNullable(period.revenueCents ?? period.amountCents ?? period.revenue),
-            orders: numericNullable(period.orders ?? period.orderCount),
-            completedPayments: numericNullable(period.completedPayments),
-            newCustomers: numericNullable(period.newCustomers),
-            customers: numericNullable(period.customers),
-            averageOrderValueCents: numericNullable(period.averageOrderValueCents)
-        },
+        period,
         previousPeriod,
         activity,
+        currencies,
         orderStatuses: normalizeDistribution(payload?.orderStatusDistribution),
         paymentStatuses: normalizeDistribution(payload?.paymentStatusDistribution),
         gateways: normalizeDistribution(payload?.gatewayDistribution),
-        topProducts: (payload?.topProducts || []).map((row, index) => ({
-            key: row.productId || row.id || 'product-' + index,
-            name: row.productName || row.name || row.productId || 'Produkt',
-            quantity: numeric(row.quantity ?? row.sales ?? row.count),
-            revenueCents: numeric(row.revenueCents)
-        }))
+        topProducts: (payload?.topProducts || [])
+            .filter((row) => Number.isFinite(Number(row.quantity)))
+            .map((row, index) => ({
+                key: row.productId || 'product-' + index,
+                name: row.name || row.productId || 'Nicht verfügbar',
+                quantity: Number(row.quantity),
+                revenueByCurrency: row.revenueByCurrency || {}
+            }))
     };
 }
 
 function normalizeDistribution(rows) {
     if (!rows) return [];
-    const source = Array.isArray(rows) ? rows : Object.entries(rows).map(([key, value]) => ({ key, value }));
-    return source.map((row, index) => ({
-        key: row.key || row.status || row.gateway || row.provider || 'item-' + index,
-        label: humanize(row.label || row.status || row.gateway || row.provider || row.key || 'Unbekannt'),
-        value: numeric(row.value ?? row.count ?? row.total)
-    }));
+    return Object.entries(rows)
+        .map(([key, value]) => ({ key, value }))
+        .filter((row) => Number.isFinite(Number(row.value)))
+        .map((row, index) => ({
+            key: row.key || 'item-' + index,
+            label: humanize(row.key || 'Unbekannt'),
+            value: Number(row.value)
+        }));
 }
 
 function pageItems(payload) {
-    return payload?.items || payload?.content || [];
+    return payload?.items || [];
 }
 
-function numeric(value) {
-    return Number.isFinite(Number(value)) ? Number(value) : 0;
-}
-
-function numericNullable(value) {
-    return Number.isFinite(Number(value)) ? Number(value) : null;
-}
-
-function moneyValue(value) {
-    const cents = numeric(value);
-    return cents / 100;
-}
-
-function sumCurrencies(values) {
-    if (!values || typeof values !== 'object') return null;
-    return Object.values(values).reduce((sum, value) => sum + numeric(value), 0);
-}
-
-function comparison(value, previous, suffix) {
-    if (!Number.isFinite(Number(value)) || !Number.isFinite(Number(previous))) return suffix;
-    if (Number(previous) === 0) return Number(value) === 0 ? 'unverändert ' + suffix : 'neu ' + suffix;
+function comparison(value, previous) {
+    if (!Number.isFinite(Number(value)) || !Number.isFinite(Number(previous))) return 'Vergleich nicht verfügbar';
+    if (Number(previous) === 0) return Number(value) === 0 ? 'Unverändert zum Vergleich' : 'Neu im Zeitraum';
     const delta = ((Number(value) - Number(previous)) / Math.abs(Number(previous))) * 100;
-    return (delta >= 0 ? '+' : '') + new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(delta) + ' % ' + suffix;
+    return (delta >= 0 ? '+' : '') + new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(delta) + ' % zum Vergleich';
+}
+
+function currencyComparison(current = {}, previous = {}) {
+    const currencies = Array.from(new Set([...Object.keys(current), ...Object.keys(previous)])).sort();
+    if (!currencies.length) return 'Keine abgeschlossenen Zahlungen im Vergleich';
+    return currencies
+        .map((currency) => `${currency}: ${comparison(current[currency] ?? 0, previous[currency] ?? 0)}`)
+        .join(' · ');
+}
+
+function formatCurrencyMap(values, emptyLabel = 'Nicht verfügbar') {
+    const entries = Object.entries(values || {}).filter(([, cents]) => Number.isFinite(Number(cents)));
+    if (!entries.length) return emptyLabel;
+    return entries.map(([currency, cents]) => formatStorePrice(cents, currency)).join(' · ');
 }
 
 function shortDate(value) {

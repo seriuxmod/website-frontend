@@ -23,24 +23,19 @@ import {
     getAuthenticatedUser,
     isForumAdministrator,
     isStoreAdministrator,
+    isTeamAdministrator,
     isUserAdministrator
 } from '../../lib/auth';
 import { forumApi } from '../../lib/forumApi';
 import { storeApi } from '../../lib/storeApi';
+import { teamApi } from '../../lib/teamApi';
 import { playerAvatar } from '../../lib/userApi';
 import { userAdminApi } from '../../lib/userAdminApi';
 
 const STATUS_API = 'https://api.seriuxmod.net/api/v1/status/summary';
-const EMPTY_DATA = { users: null, store: null, forum: null, status: null };
+const EMPTY_DATA = { users: null, store: null, forum: null, status: null, team: null };
 const AdminApiWorldMap = lazy(() => import('../../components/admin/AdminApiWorldMap'));
 const AdminOverviewActivityChart = lazy(() => import('../../components/admin/AdminOverviewActivityChart'));
-
-const PREVIEW_EVENTS = [
-    { icon: FaUsers, title: 'Neue Spielerregistrierung', detail: 'User-Service · Benutzerkonto', time: 'vor 2 Min.' },
-    { icon: FaComments, title: 'Forum-Meldung eingegangen', detail: 'Forum-Service · Moderation', time: 'vor 8 Min.' },
-    { icon: FaBagShopping, title: 'Bestellung abgeschlossen', detail: 'Store-Service · Zahlung', time: 'vor 17 Min.' },
-    { icon: FaCircleCheck, title: 'Deployment erfolgreich', detail: 'Homepage · Produktion', time: 'vor 31 Min.' }
-];
 
 export default function AdminDashboard() {
     const [user, setUser] = useState(() => getAuthenticatedUser());
@@ -53,7 +48,8 @@ export default function AdminDashboard() {
         users: 'hidden',
         store: 'hidden',
         forum: 'hidden',
-        status: 'loading'
+        status: 'loading',
+        team: 'hidden'
     });
 
     useEffect(() => {
@@ -76,7 +72,8 @@ export default function AdminDashboard() {
                 users: isUserAdministrator(profile) ? 'loading' : 'hidden',
                 store: isStoreAdministrator(profile) ? 'loading' : 'hidden',
                 forum: isForumAdministrator(profile) ? 'loading' : 'hidden',
-                status: 'loading'
+                status: 'loading',
+                team: isTeamAdministrator(profile) ? 'loading' : 'hidden'
             };
             setSourceState(states);
 
@@ -91,6 +88,7 @@ export default function AdminDashboard() {
 
             if (isUserAdministrator(profile)) tasks.push({ key: 'users', promise: userAdminApi.overview() });
             if (isStoreAdministrator(profile)) tasks.push({ key: 'store', promise: storeApi.admin.overview() });
+            if (isTeamAdministrator(profile)) tasks.push({ key: 'team', promise: teamApi.overview() });
             if (isForumAdministrator(profile)) {
                 tasks.push({
                     key: 'forum',
@@ -227,6 +225,18 @@ export default function AdminDashboard() {
                         value={data.forum?.reports ?? 0}
                     />
                 )}
+                {isTeamAdministrator(user) && (
+                    <AdminMetricCard
+                        detail={`${data.team?.activeTodayCount ?? 0} heute aktiv`}
+                        icon={FaUserGroup}
+                        label="Offene Team-Aufgaben"
+                        pending={sourceState.team !== 'ready'}
+                        pendingText={pendingText(sourceState.team)}
+                        pendingTitle={pendingTitle(sourceState.team)}
+                        tone="sky"
+                        value={data.team?.openTodoCount ?? 0}
+                    />
+                )}
                 <AdminMetricCard
                     detail={
                         serviceProblem
@@ -258,26 +268,36 @@ export default function AdminDashboard() {
                 </Suspense>
                 {isUserAdministrator(user) ? (
                     <OnlineStaff staff={data.users?.onlineStaff ?? []} state={sourceState.users} />
+                ) : isTeamAdministrator(user) ? (
+                    <OnlineStaff
+                        staff={(data.team?.members ?? []).filter((member) => member.activeToday)}
+                        state={sourceState.team}
+                    />
                 ) : (
                     <DataSources sourceState={sourceState} />
                 )}
             </div>
 
-            <div className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.55fr)]">
-                <Suspense
-                    fallback={
-                        <section className="grid min-h-[480px] place-items-center rounded-[28px] border border-white/[.07] bg-[#111218]">
-                            <div className="text-center">
-                                <FaSpinner className="mx-auto animate-spin text-xl text-orange-300" />
-                                <p className="mt-3 text-xs font-bold text-zinc-500">Aktivitätschart wird geladen</p>
-                            </div>
-                        </section>
-                    }
-                >
-                    <AdminOverviewActivityChart />
-                </Suspense>
-                <ActivityFeedPreview />
-            </div>
+            {isTeamAdministrator(user) && (
+                <div className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.55fr)]">
+                    <Suspense
+                        fallback={
+                            <section className="grid min-h-[480px] place-items-center rounded-[28px] border border-white/[.07] bg-[#111218]">
+                                <div className="text-center">
+                                    <FaSpinner className="mx-auto animate-spin text-xl text-orange-300" />
+                                    <p className="mt-3 text-xs font-bold text-zinc-500">Aktivitätschart wird geladen</p>
+                                </div>
+                            </section>
+                        }
+                    >
+                        <AdminOverviewActivityChart
+                            activity={data.team?.activityBuckets ?? []}
+                            state={sourceState.team}
+                        />
+                    </Suspense>
+                    <TeamActivityFeed events={data.team?.recentActivity ?? []} state={sourceState.team} />
+                </div>
+            )}
 
             <section className="mt-6">
                 <div className="mb-4 flex items-end justify-between gap-4">
@@ -332,52 +352,87 @@ export default function AdminDashboard() {
                             to="/admin/commerce"
                         />
                     )}
+                    {isTeamAdministrator(user) && (
+                        <QuickLink
+                            copy={
+                                sourceState.team === 'ready'
+                                    ? `${data.team?.memberCount ?? 0} Mitglieder · ${data.team?.openTodoCount ?? 0} offene Aufgaben`
+                                    : null
+                            }
+                            icon={FaUserGroup}
+                            pending={sourceState.team !== 'ready'}
+                            pendingState={sourceState.team}
+                            title="Teamorganisation"
+                            to="/admin/team"
+                        />
+                    )}
                 </div>
             </section>
         </div>
     );
 }
 
-function ActivityFeedPreview() {
+function TeamActivityFeed({ events, state }) {
+    const ready = state === 'ready';
     return (
         <section className="rounded-[28px] border border-white/[.07] bg-[#111218] p-5 shadow-[0_24px_80px_rgba(0,0,0,.14)] sm:p-7">
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <p className="eyebrow">EREIGNISSE</p>
-                    <h3 className="mt-2 font-display text-2xl font-bold">Letzte Aktivität</h3>
+                    <h3 className="mt-2 font-display text-2xl font-bold">Letzte Teamaktivität</h3>
                     <p className="mt-2 text-xs leading-5 text-zinc-600">
-                        Vorschau auf einen späteren serviceübergreifenden Ereignisstrom.
+                        Persistierte Kalender-, Aufgaben- und Notizänderungen aus dem User-Service.
                     </p>
                 </div>
-                <span className="shrink-0 rounded-full border border-amber-400/20 bg-amber-400/[.07] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.15em] text-amber-200">
-                    Test
-                </span>
+                {ready && (
+                    <span className="shrink-0 rounded-full border border-emerald-400/20 bg-emerald-400/[.07] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.15em] text-emerald-200">
+                        Live
+                    </span>
+                )}
             </div>
 
-            <div className="relative mt-6 space-y-2 before:absolute before:bottom-6 before:left-[19px] before:top-6 before:w-px before:bg-white/[.06]">
-                {PREVIEW_EVENTS.map(({ detail, icon: Icon, time, title }) => (
-                    <div
-                        className="relative flex gap-4 rounded-2xl border border-transparent px-1 py-3 transition hover:border-white/[.055] hover:bg-black/15 sm:px-3"
-                        key={title}
-                    >
-                        <span className="relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-orange-400/15 bg-[#1b1512] text-xs text-orange-300">
-                            <Icon />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                            <b className="block truncate text-sm text-zinc-200">{title}</b>
-                            <p className="mt-1 truncate text-[11px] text-zinc-600">{detail}</p>
+            {!ready ? (
+                <div className="mt-6">
+                    <AdminPendingState
+                        compact
+                        title={state === 'waiting' ? 'Team-Verlauf nicht erreichbar' : 'Team-Verlauf wird geladen'}
+                        text="Die Aktivitätsdaten werden direkt aus dem User-Service geladen."
+                    />
+                </div>
+            ) : events.length ? (
+                <div className="relative mt-6 space-y-2 before:absolute before:bottom-6 before:left-[19px] before:top-6 before:w-px before:bg-white/[.06]">
+                    {events.map((event) => (
+                        <div
+                            className="relative flex gap-4 rounded-2xl border border-transparent px-1 py-3 transition hover:border-white/[.055] hover:bg-black/15 sm:px-3"
+                            key={event.id}
+                        >
+                            <span className="relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-orange-400/15 bg-[#1b1512] text-xs text-orange-300">
+                                <FaCircleCheck />
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <b className="block truncate text-sm text-zinc-200">{humanize(event.action)}</b>
+                                <p className="mt-1 truncate text-[11px] text-zinc-600">
+                                    {event.actorUsername || shortId(event.actorId)} ·{' '}
+                                    {event.area || humanize(event.entityType)}
+                                </p>
+                            </div>
+                            <time
+                                className="shrink-0 pt-0.5 text-[9px] font-bold uppercase tracking-[.1em] text-zinc-700"
+                                dateTime={event.occurredAt}
+                            >
+                                {formatDate(event.occurredAt)}
+                            </time>
                         </div>
-                        <time className="shrink-0 pt-0.5 text-[9px] font-bold uppercase tracking-[.1em] text-zinc-700">
-                            {time}
-                        </time>
-                    </div>
-                ))}
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-dashed border-white/[.075] bg-black/10 px-4 py-3 text-[11px] leading-5 text-zinc-600">
-                Die Einträge werden erst bei der späteren Backend-Anbindung durch echte Audit- und Service-Ereignisse
-                ersetzt.
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="mt-6">
+                    <AdminEmptyState
+                        title="Noch keine Teamaktivität"
+                        text="Nach der ersten Änderung im Kalender, in Aufgaben oder Notizen erscheint sie hier."
+                    />
+                </div>
+            )}
         </section>
     );
 }
@@ -519,6 +574,24 @@ function formatRevenue(revenueByCurrency) {
 
 function formatTime(value) {
     return new Intl.DateTimeFormat('de-DE', { timeStyle: 'short' }).format(value);
+}
+
+function formatDate(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+        ? 'Unbekannt'
+        : new Intl.DateTimeFormat('de-DE', { dateStyle: 'short', timeStyle: 'short' }).format(date);
+}
+
+function humanize(value) {
+    return String(value || 'Unbekannt')
+        .replace(/[._-]+/g, ' ')
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function shortId(value) {
+    const text = String(value || 'Unbekannt');
+    return text.length > 12 ? `${text.slice(0, 8)}…` : text;
 }
 
 function pendingTitle(state) {

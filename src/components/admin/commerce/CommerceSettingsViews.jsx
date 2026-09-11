@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useForm } from '@tanstack/react-form';
 import {
-    FaBuilding,
     FaCircleCheck,
     FaCircleExclamation,
     FaCreditCard,
@@ -13,6 +12,7 @@ import { hasAnyPermission } from '../../../lib/auth';
 import { storeApi } from '../../../lib/storeApi';
 import {
     CommerceAdminPage,
+    CommerceEmpty,
     CommerceLoading,
     CommercePanel,
     StatusPill,
@@ -27,7 +27,7 @@ const EMPTY_MERCHANT = {
     postalCode: '',
     city: '',
     region: '',
-    countryCode: 'DE',
+    countryCode: '',
     email: '',
     phone: '',
     website: '',
@@ -65,11 +65,7 @@ function PaymentMethodEditor({ settings, canWrite, onChanged }) {
     const methods = settings.paymentMethods || [];
     const defaultValues = useMemo(
         () => ({
-            methods: methods.map((method) => ({
-                id: method.id,
-                enabled: Boolean(method.enabled),
-                order: Number(method.order || 0)
-            }))
+            methods: paymentMethodValues(methods)
         }),
         [methods]
     );
@@ -78,7 +74,10 @@ function PaymentMethodEditor({ settings, canWrite, onChanged }) {
         onSubmit: async ({ value }) => {
             setMessage('');
             try {
-                await storeApi.admin.saveSettings(settingsPayload(settings, { paymentMethods: value.methods }));
+                const saved = await storeApi.admin.saveSettings(
+                    settingsPayload(settings, { paymentMethods: value.methods })
+                );
+                form.reset({ methods: paymentMethodValues(saved.paymentMethods) });
                 setMessage('Zahlungsmethoden wurden gespeichert.');
                 await onChanged();
             } catch (error) {
@@ -95,7 +94,7 @@ function PaymentMethodEditor({ settings, canWrite, onChanged }) {
             >
                 <form className="p-5 sm:p-6" onSubmit={submitForm(form)}>
                     <form.Field name="methods" mode="array">
-                        {(field) => (
+                        {(field) => methods.length ? (
                             <div className="grid gap-4 lg:grid-cols-2">
                                 {methods.map((method, index) => {
                                     const value = field.state.value[index] || {
@@ -150,6 +149,11 @@ function PaymentMethodEditor({ settings, canWrite, onChanged }) {
                                     );
                                 })}
                             </div>
+                        ) : (
+                            <CommerceEmpty
+                                title="Keine Zahlungsmethoden konfiguriert"
+                                text="Der Store-Service hat aktuell keine verfügbaren Zahlarten gemeldet."
+                            />
                         )}
                     </form.Field>
                     <SaveBar canWrite={canWrite} form={form} message={message} />
@@ -200,38 +204,47 @@ export function CommerceSettingsView({ user }) {
 
 function SettingsEditor({ settings, canWrite, onChanged }) {
     const [message, setMessage] = useState('');
-    const defaults = {
-        checkoutEnabled: Boolean(settings.checkoutEnabled),
-        currency: settings.currency || 'EUR',
-        invoicePrefix: settings.invoicePrefix || 'SM',
-        pricesIncludeVat: settings.pricesIncludeVat !== false,
-        vatRate: String((Number(settings.defaultVatRateBasisPoints) || 0) / 100),
-        merchant: { ...EMPTY_MERCHANT, ...(settings.merchant || {}) }
-    };
+    const defaults = settingsFormValues(settings);
     const form = useForm({
         defaultValues: defaults,
         onSubmit: async ({ value }) => {
             setMessage('');
             const country = value.merchant.countryCode.trim().toUpperCase();
-            if (!/^[A-Z]{2}$/.test(country)) {
+            const currency = value.currency.trim().toUpperCase();
+            const invoicePrefix = value.invoicePrefix.trim().toUpperCase();
+            const vatRate = Number(value.vatRate);
+            if (!/^[A-Z]{3}$/.test(currency)) {
+                setMessage('Die Währung muss als dreistelliger ISO-Code angegeben werden.');
+                return;
+            }
+            if (!/^[A-Z0-9_-]{1,12}$/.test(invoicePrefix)) {
+                setMessage('Das Rechnungspräfix darf 1–12 Buchstaben, Ziffern, _ oder - enthalten.');
+                return;
+            }
+            if (country && !/^[A-Z]{2}$/.test(country)) {
                 setMessage('Der Ländercode muss aus genau zwei Buchstaben bestehen.');
                 return;
             }
-            if (!value.merchant.email.includes('@')) {
+            if (value.merchant.email && !value.merchant.email.includes('@')) {
                 setMessage('Bitte eine gültige Kontakt-E-Mail hinterlegen.');
                 return;
             }
+            if (!Number.isFinite(vatRate) || vatRate < 0 || vatRate > 100) {
+                setMessage('Der Standard-Umsatzsteuersatz muss zwischen 0 und 100 % liegen.');
+                return;
+            }
             try {
-                await storeApi.admin.saveSettings(
+                const saved = await storeApi.admin.saveSettings(
                     settingsPayload(settings, {
                         checkoutEnabled: value.checkoutEnabled,
-                        currency: value.currency.toUpperCase(),
-                        invoicePrefix: value.invoicePrefix.toUpperCase(),
+                        currency,
+                        invoicePrefix,
                         pricesIncludeVat: value.pricesIncludeVat,
-                        defaultVatRateBasisPoints: Math.round(Number(value.vatRate) * 100),
-                        merchant: { ...value.merchant, countryCode country: undefined, countryPhone: undefined, countryCode: country }
+                        defaultVatRateBasisPoints: Math.round(vatRate * 100),
+                        merchant: { ...value.merchant, countryCode: country }
                     })
                 );
+                form.reset(settingsFormValues(saved));
                 setMessage('Store-Einstellungen wurden gespeichert.');
                 await onChanged();
             } catch (error) {
@@ -240,16 +253,16 @@ function SettingsEditor({ settings, canWrite, onChanged }) {
         }
     });
     const merchantFields = [
-        ['legalName', 'Rechtlicher Firmenname', 'text', true],
+        ['legalName', 'Rechtlicher Firmenname'],
         ['tradingName', 'Marken-/Handelsname'],
         ['managingDirector', 'Geschäftsführer / Inhaber'],
-        ['email', 'Kontakt-E-Mail', 'email', true],
-        ['addressLine1', 'Straße und Hausnummer', 'text', true],
+        ['email', 'Kontakt-E-Mail', 'email'],
+        ['addressLine1', 'Straße und Hausnummer'],
         ['addressLine2', 'Adresszusatz'],
-        ['postalCode', 'Postleitzahl', 'text', true],
-        ['city', 'Ort', 'text', true],
+        ['postalCode', 'Postleitzahl'],
+        ['city', 'Ort'],
         ['region', 'Bundesland / Region'],
-        ['countryCode', 'Ländercode', 'text', true],
+        ['countryCode', 'Ländercode'],
         ['phone', 'Telefon'],
         ['website', 'Website', 'url'],
         ['vatId', 'USt-IdNr.'],
@@ -265,14 +278,13 @@ function SettingsEditor({ settings, canWrite, onChanged }) {
                 title="Firmendaten"
             >
                 <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
-                    {merchantFields.map(([name, label, type = 'text', required = false]) => (
+                    {merchantFields.map(([name, label, type = 'text']) => (
                         <NestedField
                             disabled={!canWrite}
                             form={form}
                             key={name}
                             label={label}
                             name={name}
-                            required={required}
                             type={type}
                         />
                     ))}
@@ -288,7 +300,7 @@ function SettingsEditor({ settings, canWrite, onChanged }) {
                         <div className="grid gap-4 sm:grid-cols-3">
                             <RootField disabled={!canWrite} form={form} label="Währung" name="currency" required />
                             <RootField disabled={!canWrite} form={form} label="Rechnungspräfix" name="invoicePrefix" required />
-                            <RootField disabled={!canWrite} form={form} label="Standard-USt. in %" name="vatRate" typeRandom? name2="vatRate" type="number" />
+                            <RootField disabled={!canWrite} form={form} label="Standard-USt. in %" name="vatRate" type="number" />
                         </div>
                         <div className="mt-5 grid gap-3 sm:grid-cols-2">
                             <RootToggle disabled={!canWrite} form={form} label="Preise enthalten Umsatzsteuer" name="pricesIncludeVat" />
@@ -344,10 +356,6 @@ function NestedField({ form, name, label, type, required, disabled }) {
     );
 }
 
-function Root(props) { return null; }
-
-function Root2(props) { return null; }
-
 function RootField({ form, name, label, type = 'text', required, disabled }) {
     return (
         <form.Field name={name}>
@@ -364,7 +372,7 @@ function RootField({ form, name, label, type = 'text', required, disabled }) {
                         required={required}
                         step={type === 'number' ? '0.01' : undefined}
                         type={type}
-                        value={field.state.value}
+                        value={field.state.value ?? ''}
                     />
                 </label>
             )}
@@ -425,14 +433,36 @@ function StatusRow({ label, detail, ready }) {
 function settingsPayload(settings, overrides = {}) {
     return {
         checkoutEnabled: Boolean(settings.checkoutEnabled),
-        currency: settings.currency || 'EUR',
-        merchant: { ...EMPTY_MERCHANT, ...(settings.merchant || {}) },
-        invoicePrefix: settings.invoicePrefix || 'SM',
-        pricesIncludeVat: settings.pricesIncludeVat !== false,
-        defaultVatRateBasisPoints: Number(settings.defaultVatRateBasisPoints) || 0,
-        paymentMethods: (settings.paymentMethods || []).map(({ id, enabled, order }) => ({ id, enabled, order })),
+        currency: settings.currency,
+        merchant: merchantValues(settings.merchant),
+        invoicePrefix: settings.invoicePrefix,
+        pricesIncludeVat: Boolean(settings.pricesIncludeVat),
+        defaultVatRateBasisPoints: Number(settings.defaultVatRateBasisPoints),
+        paymentMethods: paymentMethodValues(settings.paymentMethods),
         ...overrides
     };
+}
+
+function paymentMethodValues(methods = []) {
+    return methods.map(({ id, enabled, order }) => ({ id, enabled: Boolean(enabled), order: Number(order) }));
+}
+
+function settingsFormValues(settings) {
+    const vatBasisPoints = Number(settings.defaultVatRateBasisPoints);
+    return {
+        checkoutEnabled: Boolean(settings.checkoutEnabled),
+        currency: settings.currency ?? '',
+        invoicePrefix: settings.invoicePrefix ?? '',
+        pricesIncludeVat: Boolean(settings.pricesIncludeVat),
+        vatRate: Number.isFinite(vatBasisPoints) ? String(vatBasisPoints / 100) : '',
+        merchant: merchantValues(settings.merchant)
+    };
+}
+
+function merchantValues(merchant) {
+    return Object.fromEntries(
+        Object.keys(EMPTY_MERCHANT).map((key) => [key, merchant?.[key] ?? ''])
+    );
 }
 function submitForm(form) {
     return (event) => {
