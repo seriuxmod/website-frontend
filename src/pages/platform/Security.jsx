@@ -58,13 +58,13 @@ export default function Security() {
         );
     if (state.loading)
         return (
-            <ForumShell title="Sicherheit">
+            <ForumShell title="Sicherheit" eyebrow="MEIN KONTO" rootBreadcrumb={{ label: 'Meine persönliche Ansicht', to: '/me' }}>
                 <ForumLoading />
             </ForumShell>
         );
     if (state.error)
         return (
-            <ForumShell title="Sicherheit">
+            <ForumShell title="Sicherheit" eyebrow="MEIN KONTO" rootBreadcrumb={{ label: 'Meine persönliche Ansicht', to: '/me' }}>
                 <ForumError message={state.error} onRetry={load} />
             </ForumShell>
         );

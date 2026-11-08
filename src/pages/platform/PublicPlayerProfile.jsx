@@ -244,7 +244,9 @@ export default function PublicPlayerProfile() {
                         forum: null,
                         presence: null,
                         friends: [],
-                        error: error.status === 404 ? 'Dieses Spielerprofil wurde nicht gefunden.' : error.message
+                        errorStatus: error.status,
+                        error: error.status === 404 ? 'Dieses Spielerprofil wurde nicht gefunden.'
+                            : error instanceof TypeError ? 'Die öffentliche Minecraft-Profilsuche ist derzeit nicht erreichbar. Bitte später erneut versuchen.' : error.message
                     });
                 }
             }
@@ -304,11 +306,13 @@ export default function PublicPlayerProfile() {
         return (
             <main className="grid min-h-screen place-items-center bg-[#07080b] px-5 pt-24 text-white">
                 <section className="liquid-panel max-w-lg rounded-3xl p-8 text-center">
-                    <h1 className="font-display text-3xl font-bold">Profil nicht gefunden</h1>
+                    <h1 className="font-display text-3xl font-bold">{state.errorStatus === 404 ? 'Profil nicht gefunden' : 'Profil derzeit nicht verfügbar'}</h1>
                     <p className="mt-4 text-sm leading-7 text-zinc-500">{state.error}</p>
                     <Link to="/" className="button-primary mt-7">
                         Zur Startseite
                     </Link>
+                    {state.errorStatus !== 404 && <button className="button-secondary mt-3" onClick={() => load()}>Erneut versuchen</button>}
+                    {currentUser && <Link to="/me" className="mt-5 block text-sm text-orange-400">Meine persönliche Ansicht</Link>}
                 </section>
             </main>
         );

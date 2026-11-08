@@ -1,4 +1,4 @@
-import { authenticatedFetch } from './auth';
+import { authenticatedFetch } from './auth.js';
 
 const USER_SECURITY_API = 'https://api.seriuxmod.net/api/v1/user/account/security';
 const AUTH_SECURITY_API = 'https://auth.seriuxmod.net/api/security';
@@ -10,6 +10,9 @@ async function request(url, options = {}) {
             ...(options.body ? { 'Content-Type': 'application/json' } : {}),
             ...(options.headers || {})
         }
+    }).catch(error => {
+        if (error instanceof TypeError) throw new Error('Der Sicherheitsdienst ist derzeit nicht erreichbar. Die Website-Anbindung an das neue Backend ist noch nicht abgeschlossen. Bitte später erneut versuchen.');
+        throw error;
     });
     if (response.status === 204) return null;
     const payload = await response.json().catch(() => ({}));
