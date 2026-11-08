@@ -1,3 +1,5 @@
+import { safeLoginReturnPath } from './profileRoutes.js';
+
 const AUTH_URL = 'https://auth.seriuxmod.net';
 const USER_PROFILE_URL = 'https://api.seriuxmod.net/api/v1/user/users/me';
 const USER_PERMISSIONS_URL = 'https://api.seriuxmod.net/api/v1/user/permissions/me';
@@ -272,13 +274,14 @@ export async function authenticatedFetch(input, init = {}) {
     return response;
 }
 
-export async function beginLogin(returnTo = window.location.pathname) {
+export async function beginLogin(returnTo = null) {
     const verifier = base64Url(crypto.getRandomValues(new Uint8Array(48)));
     const challenge = base64Url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
     const state = crypto.randomUUID();
     sessionStorage.setItem('seriux_pkce_verifier', verifier);
     sessionStorage.setItem('seriux_oauth_state', state);
-    sessionStorage.setItem('seriux_return_to', returnTo);
+    if (returnTo) sessionStorage.setItem('seriux_return_to', returnTo);
+    else sessionStorage.removeItem('seriux_return_to');
     const params = new URLSearchParams({
         response_type: 'code',
         client_id: CLIENT_ID,
@@ -292,7 +295,9 @@ export async function beginLogin(returnTo = window.location.pathname) {
 }
 
 export async function completeLogin(code, state) {
-    if (!code || state !== sessionStorage.getItem('seriux_oauth_state')) throw new Error('Ungültige Login-Antwort.');
+    const expectedState = sessionStorage.getItem('seriux_oauth_state');
+    const verifier = sessionStorage.getItem('seriux_pkce_verifier');
+    if (!code || !state || !expectedState || !verifier || state !== expectedState) throw new Error('Ungültige Login-Antwort.');
     const response = await fetch(`${AUTH_URL}/oauth2/token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -301,17 +306,22 @@ export async function completeLogin(code, state) {
             client_id: CLIENT_ID,
             redirect_uri: `${window.location.origin}/auth/callback`,
             code,
-            code_verifier: sessionStorage.getItem('seriux_pkce_verifier') || ''
+            code_verifier: verifier
         })
     });
     const payload = await response.json();
     if (!response.ok || !payload.access_token)
         throw new Error(payload.error_description || 'Anmeldung fehlgeschlagen.');
+    sessionStorage.removeItem(PROFILE_KEY);
+    sessionStorage.removeItem('seriux_identity_token');
     storeTokens(payload);
     sessionStorage.removeItem('seriux_pkce_verifier');
     sessionStorage.removeItem('seriux_oauth_state');
     window.dispatchEvent(new CustomEvent('seriux-auth-changed', { detail: { authenticated: true } }));
-    return sessionStorage.getItem('seriux_return_to') || '/';
+    const returnTo = sessionStorage.getItem('seriux_return_to');
+    sessionStorage.removeItem('seriux_return_to');
+    const user = getAuthenticatedUser();
+    return safeLoginReturnPath(returnTo, user);
 }
 
 export async function logout() {

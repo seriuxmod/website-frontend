@@ -12,6 +12,7 @@ import Privacy from './pages/legal/Privacy';
 import Terms from './pages/legal/Terms';
 import AuthCallback from './pages/platform/AuthCallback';
 import Profile from './pages/platform/Profile';
+import PersonalProfile from './pages/platform/PersonalProfile';
 import PublicPlayerProfile from './pages/platform/PublicPlayerProfile';
 import ForumIndex from './pages/forum/ForumIndex';
 import ForumBoard from './pages/forum/ForumBoard';
@@ -109,7 +110,9 @@ export default function App() {
                     <Route path="forum" element={<Navigate to="/admin/forum/analytics" replace />} />
                     <Route path="store" element={<Navigate to="/admin/commerce" replace />} />
                 </Route>
-                <Route path="/account/security" element={<Security />} />
+                <Route path="/me" element={<PersonalProfile />} />
+                <Route path="/me/settings/security" element={<Security />} />
+                <Route path="/account/security" element={<Navigate to="/me/settings/security" replace />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />

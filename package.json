@@ -6,7 +6,8 @@
     "scripts": {
         "dev": "vite",
         "pubDev": "vite --host",
-        "build": "vite build",
+        "test": "node --test test/*.test.mjs",
+        "build": "vite build && node scripts/prepare-pages.mjs",
         "preview": "vite preview",
         "format": "npx prettier --write src/"
     },

@@ -33,6 +33,7 @@ import { communityItems } from '../config/community';
 import { adminGroupIsActive, adminItemIsActive, adminNavigationGroups } from '../config/adminNavigation';
 import NavbarNotifications from './NavbarNotifications';
 import PlayerSearch from './PlayerSearch';
+import { publicProfilePath } from '../lib/profileRoutes';
 
 function canSeeAdminItem(user, item) {
     if (item.permissionAlternatives?.length) {
@@ -449,10 +450,13 @@ export default function Navbar() {
                         {profileOpen && (
                             <div className="liquid-menu absolute right-0 top-full mt-3 w-56 rounded-2xl p-2">
                                 <Link
-                                    to={`/players/${encodeURIComponent(user.playerId || user.username)}`}
+                                    to={publicProfilePath(user)}
                                     className="profile-menu-item"
                                 >
-                                    <FaUser /> Mein Profil
+                                    <FaUser /> Öffentliches Profil
+                                </Link>
+                                <Link to="/me" className="profile-menu-item">
+                                    <FaUser /> Meine persönliche Ansicht
                                 </Link>
                                 <Link to="/forum/account" className="profile-menu-item">
                                     <FaBell />
@@ -471,7 +475,7 @@ export default function Navbar() {
                                 <Link to="/friends" className="profile-menu-item">
                                     <FaUsers /> Freunde &amp; Partys
                                 </Link>
-                                <Link to="/account/security" className="profile-menu-item">
+                                <Link to="/me/settings/security" className="profile-menu-item">
                                     <FaKey /> Sicherheit
                                 </Link>
                                 {isAdministrator(user) && (
@@ -493,7 +497,7 @@ export default function Navbar() {
                 ) : (
                     <button
                         type="button"
-                        onClick={() => beginLogin(location.pathname)}
+                        onClick={() => beginLogin()}
                         className="login-button ml-1 hidden h-12 items-center gap-2 rounded-2xl px-5 text-sm font-extrabold sm:flex"
                     >
                         <FaRightToBracket className="text-base" /> Login
@@ -659,10 +663,11 @@ export default function Navbar() {
                             </div>
                             <Link
                                 className="mobile-nav-item"
-                                to={`/players/${encodeURIComponent(user.playerId || user.username)}`}
+                                to={publicProfilePath(user)}
                             >
-                                Mein Profil
+                                Öffentliches Profil
                             </Link>
+                            <Link className="mobile-nav-item" to="/me">Meine persönliche Ansicht</Link>
                             <Link className="mobile-nav-item flex items-center justify-between" to="/forum/account">
                                 Mein Forum
                                 {unreadForumNotifications > 0 && (
@@ -677,7 +682,7 @@ export default function Navbar() {
                             <Link className="mobile-nav-item" to="/friends">
                                 Freunde &amp; Partys
                             </Link>
-                            <Link className="mobile-nav-item" to="/account/security">
+                            <Link className="mobile-nav-item" to="/me/settings/security">
                                 Sicherheit
                             </Link>
                             {isAdministrator(user) && (
@@ -697,7 +702,7 @@ export default function Navbar() {
                     ) : (
                         <button
                             type="button"
-                            onClick={() => beginLogin(location.pathname)}
+                            onClick={() => beginLogin()}
                             className="login-button mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold"
                         >
                             <FaRightToBracket /> Login

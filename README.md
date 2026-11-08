@@ -77,4 +77,16 @@ src/config/           öffentliche Frontend-Konfiguration
 
 Ein Push auf `main` löst `.github/workflows/deploy.yml` aus. Die Pipeline installiert mit `npm ci`, erzeugt den Vite-Build und veröffentlicht die Website über GitHub Pages.
 
+Vor jedem Build laufen `npm test` (PKCE-Abschluss und Profil-Routing). Erst nach erfolgreichen Tests und Build veröffentlicht die Pipeline ausschließlich `dist/` im Branch `gh-pages`. GitHub Pages verwendet `gh-pages` mit Pfad `/`; Custom Domain ist `seriuxmod.net`, HTTPS bleibt aktiviert. `npm run build` erzeugt auch den SPA-404-Fallback, `CNAME` und `.nojekyll`.
+
+## Profil- und Konto-URLs
+
+- `/@<accountname>`: öffentliches Spielerprofil; Standardziel des Login-Buttons.
+- `/me`: persönliche Kontoansicht, erreichbar im Profil-Dropdown.
+- `/me/settings/security`: Sicherheitseinstellungen, ebenfalls im Profil-Dropdown.
+- `/profile` bleibt als Weiterleitung zum eigenen öffentlichen Profil erhalten; `/account/security` leitet auf den neuen Sicherheitspfad um.
+- Explizite Anmeldungen aus geschützten Unterseiten dürfen zu ihrem sicheren lokalen Ausgangspfad zurückkehren. Der normale Navbar-Login verwendet dagegen das öffentliche Namensprofil. Der OAuth-Callback bleibt `/auth/callback`.
+
+Die URL-Umstellung migriert nicht automatisch die bestehenden REST-Clients auf das gRPC-Backend. Sicherheits- und weitere Fach-APIs benötigen noch eine separat abgenommene browserfähige Anbindung. Ein statisch über GitHub Pages ausgeliefertes Frontend kann das Node.js-gRPC-SDK nicht direkt verwenden.
+
 Da dieses Repository öffentlich ist, enthält diese README absichtlich keine interne Endpoint-, Payload- oder Berechtigungsdokumentation. Die Verträge der Backend-Services stehen in den jeweiligen privaten Service-Repositories.

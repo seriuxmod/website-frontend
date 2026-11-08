@@ -12,7 +12,7 @@ import {
     FaTrash
 } from 'react-icons/fa6';
 import { Link } from 'react-router-dom';
-import { fetchAuthenticatedUser, getAuthenticatedUser } from '../../lib/auth';
+import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser } from '../../lib/auth';
 import { securityApi } from '../../lib/securityApi';
 import { registrationOptions, serializeCredential } from '../../lib/passkeys';
 import { ForumError, ForumLoading, ForumShell, formatDate } from '../forum/ForumComponents';
@@ -53,9 +53,7 @@ export default function Security() {
                 description="Melde dich an, um deine Zugangsdaten und Geräte zu verwalten."
                 rootBreadcrumb={{ label: 'Sicherheit' }}
             >
-                <Link className="forum-button-primary" to="/">
-                    Zur Startseite
-                </Link>
+                <button className="forum-button-primary" onClick={() => beginLogin('/me/settings/security')}>Anmelden</button>
             </ForumShell>
         );
     if (state.loading)
@@ -76,7 +74,7 @@ export default function Security() {
             eyebrow="SERIUX-ID"
             title="Sicherheit"
             description="Verwalte dein Web-Passwort, die Zwei-Faktor-Anmeldung und alle aktiven Launcher- und Browser-Sitzungen."
-            rootBreadcrumb={{ label: 'Mein Konto' }}
+            rootBreadcrumb={{ label: 'Meine persönliche Ansicht', to: '/me' }}
             breadcrumbs={[{ label: 'Sicherheit' }]}
         >
             {message && (

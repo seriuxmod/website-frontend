@@ -11,7 +11,7 @@ export default function VerifyEmail() {
         if (!token) return setState('error');
         securityApi.verifyEmail(token).then(() => setState('success')).catch(() => setState('error'));
     }, [params]);
-    return <RecoveryShell icon={state === 'success' ? FaCircleCheck : state === 'error' ? FaTriangleExclamation : FaEnvelope} title={state === 'loading' ? 'E-Mail wird bestätigt …' : state === 'success' ? 'E-Mail bestätigt' : 'Link nicht gültig'} copy={state === 'success' ? 'Deine Wiederherstellungsadresse ist jetzt verifiziert.' : state === 'error' ? 'Der Link ist abgelaufen oder wurde bereits verwendet.' : 'Einen kurzen Moment bitte.'}><Link className="forum-button-primary mt-6" to="/account/security">Zur Sicherheit</Link></RecoveryShell>;
+    return <RecoveryShell icon={state === 'success' ? FaCircleCheck : state === 'error' ? FaTriangleExclamation : FaEnvelope} title={state === 'loading' ? 'E-Mail wird bestätigt …' : state === 'success' ? 'E-Mail bestätigt' : 'Link nicht gültig'} copy={state === 'success' ? 'Deine Wiederherstellungsadresse ist jetzt verifiziert.' : state === 'error' ? 'Der Link ist abgelaufen oder wurde bereits verwendet.' : 'Einen kurzen Moment bitte.'}><Link className="forum-button-primary mt-6" to="/me/settings/security">Zur Sicherheit</Link></RecoveryShell>;
 }
 
 export function RecoveryShell({ icon: Icon, title, copy, children }) {

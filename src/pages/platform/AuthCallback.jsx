@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { completeLogin } from '../../lib/auth';
 
@@ -6,11 +6,15 @@ export default function AuthCallback() {
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const [error, setError] = useState('');
+    const loginRequest = useRef(null);
 
     useEffect(() => {
-        completeLogin(params.get('code'), params.get('state'))
-            .then((returnTo) => navigate(returnTo, { replace: true }))
-            .catch((reason) => setError(reason.message));
+        let active = true;
+        if (!loginRequest.current) loginRequest.current = completeLogin(params.get('code'), params.get('state'));
+        loginRequest.current
+            .then((returnTo) => { if (active) navigate(returnTo, { replace: true }); })
+            .catch((reason) => { if (active) setError(reason.message); });
+        return () => { active = false; };
     }, [navigate, params]);
 
     return <main className="grid min-h-screen place-items-center bg-[#090a0d] px-5 text-white">
