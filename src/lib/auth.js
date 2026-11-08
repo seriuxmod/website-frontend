@@ -8,6 +8,7 @@ const REFRESH_TOKEN_KEY = 'seriux_refresh_token';
 const ACCESS_TOKEN_REFRESH_SKEW_MS = 2 * 60 * 1000;
 const TERMINAL_REFRESH_ERRORS = new Set(['invalid_grant', 'invalid_client', 'unauthorized_client']);
 let refreshRequest = null;
+let sessionEpoch = 0;
 
 const base64Url = (bytes) =>
     btoa(String.fromCharCode(...new Uint8Array(bytes)))
@@ -65,6 +66,7 @@ const storeTokens = (payload) => {
 };
 
 const clearLocalSession = () => {
+    sessionEpoch++;
     sessionStorage.removeItem('seriux_access_token');
     sessionStorage.removeItem('seriux_identity_token');
     sessionStorage.removeItem(REFRESH_TOKEN_KEY);
@@ -112,11 +114,13 @@ async function refreshAccessToken() {
     const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
     if (!refreshToken) return null;
     const currentAccessToken = getAccessToken();
+    const epoch = sessionEpoch;
 
     refreshRequest = (async () => {
         try {
             const response = await fetch(`${AUTH_URL}/oauth2/token`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
                     grant_type: 'refresh_token',
@@ -125,6 +129,7 @@ async function refreshAccessToken() {
                 })
             });
             const payload = await response.json().catch(() => ({}));
+            if (epoch !== sessionEpoch || sessionStorage.getItem(REFRESH_TOKEN_KEY) !== refreshToken) return null;
             if (!response.ok || !payload.access_token) {
                 if (TERMINAL_REFRESH_ERRORS.has(payload.error)) {
                     clearLocalSession();
@@ -139,6 +144,7 @@ async function refreshAccessToken() {
         } catch {
             // Keep the rotating refresh token on transient network or server failures.
             // A later focus/online event can retry without forcing a new login.
+            if (epoch !== sessionEpoch || sessionStorage.getItem(REFRESH_TOKEN_KEY) !== refreshToken) return null;
             return accessTokenExpired(currentAccessToken) ? null : currentAccessToken;
         } finally {
             refreshRequest = null;
@@ -256,8 +262,10 @@ export async function authenticatedFetch(input, init = {}) {
 }
 
 export async function beginLogin(returnTo = null, { reauthenticate = false } = {}) {
+    const epoch = ++sessionEpoch;
     const verifier = base64Url(crypto.getRandomValues(new Uint8Array(48)));
     const challenge = base64Url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+    if (epoch !== sessionEpoch) return;
     const state = crypto.randomUUID();
     sessionStorage.setItem('seriux_pkce_verifier', verifier);
     sessionStorage.setItem('seriux_oauth_state', state);
@@ -277,11 +285,13 @@ export async function beginLogin(returnTo = null, { reauthenticate = false } = {
 }
 
 export async function completeLogin(code, state) {
+    const epoch = sessionEpoch;
     const expectedState = sessionStorage.getItem('seriux_oauth_state');
     const verifier = sessionStorage.getItem('seriux_pkce_verifier');
     if (!code || !state || !expectedState || !verifier || state !== expectedState) throw new Error('Ungültige Login-Antwort.');
     const response = await fetch(`${AUTH_URL}/oauth2/token`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
             grant_type: 'authorization_code',
@@ -292,8 +302,11 @@ export async function completeLogin(code, state) {
         })
     });
     const payload = await response.json();
+    if (epoch !== sessionEpoch || sessionStorage.getItem('seriux_oauth_state') !== state)
+        throw new Error('Die Anmeldung wurde zwischenzeitlich ersetzt oder abgebrochen. Bitte erneut anmelden.');
     if (!response.ok || !payload.access_token)
         throw new Error(payload.error_description || 'Anmeldung fehlgeschlagen.');
+    sessionEpoch++;
     sessionStorage.removeItem(PROFILE_KEY);
     sessionStorage.removeItem('seriux_identity_token');
     storeTokens(payload);
@@ -307,6 +320,7 @@ export async function completeLogin(code, state) {
 }
 
 export async function logout() {
+    const accessToken = getAccessToken();
     const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_KEY);
     clearLocalSession();
 
@@ -314,6 +328,7 @@ export async function logout() {
         try {
             await fetch(`${AUTH_URL}/oauth2/revoke`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
                     client_id: CLIENT_ID,
@@ -328,6 +343,7 @@ export async function logout() {
 
     let authServerSessionEnded = false;
     try {
+        if (!accessToken) throw new Error('No account-bound token is available');
         const csrfResponse = await fetch(`${AUTH_URL}/api/session/csrf`, {
             credentials: 'include',
             headers: { Accept: 'application/json' },
@@ -341,6 +357,7 @@ export async function logout() {
             credentials: 'include',
             headers: {
                 Accept: 'application/json',
+                Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/x-www-form-urlencoded'
             },
             body: new URLSearchParams({ [csrf.parameterName]: csrf.token })

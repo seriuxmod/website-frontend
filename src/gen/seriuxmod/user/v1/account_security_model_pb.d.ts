@@ -24,6 +24,11 @@ export declare type AccountSecurityStatus = Message<"seriuxmod.user.v1.AccountSe
    * @generated from field: bool two_factor_enabled = 4;
    */
   twoFactorEnabled: boolean;
+
+  /**
+   * @generated from field: int32 recovery_codes_remaining = 5;
+   */
+  recoveryCodesRemaining: number;
 };
 
 /**
@@ -255,6 +260,13 @@ export declare type RemovePasskeyRequest = Message<"seriuxmod.user.v1.RemovePass
    * @generated from field: seriuxmod.user.v1.SecurityActionVerification verification = 2;
    */
   verification?: SecurityActionVerification | undefined;
+
+  /**
+   * Passwordless accounts may instead use a recent, verified website passkey login.
+   *
+   * @generated from field: bool use_recent_authentication = 3;
+   */
+  useRecentAuthentication: boolean;
 };
 
 /**
@@ -262,4 +274,38 @@ export declare type RemovePasskeyRequest = Message<"seriuxmod.user.v1.RemovePass
  * Use `create(RemovePasskeyRequestSchema)` to create a new message.
  */
 export declare const RemovePasskeyRequestSchema: GenMessage<RemovePasskeyRequest>;
+
+/**
+ * @generated from message seriuxmod.user.v1.SetInitialPasswordRequest
+ */
+export declare type SetInitialPasswordRequest = Message<"seriuxmod.user.v1.SetInitialPasswordRequest"> & {
+  /**
+   * @generated from field: string new_password = 1;
+   */
+  newPassword: string;
+};
+
+/**
+ * Describes the message seriuxmod.user.v1.SetInitialPasswordRequest.
+ * Use `create(SetInitialPasswordRequestSchema)` to create a new message.
+ */
+export declare const SetInitialPasswordRequestSchema: GenMessage<SetInitialPasswordRequest>;
+
+/**
+ * @generated from message seriuxmod.user.v1.RecoveryCodes
+ */
+export declare type RecoveryCodes = Message<"seriuxmod.user.v1.RecoveryCodes"> & {
+  /**
+   * Returned only at generation time; the server persists hashes, never plaintext.
+   *
+   * @generated from field: repeated string codes = 1;
+   */
+  codes: string[];
+};
+
+/**
+ * Describes the message seriuxmod.user.v1.RecoveryCodes.
+ * Use `create(RecoveryCodesSchema)` to create a new message.
+ */
+export declare const RecoveryCodesSchema: GenMessage<RecoveryCodes>;
 

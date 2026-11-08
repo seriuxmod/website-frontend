@@ -1,17 +1,8 @@
-import { useEffect, useState } from 'react';
-import { FaCircleCheck, FaEnvelope, FaTriangleExclamation } from 'react-icons/fa6';
-import { Link, useSearchParams } from 'react-router-dom';
-import { securityApi } from '../../lib/securityApi';
+import { FaEnvelope } from 'react-icons/fa6';
+import { Link } from 'react-router-dom';
 
 export default function VerifyEmail() {
-    const [params] = useSearchParams();
-    const [state, setState] = useState('loading');
-    useEffect(() => {
-        const token = params.get('token');
-        if (!token) return setState('error');
-        securityApi.verifyEmail(token).then(() => setState('success')).catch(() => setState('error'));
-    }, [params]);
-    return <RecoveryShell icon={state === 'success' ? FaCircleCheck : state === 'error' ? FaTriangleExclamation : FaEnvelope} title={state === 'loading' ? 'E-Mail wird bestätigt …' : state === 'success' ? 'E-Mail bestätigt' : 'Link nicht gültig'} copy={state === 'success' ? 'Deine Wiederherstellungsadresse ist jetzt verifiziert.' : state === 'error' ? 'Der Link ist abgelaufen oder wurde bereits verwendet.' : 'Einen kurzen Moment bitte.'}><Link className="forum-button-primary mt-6" to="/me/settings/security">Zur Sicherheit</Link></RecoveryShell>;
+    return <RecoveryShell icon={FaEnvelope} title="Keine E-Mail-Bestätigung eingerichtet" copy="Seriux-ID verwendet derzeit keine E-Mail-Wiederherstellung. Sichere stattdessen Wiederherstellungscodes unter Kontosicherheit."><Link className="forum-button-primary mt-6" to="/me/settings/security">Zur Sicherheit</Link></RecoveryShell>;
 }
 
 export function RecoveryShell({ icon: Icon, title, copy, children }) {

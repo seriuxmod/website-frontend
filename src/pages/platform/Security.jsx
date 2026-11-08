@@ -11,8 +11,7 @@ import {
     FaShieldHalved,
     FaTrash
 } from 'react-icons/fa6';
-import { Link } from 'react-router-dom';
-import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser } from '../../lib/auth';
+import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, logout } from '../../lib/auth';
 import { securityApi } from '../../lib/securityApi';
 import { registrationOptions, serializeCredential } from '../../lib/passkeys';
 import { ForumError, ForumLoading, ForumShell, formatDate } from '../forum/ForumComponents';
@@ -24,26 +23,42 @@ export default function Security() {
     const [message, setMessage] = useState('');
 
     const load = useCallback(async () => {
-        setState((current) => ({ ...current, loading: true, error: '' }));
+        const expectedUser = getAuthenticatedUser()?.playerId;
+        if (!expectedUser) return;
+        setState((current) => ({ ...current, loading: current.status === null, error: '' }));
         try {
             const [status, devices, passkeys] = await Promise.all([
                 securityApi.status(),
                 securityApi.devices(),
                 securityApi.passkeys()
             ]);
-            setState({ loading: false, status, devices, passkeys, error: '' });
+            if (getAuthenticatedUser()?.playerId === expectedUser) setState({ loading: false, status, devices, passkeys, error: '' });
         } catch (error) {
-            setState((current) => ({ ...current, loading: false, error: error.message }));
+            if (getAuthenticatedUser()?.playerId === expectedUser) setState((current) => ({ ...current, loading: false, error: error.message }));
         }
     }, []);
 
     useEffect(() => {
+        let active = true;
         fetchAuthenticatedUser().then((profile) => {
+            if (!active) return;
             setUser(profile);
             if (profile) load();
             else setState((current) => ({ ...current, loading: false }));
         });
+        const changed = () => {
+            const profile = getAuthenticatedUser(); setUser(profile); setTotpSetup(null); setMessage('');
+            if (profile) load();
+            else setState({ loading: false, status: null, devices: [], passkeys: [], error: '' });
+        };
+        window.addEventListener('seriux-auth-changed', changed);
+        return () => { active = false; window.removeEventListener('seriux-auth-changed', changed); };
     }, [load]);
+
+    const sessionEnded = async text => {
+        await logout(); setUser(null); setTotpSetup(null); setMessage(text);
+    };
+    const securityChanged = text => sessionEnded(`${text} Alle bisherigen Sitzungen wurden widerrufen. Bitte melde dich erneut an.`);
 
     if (!user)
         return (
@@ -53,6 +68,7 @@ export default function Security() {
                 description="Melde dich an, um deine Zugangsdaten und Geräte zu verwalten."
                 rootBreadcrumb={{ label: 'Sicherheit' }}
             >
+                {message && <p className="mb-5 text-sm leading-6 text-zinc-300" role="status">{message}</p>}
                 <button className="forum-button-primary" onClick={() => beginLogin('/me/settings/security')}>Anmelden</button>
             </ForumShell>
         );
@@ -88,27 +104,22 @@ export default function Security() {
                 </div>
             )}
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <PasswordPanel status={state.status} onMessage={setMessage} />
+                <PasswordPanel status={state.status} onChanged={securityChanged} />
                 <TotpPanel
                     status={state.status}
                     setup={totpSetup}
                     setSetup={setTotpSetup}
-                    onChanged={async (text) => {
-                        setMessage(text);
-                        setTotpSetup(null);
-                        await load();
-                    }}
+                    onChanged={securityChanged}
                 />
             </div>
             <PasskeyPanel
                 passwordConfigured={state.status.passwordConfigured}
                 passkeys={state.passkeys}
-                onChanged={async (text) => {
-                    setMessage(text);
-                    await load();
-                }}
+                onChanged={securityChanged}
             />
-            <DevicePanel devices={state.devices} onChanged={load} />
+            <RecoveryPanel key={user.playerId} remaining={state.status.recoveryCodesRemaining}
+                onGenerated={count => setState(current => ({ ...current, status: { ...current.status, recoveryCodesRemaining: count } }))} />
+            <DevicePanel devices={state.devices} onChanged={load} onSessionEnded={sessionEnded} />
         </ForumShell>
     );
 }
@@ -155,7 +166,7 @@ function PasskeyPanel({ passkeys, onChanged, passwordConfigured }) {
         setBusy(true);
         setError('');
         try {
-            await securityApi.removePasskey(passkey.id, removePassword, removeCode);
+            await securityApi.removePasskey(passkey.id, removePassword, removeCode, !passwordConfigured);
             setRemoveTarget(null);
             setRemovePassword('');
             setRemoveCode('');
@@ -202,15 +213,15 @@ function PasskeyPanel({ passkeys, onChanged, passwordConfigured }) {
             </div>
 
             {error && <p className="px-6 pb-6 text-sm text-red-300 sm:px-8">{error}</p>}
-            {!passwordConfigured && <p className="px-6 pb-6 text-sm text-zinc-400 sm:px-8">Bei passwortlosen Konten ist das Entfernen eines Passkeys noch nicht freigegeben: Der vorhandene Sicherheitsvertrag verlangt dafür eine Passwortbestätigung. Zusätzliche Passkeys kannst du nach erneuter Website-Anmeldung hinzufügen.</p>}
+            {!passwordConfigured && <p className="px-6 pb-6 text-sm text-zinc-400 sm:px-8">Zum Entfernen brauchst du eine höchstens fünf Minuten alte Passkey-Anmeldung. Der letzte verwendbare Zugang bleibt geschützt — Wiederherstellungscodes zählen dafür nicht als Ersatz.</p>}
             {removeTarget && (
                 <div className="mx-6 mb-6 rounded-2xl border border-red-500/20 bg-red-500/[.055] p-5 sm:mx-8">
                     <b className="text-sm text-red-200">„{removeTarget.name || 'Unbenannt'}“ entfernen</b>
-          <p className="mt-2 text-xs leading-5 text-zinc-500">Bestätige die sicherheitskritische Änderung mit deinem Passwort und – falls aktiviert – deinem 2FA-Code.</p>
+                    <p className="mt-2 text-xs leading-5 text-zinc-400">{passwordConfigured ? 'Bestätige mit deinem Passwort und — falls aktiviert — deinem 2FA-Code.' : 'Bestätige mit deiner kürzlich erfolgten Passkey-Anmeldung. Falls nötig, erneuere sie über „Anmeldung erneuern“.'} Die Änderung meldet alle bisherigen Sitzungen ab.</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_auto_auto]">
-                        <input className="forum-input mt-0" type="password" value={removePassword} onChange={(e) => setRemovePassword(e.target.value)} placeholder="Passwort" />
-                        <input className="forum-input mt-0" inputMode="numeric" value={removeCode} onChange={(e) => setRemoveCode(e.target.value)} placeholder="2FA-Code (optional)" />
-                        <button className="rounded-xl bg-red-500 px-4 text-xs font-bold" disabled={busy || !removePassword} onClick={() => remove(removeTarget)}>Entfernen</button>
+                        {passwordConfigured && <input aria-label="Passwort zur Bestätigung" className="forum-input mt-0" type="password" autoComplete="current-password" value={removePassword} onChange={(e) => setRemovePassword(e.target.value)} placeholder="Passwort" />}
+                        {passwordConfigured && <input aria-label="2FA-Code zur Bestätigung" className="forum-input mt-0" inputMode="numeric" maxLength={6} value={removeCode} onChange={(e) => setRemoveCode(e.target.value.replace(/\D/g, ''))} placeholder="2FA-Code (falls aktiviert)" />}
+                        <button className="rounded-xl bg-red-500 p-4 text-xs font-bold" disabled={busy || (passwordConfigured && !removePassword)} onClick={() => remove(removeTarget)}>Entfernen und abmelden</button>
                         <button className="forum-button-secondary" onClick={() => setRemoveTarget(null)}>Abbrechen</button>
                     </div>
                 </div>
@@ -236,7 +247,7 @@ function PasskeyPanel({ passkeys, onChanged, passwordConfigured }) {
                                 {passkey.backedUp ? ' · Synchronisiert' : ''}
                             </p>
                         </div>
-                        <button disabled={busy || !passwordConfigured} onClick={() => setRemoveTarget(passkey)} className="forum-button-secondary text-red-300">
+                        <button title={!passwordConfigured && passkeys.length <= 1 ? 'Richte zuerst einen weiteren Passkey oder ein Passwort ein.' : undefined} disabled={busy || (!passwordConfigured && passkeys.length <= 1)} onClick={() => setRemoveTarget(passkey)} className="forum-button-secondary text-red-300">
                             <FaTrash /> Entfernen
                         </button>
                     </div>
@@ -246,24 +257,22 @@ function PasskeyPanel({ passkeys, onChanged, passwordConfigured }) {
     );
 }
 
-function PasswordPanel({ status, onMessage }) {
+function PasswordPanel({ status, onChanged }) {
     const [form, setForm] = useState({ current: '', next: '', confirm: '' });
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
-    const [resetSending, setResetSending] = useState(false);
-    if (!status.passwordConfigured) return <section className="forum-panel rounded-3xl p-6 sm:p-8">
-        <p className="eyebrow">PASSWORTLOS</p><h2 className="mt-2 font-display text-2xl font-bold">Anmeldung mit Passkey</h2>
-        <p className="mt-5 text-sm leading-7 text-zinc-400">Für dein Konto ist kein Passwort eingerichtet. Das nachträgliche Setzen eines Passworts ist noch nicht freigegeben und wird nicht durch einen Launcher-Reset ersetzt.</p>
-    </section>;
     const submit = async (event) => {
         event.preventDefault();
         setError('');
         if (form.next !== form.confirm) return setError('Die neuen Passwörter stimmen nicht überein.');
+        if (new TextEncoder().encode(form.next).length > 72) return setError('Das Passwort darf höchstens 72 UTF-8-Bytes enthalten.');
+        if (!window.confirm('Passwort speichern und alle bisherigen Sitzungen abmelden? Deine vorhandenen Passkeys bleiben erhalten.')) return;
         setSaving(true);
         try {
-            await securityApi.changePassword(form.current, form.next);
+            if (status.passwordConfigured) await securityApi.changePassword(form.current, form.next);
+            else await securityApi.setInitialPassword(form.next);
             setForm({ current: '', next: '', confirm: '' });
-            onMessage('Dein Passwort wurde geändert.');
+            await onChanged(status.passwordConfigured ? 'Dein Passwort wurde geändert.' : 'Dein zusätzliches Passwort wurde eingerichtet.');
         } catch (reason) {
             setError(reason.message);
         } finally {
@@ -278,59 +287,36 @@ function PasswordPanel({ status, onMessage }) {
                 </span>
                 <div>
                     <p className="eyebrow">PASSWORT</p>
-                    <h2 className="mt-1 font-display text-2xl font-bold">Web-Zugang schützen</h2>
+                    <h2 className="mt-1 font-display text-2xl font-bold">{status.passwordConfigured ? 'Web-Zugang schützen' : 'Passwort ergänzen'}</h2>
                 </div>
             </div>
+            {!status.passwordConfigured && <p className="mt-5 text-sm leading-6 text-zinc-400">Dein Konto nutzt Passkeys. Mit einer höchstens fünf Minuten alten Passkey-Anmeldung kannst du ein zusätzliches Passwort einrichten. Ein bestehendes Passwort wird dabei niemals überschrieben.</p>}
             <div className="mt-7 grid gap-4">
-                <SecurityInput
+                {status.passwordConfigured && <SecurityInput
                     label="Aktuelles Passwort"
                     value={form.current}
                     onChange={(current) => setForm({ ...form, current })}
-                />
+                />}
                 <SecurityInput
                     label="Neues Passwort (mindestens 12 Zeichen)"
                     value={form.next}
                     onChange={(next) => setForm({ ...form, next })}
                     minLength={12}
+                    autoComplete="new-password"
                 />
                 <SecurityInput
                     label="Neues Passwort wiederholen"
                     value={form.confirm}
                     onChange={(confirm) => setForm({ ...form, confirm })}
                     minLength={12}
+                    autoComplete="new-password"
                 />
             </div>
             {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
             <button disabled={saving} className="forum-button-primary mt-6">
-                <FaCheck /> Passwort ändern
+                <FaCheck /> {status.passwordConfigured ? 'Passwort ändern' : 'Passwort einrichten'}
             </button>
-            {status.recoveryEmail && (
-                <div className="mt-6 border-t border-white/[.06] pt-5">
-                    <p className="text-xs leading-5 text-zinc-600">
-                        Passwort vergessen? Wir senden den Reset-Link an{' '}
-                        <b className="text-zinc-400">{status.recoveryEmail}</b>.
-                    </p>
-                    <button
-                        type="button"
-                        disabled={resetSending}
-                        onClick={async () => {
-                            setResetSending(true);
-                            setError('');
-                            try {
-                                await securityApi.requestPasswordReset(status.recoveryEmail);
-                                onMessage('Der Passwort-Reset wurde an deine Wiederherstellungs-E-Mail gesendet.');
-                            } catch (reason) {
-                                setError(reason.message);
-                            } finally {
-                                setResetSending(false);
-                            }
-                        }}
-                        className="forum-button-secondary mt-4"
-                    >
-                        <FaClockRotateLeft /> Reset-Link senden
-                    </button>
-                </div>
-            )}
+            <p className="mt-4 text-xs leading-5 text-zinc-500">Eine Passwortänderung widerruft alle bisherigen Sitzungen. Notfallzugang: Wiederherstellungscodes unten sichern.</p>
         </form>
     );
 }
@@ -444,22 +430,72 @@ function TotpPanel({ status, setup, setSetup, onChanged }) {
     );
 }
 
-function DevicePanel({ devices, onChanged }) {
+function RecoveryPanel({ remaining, onGenerated }) {
+    const [codes, setCodes] = useState([]);
+    const [confirmed, setConfirmed] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState('');
+    const generate = async () => {
+        if (!confirmed || busy) return;
+        setBusy(true); setError('');
+        try {
+            const next = await securityApi.generateRecoveryCodes();
+            if (next.length !== 10) throw new Error('Die Codes wurden nicht vollständig zurückgegeben. Bitte erneut erzeugen.');
+            setCodes(next); setConfirmed(false); onGenerated(next.length);
+        } catch (reason) { setError(reason.message); }
+        finally { setBusy(false); }
+    };
+    return <section className="forum-panel mt-6 rounded-3xl p-6 sm:p-8">
+        <p className="eyebrow">NOTFALLZUGANG</p>
+        <h2 className="mt-2 font-display text-2xl font-bold">Wiederherstellungscodes</h2>
+        <p className="mt-4 text-sm leading-6 text-zinc-400">{remaining === 0 ? 'Noch keine Codes eingerichtet.' : `${remaining} unverbrauchte Codes vorhanden.`} Sichere sie getrennt von deinen Anmeldegeräten. Die vollständigen Codes werden nur einmal angezeigt und niemals im Browser gespeichert.</p>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">Eine Wiederherstellung setzt ein neues Passwort, entfernt alle bisherigen Passkeys und den Authenticator, entwertet das gesamte alte Code-Set und widerruft alle alten Sitzungen. Deine Minecraft-UUID und deine Kontodaten bleiben erhalten.</p>
+        {codes.length > 0 ? <div className="mt-6 rounded-2xl border border-orange-500/20 bg-orange-500/[.05] p-5">
+            <p className="text-sm font-bold text-orange-200" role="status">Jetzt sicher aufbewahren — diese Anzeige lässt sich nicht wieder öffnen.</p>
+            <ol className="mt-4 grid gap-3 font-mono text-xs sm:grid-cols-2">
+                {codes.map(code => <li key={code}><code className="block select-all break-all rounded-lg bg-black/25 p-3">{code}</code></li>)}
+            </ol>
+            <button className="forum-button-secondary mt-5" onClick={() => setCodes([])}>Ich habe die Codes sicher aufbewahrt</button>
+        </div> : <div className="mt-6">
+            <label className="flex items-start gap-3 text-sm leading-6 text-zinc-400">
+                <input className="mt-1.5" type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />
+                <span>Ich kann die Codes jetzt sicher aufbewahren. Neue Codes ersetzen alle bisherigen Codes.</span>
+            </label>
+            <button className="forum-button-primary mt-5" disabled={busy || !confirmed} onClick={generate}>{busy ? 'Codes werden erzeugt …' : 'Zehn neue Codes erzeugen'}</button>
+        </div>}
+        {error && <p className="mt-4 text-sm text-red-300" role="alert">{error}</p>}
+        <a className="mt-5 inline-block text-sm text-orange-300 underline" href="https://auth.seriuxmod.net/login/recovery">Zur Wiederherstellung mit einem gesicherten Code</a>
+    </section>;
+}
+
+function DevicePanel({ devices, onChanged, onSessionEnded }) {
     const [busy, setBusy] = useState('');
+    const [error, setError] = useState('');
     const revoke = async (deviceId) => {
         if (
             !window.confirm(
-                'Diese Sitzung wirklich abmelden? Der Launcher muss sich anschließend erneut mit Microsoft verbinden.'
+                'Dieses Gerät und seine Browser-/Launcher-Sitzungen wirklich abmelden? Andere Geräte bleiben angemeldet.'
             )
         )
             return;
         setBusy(deviceId);
+        setError('');
         try {
             await securityApi.revokeDevice(deviceId);
-            await onChanged();
+            if (devices.some(device => device.deviceId === deviceId && device.current)) await onSessionEnded('Dieses Gerät wurde abgemeldet. Bitte melde dich erneut an.');
+            else await onChanged();
+        } catch (reason) {
+            setError(reason.message);
         } finally {
             setBusy('');
         }
+    };
+    const revokeOthers = async () => {
+        if (!window.confirm('Alle anderen Geräte abmelden? Dieses Gerät bleibt angemeldet.')) return;
+        setBusy('others'); setError('');
+        try { await securityApi.revokeOthers(); await onChanged(); }
+        catch (reason) { setError(reason.message); }
+        finally { setBusy(''); }
     };
     return (
         <section className="forum-panel mt-6 overflow-hidden rounded-3xl">
@@ -472,6 +508,11 @@ function DevicePanel({ devices, onChanged }) {
                     <h2 className="mt-1 font-display text-2xl font-bold">Verbundene Geräte</h2>
                 </div>
             </header>
+            <div className="p-6 sm:px-8">
+                <p className="text-sm leading-6 text-zinc-400">„Dieses Gerät“ wird serverseitig aus der bestätigten Sitzung ermittelt — nicht aus einer frei übermittelten Gerätekennung.</p>
+                <button className="forum-button-secondary mt-4" disabled={Boolean(busy) || !devices.some(device => device.current)} onClick={revokeOthers}>Alle anderen Geräte abmelden</button>
+                {error && <p className="mt-4 text-sm text-red-300" role="alert">{error}</p>}
+            </div>
             {devices.length === 0 ? (
                 <p className="p-8 text-sm text-zinc-500">
                     Noch keine Geräteinformationen vorhanden. Sie werden bei der nächsten Anmeldung erfasst.
@@ -488,7 +529,8 @@ function DevicePanel({ devices, onChanged }) {
                         <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center gap-3">
                                 <b className="text-zinc-100">{device.deviceName || 'Unbekanntes Gerät'}</b>
-                                <StatusBadge active={!device.revokedAt} />
+                                <StatusBadge active={device.active} />
+                                {device.current && <span className="text-xs font-bold text-orange-300">Dieses Gerät</span>}
                             </div>
                             <p className="mt-2 text-xs text-zinc-500">
                                 {device.osName || 'Unbekanntes System'}
@@ -503,9 +545,9 @@ function DevicePanel({ devices, onChanged }) {
                                 </span>
                             </div>
                         </div>
-                        {!device.revokedAt && (
+                        {device.active && (
                             <button
-                                disabled={busy === device.deviceId}
+                                disabled={Boolean(busy)}
                                 onClick={() => revoke(device.deviceId)}
                                 className="forum-button-secondary text-red-300"
                             >
@@ -519,14 +561,15 @@ function DevicePanel({ devices, onChanged }) {
     );
 }
 
-function SecurityInput({ label, value, onChange, minLength }) {
+function SecurityInput({ label, value, onChange, minLength, autoComplete = 'current-password' }) {
     return (
         <label className="forum-label">
             {label}
             <input
                 className="forum-input"
                 type="password"
-                autoComplete="current-password"
+                autoComplete={autoComplete}
+                maxLength={autoComplete === 'new-password' ? 72 : 256}
                 required
                 minLength={minLength}
                 value={value}

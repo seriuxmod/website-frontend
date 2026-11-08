@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { create, toBinary, fromBinary } from '@bufbuild/protobuf';
-import { AccountSecurityStatusSchema, ChangePasswordRequestSchema, WebAuthnChallengeResponseSchema, WebAuthnFinishRequestSchema } from '../src/gen/seriuxmod/user/v1/account_security_model_pb.js';
+import { AccountSecurityStatusSchema, ChangePasswordRequestSchema, WebAuthnChallengeResponseSchema, WebAuthnFinishRequestSchema,
+    SetInitialPasswordRequestSchema, RecoveryCodesSchema, RemovePasskeyRequestSchema } from '../src/gen/seriuxmod/user/v1/account_security_model_pb.js';
+import { ListDeviceSessionsResponseSchema, RevokeOtherDeviceSessionsRequestSchema } from '../src/gen/seriuxmod/auth/v1/device_session_model_pb.js';
 import { securityApi } from '../src/lib/securityApi.js';
 
 function frame(payload, flags = 0) {
@@ -57,6 +59,43 @@ test('security uses canonical binary gRPC-Web, preserves headers and forwards on
         mode = 'passkey-finish';
         await assert.rejects(() => securityApi.finishPasskeyRegistration(challenge.challengeId,
             { id: 'fixture', response: { attestationObject: 'AQID' } }), error => error.code === 7);
+    } finally {
+        for (const [key, descriptor] of Object.entries(prior)) {
+            if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key];
+        }
+    }
+});
+
+test('passwordless management, once-returned recovery codes and server-derived current devices use explicit gRPC commands', async () => {
+    const prior = Object.fromEntries(['sessionStorage', 'fetch'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]));
+    try {
+        Object.defineProperty(globalThis, 'sessionStorage', { configurable: true, value: { getItem: () => null } });
+        Object.defineProperty(globalThis, 'fetch', { configurable: true, value: async (url, init) => {
+            const method = new URL(url).pathname.split('/').pop();
+            const bytes = new Uint8Array(init.body).subarray(5);
+            if (method === 'SetInitialPassword') {
+                assert.equal(fromBinary(SetInitialPasswordRequestSchema, bytes).newPassword, 'fixture-password');
+                return response(null, null, 7);
+            }
+            if (method === 'GenerateRecoveryCodes') return response(RecoveryCodesSchema, { codes: ['fixture-once-only-code'] });
+            if (method === 'RemovePasskey') {
+                const request = fromBinary(RemovePasskeyRequestSchema, bytes);
+                assert.equal(request.useRecentAuthentication, true); assert.equal(request.verification, undefined);
+                return response(null, null, 7);
+            }
+            if (method === 'ListDeviceSessions') return response(ListDeviceSessionsResponseSchema, {
+                currentDeviceId: 'server-device', sessions: [{ deviceId: 'server-device', active: true }, { deviceId: 'other', active: false }]
+            });
+            assert.equal(method, 'RevokeOtherDeviceSessions');
+            assert.equal(fromBinary(RevokeOtherDeviceSessionsRequestSchema, bytes).currentDeviceId, '');
+            return response(null, null, 7);
+        } });
+        await assert.rejects(() => securityApi.setInitialPassword('fixture-password'), reason => reason.code === 7);
+        assert.deepEqual(await securityApi.generateRecoveryCodes(), ['fixture-once-only-code']);
+        await assert.rejects(() => securityApi.removePasskey('fixture-key', '', '', true), reason => reason.code === 7);
+        const devices = await securityApi.devices();
+        assert.equal(devices[0].current, true); assert.equal(devices[0].active, true); assert.equal(devices[1].current, false);
+        await assert.rejects(() => securityApi.revokeOthers(), reason => reason.code === 7);
     } finally {
         for (const [key, descriptor] of Object.entries(prior)) {
             if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key];

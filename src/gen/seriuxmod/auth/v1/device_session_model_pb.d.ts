@@ -64,6 +64,11 @@ export declare type DeviceSession = Message<"seriuxmod.auth.v1.DeviceSession"> &
    * @generated from field: optional google.protobuf.Timestamp revoked_at = 10;
    */
   revokedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: bool active = 11;
+   */
+  active: boolean;
 };
 
 /**
@@ -80,6 +85,13 @@ export declare type ListDeviceSessionsResponse = Message<"seriuxmod.auth.v1.List
    * @generated from field: repeated seriuxmod.auth.v1.DeviceSession sessions = 1;
    */
   sessions: DeviceSession[];
+
+  /**
+   * Derived from the validated access-token sid, never a browser-supplied hint.
+   *
+   * @generated from field: string current_device_id = 2;
+   */
+  currentDeviceId: string;
 };
 
 /**
@@ -109,7 +121,8 @@ export declare const RevokeDeviceSessionRequestSchema: GenMessage<RevokeDeviceSe
  */
 export declare type RevokeOtherDeviceSessionsRequest = Message<"seriuxmod.auth.v1.RevokeOtherDeviceSessionsRequest"> & {
   /**
-   * @generated from field: string current_device_id = 1;
+   * @generated from field: string current_device_id = 1 [deprecated = true];
+   * @deprecated
    */
   currentDeviceId: string;
 };

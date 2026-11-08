@@ -4,7 +4,7 @@
 
 import type { GenFile, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { EmptySchema } from "@bufbuild/protobuf/wkt";
-import type { AccountSecurityStatusSchema, ChangePasswordRequestSchema, DisableTotpRequestSchema, ListPasskeysResponseSchema, PasskeySummarySchema, RemovePasskeyRequestSchema, StartPasskeyRegistrationRequestSchema, TotpCodeRequestSchema, TotpSetupSchema, WebAuthnChallengeResponseSchema, WebAuthnFinishRequestSchema } from "./account_security_model_pb.js";
+import type { AccountSecurityStatusSchema, ChangePasswordRequestSchema, DisableTotpRequestSchema, ListPasskeysResponseSchema, PasskeySummarySchema, RecoveryCodesSchema, RemovePasskeyRequestSchema, SetInitialPasswordRequestSchema, StartPasskeyRegistrationRequestSchema, TotpCodeRequestSchema, TotpSetupSchema, WebAuthnChallengeResponseSchema, WebAuthnFinishRequestSchema } from "./account_security_model_pb.js";
 
 /**
  * Describes the file seriuxmod/user/v1/account_security_service.proto.
@@ -86,6 +86,22 @@ export declare const AccountSecurityService: GenService<{
     methodKind: "unary";
     input: typeof RemovePasskeyRequestSchema;
     output: typeof EmptySchema;
+  },
+  /**
+   * @generated from rpc seriuxmod.user.v1.AccountSecurityService.SetInitialPassword
+   */
+  setInitialPassword: {
+    methodKind: "unary";
+    input: typeof SetInitialPasswordRequestSchema;
+    output: typeof EmptySchema;
+  },
+  /**
+   * @generated from rpc seriuxmod.user.v1.AccountSecurityService.GenerateRecoveryCodes
+   */
+  generateRecoveryCodes: {
+    methodKind: "unary";
+    input: typeof EmptySchema;
+    output: typeof RecoveryCodesSchema;
   },
 }>;
 
