@@ -21,7 +21,6 @@ import { Link, useParams } from 'react-router-dom';
 import MinecraftSkinViewer from '../../components/MinecraftSkinViewer';
 import { forumApi } from '../../lib/forumApi';
 import { getAuthenticatedUser } from '../../lib/auth';
-import { playerDirectoryApi } from '../../lib/playerDirectoryApi';
 import { playerAvatar, userApi } from '../../lib/userApi';
 import { socialApi } from '../../lib/socialApi';
 
@@ -170,60 +169,31 @@ export default function PublicPlayerProfile() {
                 error: ''
             });
             try {
-                const directoryPlayer = await playerDirectoryApi.byIdentifier(username, signal);
-                let seriuxProfile = null;
-                try {
-                    seriuxProfile = await userApi.byId(directoryPlayer.uuid, signal);
-                } catch (error) {
-                    if (error.name === 'AbortError') throw error;
-                }
-
-                const profile = seriuxProfile
-                    ? {
-                          ...seriuxProfile,
-                          playerId: directoryPlayer.uuid,
-                          username: directoryPlayer.username || seriuxProfile.username
-                      }
-                    : {
-                          playerId: directoryPlayer.uuid,
-                          username: directoryPlayer.username,
-                          rank: null,
-                          memberSince: null,
-                          lastOnline: null
-                      };
-
-                if (!seriuxProfile) {
-                    setState({
-                        loading: false,
-                        profile,
-                        directoryPlayer,
-                        hasSeriuxProfile: false,
-                        forum: null,
-                        presence: null,
-                        friends: [],
-                        error: ''
-                    });
-                    return;
-                }
+                const profile = /^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$/i.test(username)
+                    ? await userApi.byId(username, signal) : await userApi.byUsername(username, signal);
+                const directoryPlayer = null;
+                setState({ loading: false, profile, directoryPlayer, hasSeriuxProfile: true,
+                    forum: null, presence: null, friends: [], error: '' });
 
                 const [forum, presence, friendRelations] = await Promise.all([
                     forumApi.userProfile(profile.playerId, 6).catch(() => null),
                     socialApi.presence.public(profile.playerId, 112, signal).catch(() => null),
-                    socialApi.profiles.friends(profile.playerId, 100, signal).catch(() => [])
+                    socialApi.profiles.friends(profile.playerId, 100, signal).catch(() => null)
                 ]);
                 const friendProfiles = await userApi
                     .batch(
-                        friendRelations.map((friend) => friend.friendUserId),
+                         (friendRelations || []).map((friend) => friend.friendUserId),
                         signal
                     )
                     .catch(() => []);
                 const profilesById = new Map(friendProfiles.map((friend) => [friend.playerId, friend]));
-                const friends = friendRelations
+                const friends = (friendRelations || [])
                     .map((relation) => {
                         const friend = profilesById.get(relation.friendUserId);
                         return friend ? { ...friend, friendsSince: relation.friendsSince } : null;
                     })
                     .filter(Boolean);
+                if (signal?.aborted) return;
                 setState({
                     loading: false,
                     profile,
@@ -232,6 +202,7 @@ export default function PublicPlayerProfile() {
                     forum,
                     presence,
                     friends,
+                    friendsAvailable: friendRelations !== null,
                     error: ''
                 });
             } catch (error) {
@@ -324,13 +295,13 @@ export default function PublicPlayerProfile() {
     const surfaces = presence?.surfaces || [];
     const lastOnline = presence?.lastSeenAt || profile.lastOnline;
     const weeks = activityWeeks(presence?.activity);
-    const nameHistory = [...(directoryPlayer.history?.names || [])].sort(historySort);
-    const skinHistory = [...(directoryPlayer.history?.skins || [])].sort(historySort);
-    const capeHistory = [...(directoryPlayer.history?.capes || [])].sort(historySort);
+    const nameHistory = [...(directoryPlayer?.history?.names || [])].sort(historySort);
+    const skinHistory = [...(directoryPlayer?.history?.skins || [])].sort(historySort);
+    const capeHistory = [...(directoryPlayer?.history?.capes || [])].sort(historySort);
     const stats = [
-        [FaComments, 'Themen', forum?.topicsCreated ?? 0],
-        [FaMessage, 'Beiträge', forum?.postsCreated ?? 0],
-        [FaHeart, 'Reaktionen', forum?.reactionsReceived ?? 0]
+        [FaComments, 'Themen', forum?.topicsCreated ?? 'Nicht verfügbar'],
+        [FaMessage, 'Beiträge', forum?.postsCreated ?? 'Nicht verfügbar'],
+        [FaHeart, 'Reaktionen', forum?.reactionsReceived ?? 'Nicht verfügbar']
     ];
     const profileFacts = [
         ['01', 'Spielername', profile.username],
@@ -384,7 +355,7 @@ export default function PublicPlayerProfile() {
                                 {online
                                     ? `Online · ${surfaces.map((surface) => PRESENCE_LABELS[surface] || surface).join(', ')}`
                                     : hasSeriuxProfile
-                                      ? 'Offline'
+                                      ? (presence ? 'Offline' : 'Präsenz nicht verfügbar')
                                       : 'Nicht verknüpft'}
                             </span>
                         </div>
@@ -425,7 +396,7 @@ export default function PublicPlayerProfile() {
                                 <FaCalendarDays className="text-orange-400" />{' '}
                                 {hasSeriuxProfile ? formatMemberSince(profile.memberSince) : 'Minecraft-Profil'}
                             </span>
-                            {hasSeriuxProfile && (
+                            {forum && (
                                 <span className="inline-flex items-center gap-2 rounded-full border border-pink-500/20 bg-pink-500/[.08] px-3.5 py-2 text-xs text-pink-300">
                                     <FaHeart /> {forum?.reactionsReceived ?? 0} Reaktionen
                                 </span>
@@ -455,13 +426,13 @@ export default function PublicPlayerProfile() {
                         <p className="mt-5 text-sm leading-7 text-zinc-500">
                             {hasSeriuxProfile
                                 ? 'Verifiziert über den SeriuxMod Launcher und eindeutig mit dieser Minecraft-UUID verbunden.'
-                                : 'Öffentliches Minecraft-Profil aus dem SeriuxMod Player Directory. Für die Skin-Vorschau ist kein SeriuxMod-Konto erforderlich.'}
+                                : 'Öffentliches SeriuxMod-Profil.'}
                         </p>
                     </div>
                     <div className="forum-panel rounded-3xl p-6">
                         <h2 className="font-display text-lg font-bold">Profil teilen</h2>
                         <div className="mt-4 break-all rounded-xl border border-white/[.06] bg-black/20 px-4 py-3 font-mono text-[10px] text-zinc-500">
-                            seriuxmod.net/players/{profile.playerId}
+                            seriuxmod.net/@{profile.username}
                         </div>
                     </div>
 
@@ -472,12 +443,12 @@ export default function PublicPlayerProfile() {
                                 <h2 className="font-display text-lg font-bold">Skin-Verlauf</h2>
                             </div>
                             <span className="rounded-full bg-white/[.06] px-2 py-0.5 text-[10px] font-bold text-zinc-500">
-                                {skinHistory.length}
+                                {directoryPlayer ? skinHistory.length : '—'}
                             </span>
                         </header>
                         {skinHistory.length === 0 ? (
                             <p className="mt-5 text-sm leading-6 text-zinc-600">
-                                Für diesen Spieler wurde noch kein Skin-Verlauf synchronisiert.
+                                Historische Skin-Daten werden nicht mehr über einen externen Suchdienst geladen.
                             </p>
                         ) : (
                             <div className="mt-5 grid grid-cols-4 gap-2 sm:grid-cols-5 lg:grid-cols-4">
@@ -570,7 +541,7 @@ export default function PublicPlayerProfile() {
                                     {online
                                         ? 'SeriuxMod ist gerade verbunden'
                                         : hasSeriuxProfile
-                                          ? 'Aktuell keine aktive Sitzung'
+                                           ? (presence ? 'Aktuell keine aktive Sitzung' : 'Präsenzdaten derzeit nicht verfügbar')
                                           : 'Noch kein SeriuxMod-Profil vorhanden'}
                                 </b>
                             </div>
@@ -588,7 +559,7 @@ export default function PublicPlayerProfile() {
                                         {surface === 'LAUNCHER' && <FaRocket />}
                                         {surface === 'WEBSITE' && <FaGlobe />}
                                         <FaCircle className="text-[6px]" />
-                                        {PRESENCE_LABELS[surface] || (hasSeriuxProfile ? 'Offline' : 'Nicht verknüpft')}
+                                         {PRESENCE_LABELS[surface] || (presence ? 'Offline' : 'Nicht verfügbar')}
                                     </span>
                                 ))}
                             </div>
@@ -602,12 +573,12 @@ export default function PublicPlayerProfile() {
                                 <h2 className="font-display text-lg font-bold">Namensverlauf</h2>
                             </div>
                             <span className="rounded-full bg-white/[.06] px-2.5 py-1 text-[10px] font-bold text-zinc-500">
-                                {nameHistory.length}
+                                {directoryPlayer ? nameHistory.length : '—'}
                             </span>
                         </header>
                         {nameHistory.length === 0 ? (
                             <p className="p-7 text-sm leading-7 text-zinc-600">
-                                Die Namenshistorie dieses Spielers wird noch von den verbundenen Quellen synchronisiert.
+                                 Namenshistorien werden mit dem entfernten Suchdienst nicht mehr geladen.
                             </p>
                         ) : (
                             <div className="divide-y divide-white/[.05]">
@@ -650,8 +621,8 @@ export default function PublicPlayerProfile() {
                         )}
                     </section>
 
-                    {hasSeriuxProfile && (
-                        <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
+                     {presence && (
+                         <section className="forum-panel min-w-0 rounded-3xl p-6 sm:p-7">
                             <header className="flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
                                     <FaCalendarDays className="text-sky-400" />
@@ -718,12 +689,12 @@ export default function PublicPlayerProfile() {
                                 <FaUsers className="text-sky-400" />
                                 <h2 className="font-display text-lg font-bold">Freunde</h2>
                                 <span className="rounded-full bg-white/[.06] px-2 py-0.5 text-[10px] font-bold text-zinc-500">
-                                    {friends.length}
+                                     {state.friendsAvailable ? friends.length : '—'}
                                 </span>
                             </header>
                             {friends.length === 0 ? (
                                 <p className="mt-5 break-words rounded-2xl border border-dashed border-white/[.07] p-6 text-sm text-zinc-600">
-                                    Dieses Profil hat noch keine öffentlichen Freundschaften.
+                                     {state.friendsAvailable ? 'Dieses Profil hat noch keine öffentlichen Freundschaften.' : 'Freundesdaten sind derzeit nicht verfügbar.'}
                                 </p>
                             ) : (
                                 <div className="mt-5 flex flex-wrap gap-2">

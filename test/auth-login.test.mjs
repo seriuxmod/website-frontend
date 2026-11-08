@@ -33,6 +33,9 @@ test('PKCE login defaults to the named public profile without depending on old R
         assert.equal(calls, 1);
         assert.equal(values.has('seriux_pkce_verifier'), false);
         assert.equal(values.has('seriux_oauth_state'), false);
+        await beginLogin('/me/settings/security', { reauthenticate: true });
+        assert.equal(authorization.searchParams.get('prompt'), 'login');
+        assert.equal(await completeLogin('fixture-second-code', authorization.searchParams.get('state')), '/me/settings/security');
     } finally {
         for (const [key, descriptor] of Object.entries(descriptors)) {
             if (descriptor) Object.defineProperty(globalThis, key, descriptor);

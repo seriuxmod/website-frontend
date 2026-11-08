@@ -4,6 +4,7 @@
     "version": "0.0.0",
     "type": "module",
     "scripts": {
+        "generate:grpc": "node scripts/generate-grpc.mjs",
         "dev": "vite",
         "pubDev": "vite --host",
         "test": "node --test test/*.test.mjs",
@@ -12,6 +13,9 @@
         "format": "npx prettier --write src/"
     },
     "dependencies": {
+        "@bufbuild/protobuf": "2.17.0",
+        "@connectrpc/connect": "2.3.0",
+        "@connectrpc/connect-web": "2.3.0",
         "@tanstack/charts": "0.16.2",
         "@tanstack/react-form": "1.33.5",
         "@tanstack/react-hotkeys": "0.10.0",
@@ -32,6 +36,8 @@
         "world-atlas": "2.0.2"
     },
     "devDependencies": {
+        "@bufbuild/buf": "1.75.0",
+        "@bufbuild/protoc-gen-es": "2.17.0",
         "@types/react": "19.2.18",
         "@types/react-dom": "19.2.7",
         "@vitejs/plugin-react": "6.1.0",

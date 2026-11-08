@@ -1,8 +1,7 @@
 import { safeLoginReturnPath } from './profileRoutes.js';
+import { publicUsers, permissions, identityCall } from './grpc/identityClients.js';
 
 const AUTH_URL = 'https://auth.seriuxmod.net';
-const USER_PROFILE_URL = 'https://api.seriuxmod.net/api/v1/user/users/me';
-const USER_PERMISSIONS_URL = 'https://api.seriuxmod.net/api/v1/user/permissions/me';
 const CLIENT_ID = 'seriuxmod-website';
 const PROFILE_KEY = 'seriux_user_profile';
 const REFRESH_TOKEN_KEY = 'seriux_refresh_token';
@@ -161,39 +160,21 @@ export async function refreshAuthenticatedSession() {
 
 export async function fetchAuthenticatedUser() {
     await refreshAuthenticatedSession();
-    let accessToken = getAccessToken();
-    let tokenUser = getAuthenticatedUser();
+    const accessToken = getAccessToken();
+    const tokenUser = getAuthenticatedUser();
     if (!tokenUser || !accessToken) return null;
 
     try {
-        let response = await fetch(USER_PROFILE_URL, {
-            headers: { Authorization: `Bearer ${accessToken}` }
-        });
-        if (response.status === 401) {
-            accessToken = await refreshAccessToken();
-            if (!accessToken) return null;
-            tokenUser = getAuthenticatedUser();
-            response = await fetch(USER_PROFILE_URL, {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-        }
-        if (!response.ok) return tokenUser;
-
-        const profile = await response.json();
-        const username = profile.username || profile.minecraftUsername || profile.minecraftName || profile.name;
-        const playerId = profile.playerId || profile.uniqueId || profile.uid || profile.id || tokenUser.playerId;
+        const { profile } = await identityCall(() => publicUsers.getPublicUser({ playerId: tokenUser.playerId }));
+        const username = profile.username;
+        const playerId = profile.playerId;
         const user = buildUser(username, playerId);
         try {
-            const permissionResponse = await fetch(USER_PERMISSIONS_URL, {
-                headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            if (permissionResponse.ok) {
-                const permissionSnapshot = await permissionResponse.json();
-                user.permissions = permissionSnapshot.effectivePermissions ?? [];
-                user.groups = (permissionSnapshot.assignedGroups ?? [])
-                    .filter((assignment) => assignment.active)
-                    .map((assignment) => assignment.groupKey);
-            }
+            const permissionSnapshot = await identityCall(() => permissions.getMyPermissions({}));
+            user.permissions = permissionSnapshot.effectivePermissions ?? [];
+            user.groups = (permissionSnapshot.assignedGroups ?? [])
+                .filter((assignment) => assignment.active)
+                .map((assignment) => assignment.groupKey);
         } catch {
             // The identity remains usable if the permission service is temporarily unavailable.
         }
@@ -257,14 +238,14 @@ export async function authenticatedFetch(input, init = {}) {
         accessToken = await refreshAccessToken();
     }
 
-    const request = (token) =>
-        fetch(input, {
+    const request = (token) => {
+        const headers = new Headers(init.headers);
+        if (token) headers.set('Authorization', `Bearer ${token}`);
+        return fetch(input, {
             ...init,
-            headers: {
-                ...(init.headers || {}),
-                ...(token ? { Authorization: `Bearer ${token}` } : {})
-            }
+            headers
         });
+    };
 
     let response = await request(accessToken);
     if (response.status === 401 && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
@@ -274,7 +255,7 @@ export async function authenticatedFetch(input, init = {}) {
     return response;
 }
 
-export async function beginLogin(returnTo = null) {
+export async function beginLogin(returnTo = null, { reauthenticate = false } = {}) {
     const verifier = base64Url(crypto.getRandomValues(new Uint8Array(48)));
     const challenge = base64Url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
     const state = crypto.randomUUID();
@@ -291,6 +272,7 @@ export async function beginLogin(returnTo = null) {
         code_challenge_method: 'S256',
         state
     });
+    if (reauthenticate) params.set('prompt', 'login');
     window.location.assign(`${AUTH_URL}/oauth2/authorize?${params}`);
 }
 

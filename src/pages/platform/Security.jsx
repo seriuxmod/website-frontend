@@ -66,6 +66,7 @@ export default function Security() {
         return (
             <ForumShell title="Sicherheit" eyebrow="MEIN KONTO" rootBreadcrumb={{ label: 'Meine persönliche Ansicht', to: '/me' }}>
                 <ForumError message={state.error} onRetry={load} />
+                <button className="forum-button-primary mt-5" onClick={() => beginLogin('/me/settings/security', { reauthenticate: true })}>Website-Anmeldung erneuern</button>
             </ForumShell>
         );
 
@@ -77,6 +78,10 @@ export default function Security() {
             rootBreadcrumb={{ label: 'Meine persönliche Ansicht', to: '/me' }}
             breadcrumbs={[{ label: 'Sicherheit' }]}
         >
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/10 p-5">
+                <p className="text-sm text-zinc-400">Sensible Änderungen verlangen eine aktuelle Website-Anmeldung.</p>
+                <button className="forum-button-secondary" onClick={() => beginLogin('/me/settings/security', { reauthenticate: true })}>Anmeldung erneuern</button>
+            </div>
             {message && (
                 <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/[.07] px-5 py-4 text-sm text-emerald-300">
                     {message}
@@ -96,6 +101,7 @@ export default function Security() {
                 />
             </div>
             <PasskeyPanel
+                passwordConfigured={state.status.passwordConfigured}
                 passkeys={state.passkeys}
                 onChanged={async (text) => {
                     setMessage(text);
@@ -107,7 +113,7 @@ export default function Security() {
     );
 }
 
-function PasskeyPanel({ passkeys, onChanged }) {
+function PasskeyPanel({ passkeys, onChanged, passwordConfigured }) {
     const [name, setName] = useState('');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
@@ -196,6 +202,7 @@ function PasskeyPanel({ passkeys, onChanged }) {
             </div>
 
             {error && <p className="px-6 pb-6 text-sm text-red-300 sm:px-8">{error}</p>}
+            {!passwordConfigured && <p className="px-6 pb-6 text-sm text-zinc-400 sm:px-8">Bei passwortlosen Konten ist das Entfernen eines Passkeys noch nicht freigegeben: Der vorhandene Sicherheitsvertrag verlangt dafür eine Passwortbestätigung. Zusätzliche Passkeys kannst du nach erneuter Website-Anmeldung hinzufügen.</p>}
             {removeTarget && (
                 <div className="mx-6 mb-6 rounded-2xl border border-red-500/20 bg-red-500/[.055] p-5 sm:mx-8">
                     <b className="text-sm text-red-200">„{removeTarget.name || 'Unbenannt'}“ entfernen</b>
@@ -229,7 +236,7 @@ function PasskeyPanel({ passkeys, onChanged }) {
                                 {passkey.backedUp ? ' · Synchronisiert' : ''}
                             </p>
                         </div>
-                        <button disabled={busy} onClick={() => setRemoveTarget(passkey)} className="forum-button-secondary text-red-300">
+                        <button disabled={busy || !passwordConfigured} onClick={() => setRemoveTarget(passkey)} className="forum-button-secondary text-red-300">
                             <FaTrash /> Entfernen
                         </button>
                     </div>
@@ -244,6 +251,10 @@ function PasswordPanel({ status, onMessage }) {
     const [error, setError] = useState('');
     const [saving, setSaving] = useState(false);
     const [resetSending, setResetSending] = useState(false);
+    if (!status.passwordConfigured) return <section className="forum-panel rounded-3xl p-6 sm:p-8">
+        <p className="eyebrow">PASSWORTLOS</p><h2 className="mt-2 font-display text-2xl font-bold">Anmeldung mit Passkey</h2>
+        <p className="mt-5 text-sm leading-7 text-zinc-400">Für dein Konto ist kein Passwort eingerichtet. Das nachträgliche Setzen eines Passworts ist noch nicht freigegeben und wird nicht durch einen Launcher-Reset ersetzt.</p>
+    </section>;
     const submit = async (event) => {
         event.preventDefault();
         setError('');
@@ -357,7 +368,8 @@ function TotpPanel({ status, setup, setSetup, onChanged }) {
             <p className="mt-6 text-sm leading-6 text-zinc-500">
                 Ein zeitbasierter Einmalcode wird zusätzlich zu deinem Passwort beim Web-Login verlangt.
             </p>
-            {!status.twoFactorEnabled && !setup && (
+            {!status.passwordConfigured && <p className="mt-5 text-sm text-zinc-400">Authenticator-2FA ergänzt die Passwort-Anmeldung und wird bei diesem passwortlosen Konto nicht angeboten.</p>}
+            {status.passwordConfigured && !status.twoFactorEnabled && !setup && (
                 <button
                     disabled={saving}
                     onClick={() => run(async () => setSetup(await securityApi.setupTotp()))}

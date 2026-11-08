@@ -1,24 +1,14 @@
-const USER_API = 'https://api.seriuxmod.net/api/v1/user/public/users';
+import { publicUsers, dateValue, identityCall } from './grpc/identityClients.js';
 
-async function request(path, options = {}) {
-    const response = await fetch(`${USER_API}${path}`, options);
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(payload.message || 'Das Spielerprofil konnte nicht geladen werden.');
-        error.status = response.status;
-        throw error;
-    }
-    return payload;
-}
-
+const profile = value => value ? { ...value, memberSince: dateValue(value.memberSince), lastOnline: dateValue(value.lastOnline) } : null;
+const canonicalId = value => /^[a-f0-9]{32}$/i.test(value || '')
+    ? value.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5') : value;
 export const userApi = {
-    byId: (playerId, signal) => request(`/${encodeURIComponent(playerId)}`, { signal }),
-    batch: (playerIds, signal) =>
-        playerIds?.length
-            ? request(`/batch?ids=${playerIds.map(encodeURIComponent).join(',')}`, { signal })
-            : Promise.resolve([]),
-    byUsername: (username, signal) => request(`/by-name/${encodeURIComponent(username)}`, { signal }),
-    search: (query, limit = 8, signal) => request(`/search?q=${encodeURIComponent(query)}&limit=${limit}`, { signal })
+    byId: (playerId, signal) => identityCall(async () => profile((await publicUsers.getPublicUser({ playerId: canonicalId(playerId) }, { signal })).profile)),
+    byUsername: (username, signal) => identityCall(async () => profile((await publicUsers.getPublicUserByUsername({ username }, { signal })).profile)),
+    search: (query, limit = 8, signal) => identityCall(async () => (await publicUsers.searchPublicUsers({ query, limit }, { signal })).profiles.map(profile)),
+    batch: (playerIds, signal) => !playerIds?.length ? Promise.resolve([]) : identityCall(async () =>
+        (await publicUsers.batchGetPublicUsers({ playerIds: playerIds.map(canonicalId) }, { signal })).profiles.map(profile))
 };
 
 export function playerAvatar(playerId, size = 96) {

@@ -59,7 +59,7 @@ Mit `npm run format` werden die Dateien unter `src/` durch Prettier formatiert.
 
 | Variable | Zweck |
 | --- | --- |
-| `VITE_PLAYER_DIRECTORY_API_URL` | Basis-URL der öffentlichen Player-Directory-/Skin-Quelle |
+| Identitäts-Transport | gRPC-Web über den öffentlichen TLS-Gateway; keine Browser-Geheimnisse |
 
 Weitere Service-URLs und OAuth2-Einstellungen werden derzeit in den Dateien unter `src/lib/` geführt. Neue Geheimnisse dürfen nicht als `VITE_*`-Variable eingebunden werden, weil Vite diese Werte in den Browser-Build schreibt.
 
@@ -87,6 +87,10 @@ Vor jedem Build laufen `npm test` (PKCE-Abschluss und Profil-Routing). Erst nach
 - `/profile` bleibt als Weiterleitung zum eigenen öffentlichen Profil erhalten; `/account/security` leitet auf den neuen Sicherheitspfad um.
 - Explizite Anmeldungen aus geschützten Unterseiten dürfen zu ihrem sicheren lokalen Ausgangspfad zurückkehren. Der normale Navbar-Login verwendet dagegen das öffentliche Namensprofil. Der OAuth-Callback bleibt `/auth/callback`.
 
-Die URL-Umstellung migriert nicht automatisch die bestehenden REST-Clients auf das gRPC-Backend. Sicherheits- und weitere Fach-APIs benötigen noch eine separat abgenommene browserfähige Anbindung. Ein statisch über GitHub Pages ausgeliefertes Frontend kann das Node.js-gRPC-SDK nicht direkt verwenden.
+Profilabruf, Spielersuche, eigene Berechtigungen und Kontosicherheit verwenden jetzt generierte Browser-Clients mit gRPC-Web. Die vorhandenen nativen gRPC-Dienste bleiben zuständig für Validierung und Berechtigungen. Der entfernte Player-Directory-Dienst wird nicht mehr aufgerufen; historische Namen/Skins stehen ohne neue Quelle nicht zur Verfügung. Andere Fachbereiche wie Forum/Social/Store sind damit nicht automatisch migriert.
+
+Die generierten Dateien unter `src/gen/` werden mit veröffentlicht, sodass GitHub Pages ohne Zugriff auf das private Vertragsprojekt bauen kann. Regeneration nur im Entwicklungs-Workspace mit benachbartem `grpc-contracts`: `npm run generate:grpc`. Generierte Dateien nicht von Hand ändern.
+
+Die Sicherheitsseite unterstützt die bestehenden RPCs für Status, Passwortänderung, TOTP und Passkeys sowie Geräteübersicht/-widerruf. Sensible Aktionen können eine erneute Website-Anmeldung verlangen. Passwortlose Konten können derzeit weder nachträglich ein Passwort setzen noch ohne Passwortbestätigung einen Passkey entfernen; diese noch fehlenden Backend-Funktionen werden ausdrücklich nicht durch einen Launcher-Reset umgangen.
 
 Da dieses Repository öffentlich ist, enthält diese README absichtlich keine interne Endpoint-, Payload- oder Berechtigungsdokumentation. Die Verträge der Backend-Services stehen in den jeweiligen privaten Service-Repositories.

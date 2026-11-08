@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaLayerGroup, FaPause, FaPerson, FaPersonWalking, FaPlaneUp, FaPlay, FaShirt } from 'react-icons/fa6';
-import { playerDirectoryApi } from '../lib/playerDirectoryApi';
 
 const ANIMATION_CONTROLS = [
     { key: 'idle', label: 'Ruhig', Icon: FaPerson },
@@ -75,17 +74,8 @@ export default function MinecraftSkinViewer({ identifier, username, player = nul
             setDirectoryState({ loading: false, player, error: '' });
             return undefined;
         }
-        const controller = new AbortController();
-        setDirectoryState({ loading: true, player: null, error: '' });
-        playerDirectoryApi
-            .byIdentifier(identifier || username, controller.signal)
-            .then((player) => setDirectoryState({ loading: false, player, error: '' }))
-            .catch((error) => {
-                if (error.name !== 'AbortError') {
-                    setDirectoryState({ loading: false, player: null, error: error.message });
-                }
-            });
-        return () => controller.abort();
+        setDirectoryState({ loading: false, player: null, error: 'Keine Skindaten vom Backend vorhanden.' });
+        return undefined;
     }, [identifier, player, username]);
 
     const rendering = directoryState.player?.rendering;
@@ -229,7 +219,7 @@ export default function MinecraftSkinViewer({ identifier, username, player = nul
                 </span>
                 {viewerStatus === 'fallback' && (
                     <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.14em] text-amber-300 backdrop-blur-md">
-                        Fallback
+                        Standardmodell · kein geladener Spieler-Skin
                     </span>
                 )}
             </div>

@@ -1,70 +1,30 @@
-import { authenticatedFetch } from './auth.js';
+import { accountSecurity, deviceSessions, dateValue, identityCall } from './grpc/identityClients.js';
 
-const USER_SECURITY_API = 'https://api.seriuxmod.net/api/v1/user/account/security';
-const AUTH_SECURITY_API = 'https://auth.seriuxmod.net/api/security';
-
-async function request(url, options = {}) {
-    const response = await authenticatedFetch(url, {
-        ...options,
-        headers: {
-            ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(options.headers || {})
-        }
-    }).catch(error => {
-        if (error instanceof TypeError) throw new Error('Der Sicherheitsdienst ist derzeit nicht erreichbar. Die Website-Anbindung an das neue Backend ist noch nicht abgeschlossen. Bitte später erneut versuchen.');
-        throw error;
-    });
-    if (response.status === 204) return null;
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(payload.message || payload.detail || 'Die Sicherheitsanfrage ist fehlgeschlagen.');
-        error.status = response.status;
-        throw error;
-    }
-    return payload;
-}
+const passkey = value => ({ ...value, registeredAt: dateValue(value.registeredAt), lastUsedAt: dateValue(value.lastUsedAt) });
+const unsupportedRecovery = () => Promise.reject(new Error('Eine E-Mail-Wiederherstellung ist nicht eingerichtet. Bestehende Konten können nicht über den Launcher zurückgesetzt werden.'));
 
 export const securityApi = {
-    status: () => request(USER_SECURITY_API),
-    changePassword: (currentPassword, newPassword) =>
-        request(`${USER_SECURITY_API}/password`, {
-            method: 'POST',
-            body: JSON.stringify({ currentPassword, newPassword })
-        }),
-    requestPasswordReset: (email) =>
-        request('https://api.seriuxmod.net/api/v1/user/account/website/password-reset/request', {
-            method: 'POST',
-            body: JSON.stringify({ email })
-        }),
-    confirmPasswordReset: (token, password) =>
-        request('https://api.seriuxmod.net/api/v1/user/account/website/password-reset/confirm', {
-            method: 'POST', body: JSON.stringify({ token, password })
-        }),
-    verifyEmail: (token) =>
-        request(`https://api.seriuxmod.net/api/v1/user/account/website/email/verify?token=${encodeURIComponent(token)}`, {
-            method: 'POST'
-        }),
-    setupTotp: () => request(`${USER_SECURITY_API}/totp/setup`, { method: 'POST' }),
-    enableTotp: (code) =>
-        request(`${USER_SECURITY_API}/totp/enable`, { method: 'POST', body: JSON.stringify({ code }) }),
-    disableTotp: (password, code) =>
-        request(`${USER_SECURITY_API}/totp`, { method: 'DELETE', body: JSON.stringify({ password, code }) }),
-    passkeys: () => request(`${USER_SECURITY_API}/passkeys`),
-    startPasskeyRegistration: (name) =>
-        request(`${USER_SECURITY_API}/passkeys/registration/options`, {
-            method: 'POST',
-            body: JSON.stringify({ name })
-        }),
-    finishPasskeyRegistration: (challengeId, credential) =>
-        request(`${USER_SECURITY_API}/passkeys/registration/verify`, {
-            method: 'POST',
-            body: JSON.stringify({ challengeId, credential })
-        }),
-    removePasskey: (credentialId, password, code) =>
-        request(`${USER_SECURITY_API}/passkeys/${encodeURIComponent(credentialId)}`, {
-            method: 'DELETE', body: JSON.stringify({ password, code: code || null })
-        }),
-    devices: () => request(`${AUTH_SECURITY_API}/devices`),
-    revokeDevice: (deviceId) =>
-        request(`${AUTH_SECURITY_API}/devices/${encodeURIComponent(deviceId)}`, { method: 'DELETE' })
+    status: () => identityCall(() => accountSecurity.getStatus({})),
+    changePassword: (currentPassword, newPassword) => identityCall(() => accountSecurity.changePassword({ currentPassword, newPassword })),
+    setupTotp: () => identityCall(() => accountSecurity.setupTotp({})),
+    enableTotp: code => identityCall(() => accountSecurity.enableTotp({ code })),
+    disableTotp: (password, code) => identityCall(() => accountSecurity.disableTotp({ password, code })),
+    passkeys: () => identityCall(async () => (await accountSecurity.listPasskeys({})).passkeys.map(passkey)),
+    startPasskeyRegistration: name => identityCall(async () => {
+        const result = await accountSecurity.startPasskeyRegistration({ name });
+        return { challengeId: result.challengeId, publicKey: result.publicKey };
+    }),
+    finishPasskeyRegistration: (challengeId, credential) => identityCall(() => accountSecurity.finishPasskeyRegistration({
+        challengeId, credential
+    })),
+    removePasskey: (credentialId, password, code) => identityCall(() => accountSecurity.removePasskey({
+        credentialId, verification: { password, ...(code ? { code } : {}) }
+    })),
+    devices: () => identityCall(async () => (await deviceSessions.listDeviceSessions({})).sessions.map(value => ({
+        ...value, firstSeenAt: dateValue(value.firstSeenAt), lastSeenAt: dateValue(value.lastSeenAt), revokedAt: dateValue(value.revokedAt)
+    }))),
+    revokeDevice: deviceId => identityCall(() => deviceSessions.revokeDeviceSession({ deviceId })),
+    requestPasswordReset: unsupportedRecovery,
+    confirmPasswordReset: unsupportedRecovery,
+    verifyEmail: unsupportedRecovery
 };

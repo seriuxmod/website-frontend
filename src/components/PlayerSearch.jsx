@@ -1,8 +1,7 @@
 import { forwardRef, useEffect, useRef, useState } from 'react';
-import { FaClockRotateLeft, FaMagnifyingGlass, FaSpinner, FaUser } from 'react-icons/fa6';
+import { FaMagnifyingGlass, FaSpinner, FaUser } from 'react-icons/fa6';
 import { useNavigate } from 'react-router-dom';
-import { playerDirectoryApi } from '../lib/playerDirectoryApi';
-import { playerAvatar } from '../lib/userApi';
+import { playerAvatar, userApi } from '../lib/userApi';
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{1,16}$/;
 
@@ -47,7 +46,7 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
         setOpen(false);
         setQuery('');
         setResults([]);
-        navigate(`/players/${encodeURIComponent(profile.uuid)}`);
+        navigate(`/@${encodeURIComponent(profile.username)}`);
     };
 
     const runSearch = async (normalized) => {
@@ -61,17 +60,17 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
         setOpen(true);
 
         try {
-            const result = await playerDirectoryApi.searchByName(normalized, controller.signal);
+            const result = await userApi.search(normalized, 8, controller.signal);
             if (controller.signal.aborted) return;
             const seen = new Set();
-            const profiles = [result.currentOwner, ...result.previousOwners].filter((profile) => {
+            const profiles = result.map(profile => ({ ...profile, uuid: profile.playerId })).filter((profile) => {
                 if (!profile || seen.has(profile.uuid)) return false;
                 seen.add(profile.uuid);
                 return true;
             });
             setResults(profiles);
             setActiveIndex(0);
-            if (profiles.length === 0) setMessage('Kein aktueller oder früherer Besitzer dieses Namens gefunden.');
+            if (profiles.length === 0) setMessage('Kein registriertes SeriuxMod-Profil mit diesem Namen gefunden.');
             if (profiles.length === 1) openProfile(profiles[0]);
         } catch (error) {
             if (error.name !== 'AbortError') {
@@ -180,7 +179,7 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
                             <span className="grid h-9 w-9 place-items-center rounded-xl bg-white/[.04]">
                                 <FaSpinner className="animate-spin text-orange-400" />
                             </span>
-                            Aktuelle und frühere Besitzer werden gesucht …
+                            Registrierte SeriuxMod-Profile werden gesucht …
                         </div>
                     )}
                     {!loading && hasSubmittedCurrentQuery && message && results.length === 0 && (
@@ -194,10 +193,9 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
                     {!loading &&
                         hasSubmittedCurrentQuery &&
                         results.map((profile, index) => {
-                            const historical = profile.matchType === 'historical';
                             return (
                                 <button
-                                    key={`${profile.uuid}-${profile.matchType}`}
+                                    key={profile.uuid}
                                     type="button"
                                     onPointerMove={() => setActiveIndex(index)}
                                     onClick={() => openProfile(profile)}
@@ -213,19 +211,12 @@ const PlayerSearch = forwardRef(function PlayerSearch({ className = '', mobile =
                                             {profile.username || searchedQuery}
                                         </b>
                                         <small
-                                            className={`mt-0.5 flex items-center gap-1.5 truncate text-[10px] ${historical ? 'text-amber-400/75' : 'text-zinc-600'}`}
+                                            className="mt-0.5 flex items-center gap-1.5 truncate text-[10px] text-zinc-600"
                                         >
-                                            {historical && <FaClockRotateLeft />}
-                                            {historical
-                                                ? `Früherer Besitzer von „${searchedQuery}“`
-                                                : 'Aktueller Besitzer'}
+                                            Registriertes SeriuxMod-Profil
                                         </small>
                                     </span>
-                                    {historical ? (
-                                        <FaClockRotateLeft className="text-xs text-amber-500/60" />
-                                    ) : (
-                                        <FaUser className="text-xs text-zinc-600" />
-                                    )}
+                                    <FaUser className="text-xs text-zinc-600" />
                                 </button>
                             );
                         })}
