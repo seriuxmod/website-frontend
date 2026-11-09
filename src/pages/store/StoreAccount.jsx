@@ -3,6 +3,7 @@ import { FaBagShopping, FaBox, FaCoins, FaCreditCard, FaRightToBracket } from 'r
 import { Link, useLocation } from 'react-router-dom';
 import { beginLogin, getAuthenticatedUser } from '../../lib/auth';
 import { formatStorePrice, storeApi } from '../../lib/storeApi';
+import { AdminPendingState, AdminUnavailableState } from '../../components/admin/AdminUi.jsx';
 
 const statusLabels = {
     CREATED: 'Zahlung ausstehend',
@@ -16,6 +17,8 @@ const statusLabels = {
 export default function StoreAccount() {
     const user = getAuthenticatedUser();
     const location = useLocation();
+    const [retry, setRetry] = useState(0);
+    const [page, setPage] = useState(0);
     const [state, setState] = useState({
         loading: true,
         orders: [],
@@ -31,15 +34,18 @@ export default function StoreAccount() {
             return;
         }
         let active = true;
-        Promise.all([storeApi.orders(), storeApi.entitlements(), storeApi.payments(), storeApi.credits()])
+        setState(current => ({ ...current, loading: true, error: '' }));
+        Promise.all([storeApi.orders(page), storeApi.entitlements(), storeApi.payments(), storeApi.credits()])
             .then(
                 ([orders, entitlements, payments, credits]) =>
                     active &&
                     setState({
                         loading: false,
                         orders: orders.items ?? [],
+                        orderTotal: orders.total,
                         entitlements: entitlements.entitlements ?? [],
                         payments: payments.payments ?? [],
+                        paymentTotal: payments.total,
                         credits,
                         error: ''
                     })
@@ -48,7 +54,7 @@ export default function StoreAccount() {
         return () => {
             active = false;
         };
-    }, [user?.playerId]);
+    }, [user?.playerId, retry, page]);
 
     if (!user)
         return (
@@ -65,6 +71,11 @@ export default function StoreAccount() {
                 </div>
             </main>
         );
+
+    if (state.loading || state.error) return <main className="min-h-screen px-4 pb-24 pt-36 text-white"><div className="mx-auto max-w-4xl">
+        <h1 className="mb-6 font-display text-3xl font-bold">Käufe & Freischaltungen</h1>
+        {state.error ? <AdminUnavailableState text={state.error} onRetry={() => setRetry(value => value + 1)} /> : <AdminPendingState title="Deine Store-Daten werden geladen" />}
+    </div></main>;
 
     return (
         <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-32 text-white sm:px-6 sm:pt-36">
@@ -92,12 +103,12 @@ export default function StoreAccount() {
                     </p>
                 )}
                 <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                    <Summary icon={FaBagShopping} label="Bestellungen" value={state.orders.length} />
+                    <Summary icon={FaBagShopping} label="Bestellungen" value={state.orderTotal} />
                     <Summary icon={FaBox} label="Freischaltungen" value={state.entitlements.length} />
                     <Summary
                         icon={FaCoins}
                         label="Credits"
-                        value={state.credits ? formatStorePrice(state.credits.cents, 'EUR') : '0,00 €'}
+                        value={state.credits ? formatStorePrice(state.credits.cents, 'EUR') : 'Nicht verfügbar'}
                     />
                 </div>
                 <div className="mt-8 grid gap-7 lg:grid-cols-[1fr_360px]">
@@ -147,6 +158,11 @@ export default function StoreAccount() {
                                 </article>
                             ))
                         )}
+                        <nav className="flex items-center justify-between gap-3 p-6" aria-label="Bestellseiten">
+                            <button className="forum-button-secondary" disabled={page === 0} onClick={() => setPage(value => value - 1)}>Zurück</button>
+                            <span className="text-xs text-zinc-500">Seite {page + 1}</span>
+                            <button className="forum-button-secondary" disabled={(page + 1) * 20 >= state.orderTotal} onClick={() => setPage(value => value + 1)}>Weiter</button>
+                        </nav>
                     </section>
                     <div className="space-y-7">
                         <section className="forum-panel rounded-3xl p-6">
@@ -175,9 +191,9 @@ export default function StoreAccount() {
                                 <h2 className="font-display text-2xl font-bold">Zahlungen</h2>
                             </div>
                             <p className="mt-4 text-sm text-zinc-500">
-                                {state.payments.length === 0
+                                {state.paymentTotal === 0
                                     ? 'Noch keine Zahlungen vorhanden.'
-                                    : `${state.payments.length} Zahlungsvorgänge gespeichert.`}
+                                    : `${state.paymentTotal} Zahlungsvorgänge gespeichert.`}
                             </p>
                         </section>
                     </div>

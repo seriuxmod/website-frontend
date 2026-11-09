@@ -8,7 +8,9 @@ import {
     isStatusAdministrator,
     isStoreAdministrator,
     isTeamAdministrator,
-    isUserAdministrator
+    isUserAdministrator,
+    isContentAdministrator,
+    isSocialAdministrator
 } from '../../lib/auth';
 
 export default function AdminLayout() {
@@ -48,6 +50,8 @@ export default function AdminLayout() {
 
     const allowed =
         isUserAdministrator(user) ||
+        isContentAdministrator(user) ||
+        isSocialAdministrator(user) ||
         isForumAdministrator(user) ||
         isStatusAdministrator(user) ||
         isTeamAdministrator(user) ||

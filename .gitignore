@@ -21,3 +21,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Private workspace-only gateway/deployment checks, never part of the public website.
+/scripts/website-gateway.mjs
+/scripts/generate-website-gateway.mjs
+/scripts/verify-website-source.mjs
+/test/website-gateway.test.mjs
+/test/live-website.mjs
+/test/live-website-browser.html
+/test/live-website-browser.jsx
+/test/serve-live-website.mjs

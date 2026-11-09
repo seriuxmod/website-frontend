@@ -13,6 +13,7 @@ Dieses öffentliche Repository enthält die zentrale Weboberfläche von SeriuxMo
 - öffentliche SeriuxMod- und Minecraft-Profile
 - Forum mit Boards, Themen, Beiträgen und Moderationsoberfläche
 - Feedback-/Vorschlagsbereich und Social-Hub
+- öffentliche Skin-Texturbibliothek und Minecraft-Serververzeichnis
 - Store, Checkout, Käufe, Abrechnung und Shop-Administration
 - OAuth2-Login, E-Mail-Verifikation, Passwort-Reset, Passkeys und Sitzungsverwaltung
 - Systemstatus mit Serviceübersicht und Connection Flow
@@ -22,15 +23,17 @@ Dieses öffentliche Repository enthält die zentrale Weboberfläche von SeriuxMo
 
 | Library / Toolchain | Version | Verwendung |
 | --- | --- | --- |
-| React | `^18.3.1` | Komponenten und UI-State |
-| React DOM | `^18.3.1` | Browser-Rendering |
+| React | `19.2.8` | Komponenten und UI-State |
+| React DOM | `19.2.8` | Browser-Rendering |
 | React Router DOM | `7.18.2` | clientseitiges Routing |
 | React Icons | `^5.2.1` | Icons |
 | skinview3d | `^3.4.1` | Minecraft-Skinmodell |
 | Tailwind CSS | `^3.4.6` | Utility-CSS |
 | PostCSS | `8.5.26` | CSS-Verarbeitung |
 | Autoprefixer | `10.5.4` | Browser-Präfixe |
-| Vite | `8.2.2` | Entwicklungsserver und Produktionsbuild |
+| Vite | `8.3.6` | Entwicklungsserver und Produktionsbuild |
+| protobuf-es | `2.17.0` | generierte Browser-Verträge |
+| Connect / Connect-Web | `2.3.0` | binärer gRPC-Web-Transport |
 | `@vitejs/plugin-react` | `6.1.0` | React-Integration für Vite |
 | Prettier | `^3.3.3` | Formatierung |
 | Prettier Tailwind Plugin | `^0.6.5` | Sortierung von Tailwind-Klassen |
@@ -77,7 +80,7 @@ src/config/           öffentliche Frontend-Konfiguration
 
 Ein Push auf `main` löst `.github/workflows/deploy.yml` aus. Die Pipeline installiert mit `npm ci`, erzeugt den Vite-Build und veröffentlicht die Website über GitHub Pages.
 
-Vor jedem Build laufen `npm test` (PKCE-Abschluss und Profil-Routing). Erst nach erfolgreichen Tests und Build veröffentlicht die Pipeline ausschließlich `dist/` im Branch `gh-pages`. GitHub Pages verwendet `gh-pages` mit Pfad `/`; Custom Domain ist `seriuxmod.net`, HTTPS bleibt aktiviert. `npm run build` erzeugt auch den SPA-404-Fallback, `CNAME` und `.nojekyll`.
+Vor jedem Build laufen `npm test` (Authentifizierung, Sitzungsgrenzen, Website-Verträge und öffentliche Quellprüfungen). Erst nach erfolgreichen Tests und Build veröffentlicht die Pipeline ausschließlich `dist/` im Branch `gh-pages`. GitHub Pages verwendet `gh-pages` mit Pfad `/`; Custom Domain ist `seriuxmod.net`, HTTPS bleibt aktiviert. `npm run build` erzeugt auch den SPA-404-Fallback, `CNAME` und `.nojekyll`. Die öffentliche Pipeline benötigt weder private Deployment-Konfigurationen noch echte Testzugänge. Interne Gateway-/Live-Testwerkzeuge bleiben außerhalb der Veröffentlichung.
 
 ## Profil- und Konto-URLs
 
@@ -87,11 +90,11 @@ Vor jedem Build laufen `npm test` (PKCE-Abschluss und Profil-Routing). Erst nach
 - `/profile` bleibt als Weiterleitung zum eigenen öffentlichen Profil erhalten; `/account/security` leitet auf den neuen Sicherheitspfad um.
 - Explizite Anmeldungen aus geschützten Unterseiten dürfen zu ihrem sicheren lokalen Ausgangspfad zurückkehren. Der normale Navbar-Login verwendet dagegen das öffentliche Namensprofil. Der OAuth-Callback bleibt `/auth/callback`.
 
-Profilabruf, Spielersuche, eigene Berechtigungen und Kontosicherheit verwenden jetzt generierte Browser-Clients mit gRPC-Web. Die vorhandenen nativen gRPC-Dienste bleiben zuständig für Validierung und Berechtigungen. Der entfernte Player-Directory-Dienst wird nicht mehr aufgerufen; historische Namen/Skins stehen ohne neue Quelle nicht zur Verfügung. Forum, Store und ältere Admin-Arbeitsstände sind damit nicht automatisch migriert.
+Profilabruf, Spielersuche, eigene Berechtigungen und Kontosicherheit verwenden generierte Browser-Clients mit gRPC-Web. Auch Store, Status, Team, Spieler-/Rechteverwaltung, Forum/Blog/Feedback/Übersetzungen und Social-Administration sind auf diesen Transport umgestellt. Die vorhandenen nativen Dienste bleiben für Validierung und Berechtigungen zuständig. Der entfernte Player-Directory-Dienst wird nicht mehr aufgerufen; eine vollständige historische Namen-/Skinquelle wird dadurch nicht ersetzt.
 
 Die generierten Dateien unter `src/gen/` werden mit veröffentlicht, sodass GitHub Pages ohne Zugriff auf das private Vertragsprojekt bauen kann. Regeneration nur im Entwicklungs-Workspace mit benachbartem `grpc-contracts`: `npm run generate:grpc`. Generierte Dateien nicht von Hand ändern.
 
-Die Sicherheitsseite unterstützt die bestehenden RPCs für Status, Passwortänderung, TOTP und Passkeys sowie Geräteübersicht/-widerruf. Sensible Aktionen können eine erneute Website-Anmeldung verlangen. Passwortlose Konten können derzeit weder nachträglich ein Passwort setzen noch ohne Passwortbestätigung einen Passkey entfernen; diese noch fehlenden Backend-Funktionen werden ausdrücklich nicht durch einen Launcher-Reset umgangen.
+Die Sicherheitsseite unterstützt Status, Passwortänderung, initiales Passwort für passwortlose Konten, Wiederherstellungscodes, TOTP, Passkeys und Geräteübersicht/-widerruf. Sensible Aktionen können eine erneute Website-Anmeldung verlangen. Der letzte nutzbare Zugang darf nicht entfernt werden; Wiederherstellung läuft über die geschützte Browser-Anmeldegrenze, nicht über einen Launcher-Reset.
 
 Da dieses Repository öffentlich ist, enthält diese README absichtlich keine interne Endpoint-, Payload- oder Berechtigungsdokumentation. Die Verträge der Backend-Services stehen in den jeweiligen privaten Service-Repositories.
 
@@ -108,3 +111,15 @@ Der globale Benutzerstatus **Online, Abwesend, Nicht stören, Offline, Unsichtba
 Social verwendet ebenfalls generierte gRPC-Web-Clients und den einen zentralen Realtime-Dienst. Reconnects laden autoritative Snapshots; Accountwechsel und Sitzungswiderruf leeren private Ansichten. Es gibt keinen lokalen Demo-Chat im Produktivpfad.
 
 `npm test` prüft zusätzlich Social-Transport und Sitzungslebenszyklus. Für lokale UI-Prüfungen dient nach `npm run dev` die ausdrücklich als **Testdatensatz** markierte Seite `/test/social-browser.html`. Sie ersetzt Netzwerkantworten ausschließlich in dieser Testseite, verwendet keine echten Zugangsdaten und gehört nicht zum Produktionsbuild.
+
+## Skin-Bibliothek, Server und Administration
+
+- `/community/skins` (Alias `/skins`): ausdrücklich veröffentlichte Texturen, ohne Quell-UUIDs oder Besitzbehauptung. Vorschauen prüfen PNG-Metadaten und Prüfsumme. Eine Auswahl ändert keinen Minecraft-Skin.
+- `/community/servers`: freigegebene Einträge; fehlende Spielerzahlen bleiben unbekannt statt als Null zu erscheinen. Katalogangaben sind keine unabhängige Live-Messung.
+- `/admin/skins`: berechtigte Metadatenverwaltung, begrenzter Ausgangslistenimport, private Beobachtungen und revisionsgebundene Veröffentlichung. Kein Browser-Worker, Community-Upload oder Crawler.
+- Kontowechsel verwerfen private Ansichten. Mehrschritt-Checkout bleibt an dieselbe Sitzung gebunden; unklare Schreib-/Zahlungsergebnisse werden nicht blind wiederholt.
+- Fehlende Daten, laufende Abfragen, erfolgreiche leere Ergebnisse und Fehler werden getrennt dargestellt. Keine synthetische Weltkarte als vermeintliche Live-Datenquelle.
+
+**Weiterhin offen:** Ban-/Mute-Fallverwaltung hat noch keine Backend-Domäne und wird nicht durch Kontosperren ersetzt. Geschützte PNG-Vorschauen für Skin-Entwürfe fehlen weiterhin. Positive Admin-/Skin-Schreibzyklen und praktische Provider-/Geräteprüfungen sind nicht mit einer Website-Veröffentlichung abgenommen. Die Website aktiviert weder Zahlungen noch sonstige gesperrte Backend-Funktionen.
+
+Für die übrigen lokalen Seitenprüfungen gibt es außerdem `/test/website-browser.html` mit sichtbar markiertem simuliertem Binär-Peer. Diese Fixture und ihre Werte gehören nicht zu `dist/` und sind kein Live-Backend-Nachweis.

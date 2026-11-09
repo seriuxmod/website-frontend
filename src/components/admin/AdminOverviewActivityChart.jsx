@@ -5,7 +5,7 @@ import { scaleLinear } from '@tanstack/charts/scales/linear';
 import { scalePoint } from '@tanstack/charts/scales/point';
 import { tooltip as chartTooltip } from '@tanstack/charts/tooltip';
 import { FaArrowTrendUp, FaBolt, FaClock } from 'react-icons/fa6';
-import { AdminEmptyState, AdminPendingState } from './AdminUi';
+import { AdminEmptyState, AdminPendingState, AdminUnavailableState } from './AdminUi';
 
 function createActivityChart(rows) {
     return defineChart(
@@ -71,12 +71,12 @@ function createActivityChart(rows) {
     );
 }
 
-export default function AdminOverviewActivityChart({ activity = [], state = 'loading' }) {
+export default function AdminOverviewActivityChart({ activity = [], state = 'loading', onRetry }) {
     const rows = useMemo(
         () =>
             activity.map((entry) => ({
                 label: formatBucket(entry.startsAt),
-                actions: Number(entry.count) || 0,
+                actions: entry.count,
                 startsAt: entry.startsAt
             })),
         [activity]
@@ -98,7 +98,7 @@ export default function AdminOverviewActivityChart({ activity = [], state = 'loa
                 </div>
                 {ready && (
                     <span className="rounded-full border border-emerald-400/20 bg-emerald-400/[.07] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.15em] text-emerald-200">
-                        Live
+                        Abgefragt
                     </span>
                 )}
             </div>
@@ -111,10 +111,10 @@ export default function AdminOverviewActivityChart({ activity = [], state = 'loa
                 </div>
             )}
 
-            {!ready ? (
+            {state === 'error' ? <div className="p-6 sm:p-7"><AdminUnavailableState title="Teamaktivität nicht verfügbar" onRetry={onRetry} /></div> : !ready ? (
                 <div className="p-6 sm:p-7">
                     <AdminPendingState
-                        title={state === 'waiting' ? 'Teamaktivität nicht erreichbar' : 'Teamaktivität wird geladen'}
+                        title="Teamaktivität wird geladen"
                         text="Der Verlauf wird direkt aus dem User-Service gelesen."
                     />
                 </div>

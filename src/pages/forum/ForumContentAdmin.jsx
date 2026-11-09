@@ -22,7 +22,7 @@ export function BlogAdmin() {
     const [state, setState] = useState({ loading: true, saving: false, error: '' });
     const load = useCallback(async () => {
         try {
-            const response = await blogApi.list({ size: 100 });
+            const response = await blogApi.admin.list({ size: 100 });
             setPosts(response.items ?? []);
             setState({ loading: false, saving: false, error: '' });
         } catch (error) {

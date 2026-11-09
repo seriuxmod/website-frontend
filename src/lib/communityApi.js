@@ -1,105 +1,60 @@
-import { authenticatedFetch } from './auth';
+import { BlogService, BlogAdminService } from '../gen/seriuxmod/forum/v1/blog_service_pb.js';
+import { SuggestionService, SuggestionAdminService } from '../gen/seriuxmod/forum/v1/suggestion_service_pb.js';
+import { websiteRpc as rpc, optional, optionalBoolean, fields } from './grpc/websiteRpc.js';
 
-const BASE = 'https://api.seriuxmod.net/api/v1/forum';
-
-async function request(path, options = {}) {
-    const response = await authenticatedFetch(`${BASE}${path}`, {
-        ...options,
-        headers: {
-            ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(options.headers || {})
-        }
-    });
-    if (response.status === 204) return null;
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(
-            payload.detail || payload.message || payload.error || 'Die Community-Anfrage ist fehlgeschlagen.'
-        );
-        error.status = response.status;
-        throw error;
-    }
-    return payload;
-}
+const blogList = ({ page = 0, size = 20, status = '', category = '', query = '' } = {}) => ({ page, size,
+    status: optional(status), category: optional(category), query: optional(query) });
+const blogWrite = body => fields(body, ['slug', 'title', 'excerpt', 'content', 'thumbnailUrl', 'categories', 'tags', 'status']);
+const suggestion = value => ({ ...value, likesCount: value.likeCount, dislikesCount: value.dislikeCount });
+const publicBlog = (method, request) => rpc(BlogService, method, request, { public: true });
+const adminBlog = (method, request) => rpc(BlogAdminService, method, request);
+const publicSuggestion = (method, request) => rpc(SuggestionService, method, request, { public: true });
+const adminSuggestion = (method, request) => rpc(SuggestionAdminService, method, request);
 
 export const blogApi = {
-    list: ({ page = 0, size = 20, status = '', category = '', query = '' } = {}) => {
-        const params = new URLSearchParams({ page: String(page), size: String(size) });
-        if (status) params.set('status', status);
-        if (category) params.set('category', category);
-        if (query) params.set('q', query);
-        return request(`/blog/posts?${params}`);
+    list: options => publicBlog('listPosts', blogList(options)),
+    byId: postId => publicBlog('getPost', { postId }),
+    bySlug: slug => publicBlog('getPostBySlug', { slug }),
+    create: body => adminBlog('createPost', blogWrite(body)),
+    update: (postId, body) => adminBlog('updatePost', { ...blogWrite(body), postId }),
+    patch: (postId, body) => {
+        const request = { postId, ...fields(body, ['title', 'content', 'status']) };
+        for (const key of ['excerpt', 'thumbnailUrl']) if (Object.hasOwn(body, key)) request[key] = body[key] ?? '';
+        for (const key of ['categories', 'tags']) if (Object.hasOwn(body, key)) request[key] = { values: body[key] ?? [] };
+        return adminBlog('patchPost', request);
     },
-    byId: (id) => request(`/blog/posts/${encodeURIComponent(id)}`),
-    bySlug: (slug) => request(`/blog/posts/slug/${encodeURIComponent(slug)}`),
-    create: (body) => request('/blog/posts', { method: 'POST', body: JSON.stringify(body) }),
-    update: (id, body) =>
-        request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) }),
-    patch: (id, body) =>
-        request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
-    publish: (id) => request(`/blog/posts/${encodeURIComponent(id)}:publish`, { method: 'POST' }),
-    unpublish: (id) => request(`/blog/posts/${encodeURIComponent(id)}:unpublish`, { method: 'POST' }),
-    remove: (id) => request(`/blog/posts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    publish: postId => adminBlog('publishPost', { postId }),
+    unpublish: postId => adminBlog('unpublishPost', { postId }),
+    remove: postId => adminBlog('archivePost', { postId }),
     admin: {
-        list: ({ page = 0, size = 20, status = '', category = '', query = '' } = {}) => {
-            const params = new URLSearchParams({ page: String(page), size: String(size) });
-            if (status) params.set('status', status);
-            if (category) params.set('category', category);
-            if (query) params.set('q', query);
-            return request(`/admin/blog/posts?${params}`);
-        },
-        byId: (id) => request(`/admin/blog/posts/${encodeURIComponent(id)}`)
+        list: options => adminBlog('listPosts', blogList(options)),
+        byId: postId => adminBlog('getPost', { postId })
     }
 };
 
 export const suggestionsApi = {
-    list: ({ open = true, category = '', status = '', limit = 100 } = {}) => {
-        const params = new URLSearchParams({ open: String(open), limit: String(limit) });
-        if (category) params.set('category', category);
-        if (status) params.set('status', status);
-        return request(`/suggestions?${params}`);
+    list: ({ open = true, category = '', status = '', limit = 100 } = {}) => publicSuggestion('listSuggestions', {
+        open: optionalBoolean(open), categoryId: optional(category), statusId: optional(status), limit
+    }),
+    get: suggestionId => publicSuggestion('getSuggestion', { suggestionId }).then(suggestion),
+    create: body => rpc(SuggestionService, 'createSuggestion', fields(body, ['categoryId', 'title', 'content'])).then(suggestion),
+    vote: (suggestionId, type, enabled = true) => {
+        if (!['like', 'dislike'].includes(type) || typeof enabled !== 'boolean') throw new Error('Ungültige Feedback-Bewertung.');
+        return rpc(SuggestionService, type === 'like' ? 'likeSuggestion' : 'dislikeSuggestion', { suggestionId, [type]: enabled });
     },
-    get: (id) => request(`/suggestions/${encodeURIComponent(id)}`),
-    create: (body) => request('/suggestions', { method: 'POST', body: JSON.stringify(body) }),
-    vote: (id, type, enabled = true) =>
-        request(`/suggestions/${encodeURIComponent(id)}/${type}`, {
-            method: 'POST',
-            body: JSON.stringify({ [type]: enabled })
-        }),
-    comments: (id) => request(`/suggestions/${encodeURIComponent(id)}/comments`),
-    comment: (id, content) =>
-        request(`/suggestions/${encodeURIComponent(id)}/comment`, {
-            method: 'POST',
-            body: JSON.stringify({ content })
-        }),
-    categories: () => request('/suggestions/categories'),
-    statuses: () => request('/suggestions/statuses'),
+    comments: suggestionId => publicSuggestion('listComments', { suggestionId }),
+    comment: (suggestionId, content) => rpc(SuggestionService, 'commentOnSuggestion', { suggestionId, content }),
+    categories: () => publicSuggestion('listCategories'),
+    statuses: () => publicSuggestion('listStatuses'),
     admin: {
-        list: () => request('/admin/suggestions'),
-        search: ({ page = 0, size = 25, statusId = '', categoryId = '', deleted, query = '' } = {}) => {
-            const params = new URLSearchParams({ page: String(page), size: String(size) });
-            if (statusId) params.set('statusId', statusId);
-            if (categoryId) params.set('categoryId', categoryId);
-            if (typeof deleted === 'boolean') params.set('deleted', String(deleted));
-            if (query) params.set('q', query);
-            return request(`/admin/suggestions/search?${params}`);
-        },
-        patch: (id, body) =>
-            request(`/admin/suggestions/${encodeURIComponent(id)}`, {
-                method: 'PATCH',
-                body: JSON.stringify(body)
-            }),
-        categories: () => request('/admin/suggestions/categories'),
-        saveCategory: (id, body) =>
-            request(`/admin/suggestions/categories/${encodeURIComponent(id)}`, {
-                method: 'PUT',
-                body: JSON.stringify(body)
-            }),
-        statuses: () => request('/admin/suggestions/statuses'),
-        saveStatus: (id, body) =>
-            request(`/admin/suggestions/statuses/${encodeURIComponent(id)}`, {
-                method: 'PUT',
-                body: JSON.stringify(body)
-            })
+        list: () => adminSuggestion('listSuggestions', { limit: 100 }).then(value => value.items.map(suggestion)),
+        search: ({ page = 0, size = 25, statusId = '', categoryId = '', deleted, query = '' } = {}) => adminSuggestion('searchSuggestions', {
+            page, size, statusId: optional(statusId), categoryId: optional(categoryId), deleted: optionalBoolean(deleted), query: optional(query)
+        }),
+        patch: (suggestionId, body) => adminSuggestion('patchSuggestion', { suggestionId, ...fields(body, ['statusId', 'categoryId', 'deleted']) }).then(suggestion),
+        categories: () => adminSuggestion('listCategories').then(value => value.categories),
+        saveCategory: (categoryId, body) => adminSuggestion('upsertCategory', { categoryId, category: fields(body, ['name', 'displayOrder', 'deleted']) }),
+        statuses: () => adminSuggestion('listStatuses').then(value => value.statuses),
+        saveStatus: (statusId, body) => adminSuggestion('upsertStatus', { statusId, status: fields(body, ['name', 'html', 'open', 'deleted']) })
     }
 };

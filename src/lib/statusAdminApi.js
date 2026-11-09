@@ -1,30 +1,13 @@
-import { authenticatedFetch } from './auth';
+import { StatusService } from '../gen/seriuxmod/status/v1/status_service_pb.js';
+import { websiteRpc as rpc } from './grpc/websiteRpc.js';
 
-const API = 'https://api.seriuxmod.net/api/v1/status';
-
-async function request(path, options = {}) {
-    const response = await authenticatedFetch(`${API}${path}`, {
-        cache: 'no-store',
-        ...options,
-        headers: { Accept: 'application/json', ...(options.headers || {}) }
-    });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(
-            payload.message || payload.detail || `Status-Anfrage fehlgeschlagen (${response.status})`
-        );
-        error.status = response.status;
-        throw error;
-    }
-    return payload;
-}
-
+export const statusApi = {
+    summary: signal => rpc(StatusService, 'getSummary', {}, { public: true, signal }),
+    regions: signal => rpc(StatusService, 'listRegions', {}, { public: true, signal }).then(value => value.regions),
+    region: (regionId, signal) => rpc(StatusService, 'getRegionSummary', { regionId }, { public: true, signal }),
+    incidents: signal => rpc(StatusService, 'listIncidents', {}, { public: true, signal }).then(value => value.incidents)
+};
 export const statusAdminApi = {
-    summary: (signal) => request('/admin/summary', { signal }),
-    scaleService: (serviceName, replicas) =>
-        request(`/admin/services/${encodeURIComponent(serviceName)}/replicas`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ replicas })
-        })
+    summary: signal => rpc(StatusService, 'getAdminSummary', {}, { signal }),
+    scaleService: (serviceName, replicas) => rpc(StatusService, 'scaleService', { serviceName, replicas })
 };

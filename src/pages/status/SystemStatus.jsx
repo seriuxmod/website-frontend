@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { statusApi } from '../../lib/statusAdminApi.js';
+import { AdminEmptyState } from '../../components/admin/AdminUi.jsx';
 import {
     FaArrowRotateRight,
     FaCheck,
@@ -11,11 +13,8 @@ import {
     FaUser
 } from 'react-icons/fa6';
 
-const STATUS_API = 'https://api.seriuxmod.net/api/v1/status/summary';
 const REFRESH_INTERVAL = 30_000;
 const HIGH_PING_THRESHOLD_MS = 500;
-
-const excludedMonitorIds = new Set(['seriuxmod-homepage', 'gcore-api', 'nexus', 'docker-registry', 'docker-swarm-api']);
 
 const groupPresentation = {
     'API Services': { name: 'DNS Auflösung', order: 10 },
@@ -50,7 +49,8 @@ const groupStates = {
         icon: FaHeartCrack,
         iconClass: '',
         circle: 'border-red-500/70 bg-red-500/[.08] text-red-300 shadow-[0_0_45px_rgba(239,68,68,.14)]'
-    }
+    },
+    unknown: { label: 'Unbekannt', icon: FaClock, iconClass: '', circle: 'border-zinc-500/50 bg-white/[.03] text-zinc-400' }
 };
 
 const flowLineClasses = {
@@ -102,6 +102,7 @@ const formatDate = (value) => {
 
 export default function SystemStatus() {
     const [state, setState] = useState({ data: null, loading: true, refreshing: false, error: '' });
+    const [regionId, setRegionId] = useState('');
 
     const load = useCallback(async (background = false, signal) => {
         setState((current) => ({
@@ -111,9 +112,7 @@ export default function SystemStatus() {
             error: ''
         }));
         try {
-            const response = await fetch(STATUS_API, { signal, cache: 'no-store' });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const data = await response.json();
+            const data = await statusApi.summary(signal);
             setState({ data, loading: false, refreshing: false, error: '' });
         } catch (error) {
             if (error.name === 'AbortError') return;
@@ -136,21 +135,22 @@ export default function SystemStatus() {
         };
     }, [load]);
 
+    const regions = state.data?.regions ?? [];
+    const selectedRegion = regionId ? regions.find(value => value.region?.regionId === regionId) : null;
+    const displayed = regionId ? selectedRegion : state.data;
+    useEffect(() => {
+        if (regionId && state.data && !regions.some(value => value.region?.regionId === regionId)) setRegionId('');
+    }, [regionId, state.data]);
+
     const publicServices = useMemo(
-        () =>
-            (state.data?.services ?? []).filter(
-                (service) => service.group !== 'Development' && !excludedMonitorIds.has(service.monitorId)
-            ),
-        [state.data]
+        () => displayed?.services ?? [],
+        [displayed]
     );
 
     const groups = useMemo(() => {
         const grouped = new Map();
         for (const service of publicServices) {
-            const presentation = groupPresentation[service.group] ?? {
-                name: service.group,
-                order: service.groupOrder ?? 999
-            };
+            const presentation = { name: service.group || 'Weitere Dienste', order: service.groupOrder ?? 999 };
             if (!grouped.has(presentation.name)) {
                 grouped.set(presentation.name, { services: [], order: presentation.order });
             }
@@ -163,16 +163,15 @@ export default function SystemStatus() {
                 const hasHighPing = services.some(
                     (service) => service.state === 'UP' && Number(service.responseTimeMs) >= HIGH_PING_THRESHOLD_MS
                 );
-                const status =
+                const unknown = services.every(service => !['UP', 'DOWN', 'DEGRADED', 'CRITICAL'].includes(service.state));
+                const status = unknown ? 'unknown' :
                     onlineServices === 0
                         ? 'outage'
                         : onlineServices < services.length || hasHighPing
                           ? 'degraded'
                           : 'operational';
-                const averagePing = Math.round(
-                    services.reduce((total, service) => total + (Number(service.responseTimeMs) || 0), 0) /
-                        services.length
-                );
+                const timed = services.filter(service => service.state === 'UP' && Number.isFinite(service.responseTimeMs) && service.responseTimeMs >= 0);
+                const averagePing = timed.length ? Math.round(timed.reduce((total, service) => total + service.responseTimeMs, 0) / timed.length) : null;
                 return {
                     name,
                     services,
@@ -186,15 +185,7 @@ export default function SystemStatus() {
     }, [publicServices]);
 
     const healthyServices = publicServices.filter((service) => service.state === 'UP').length;
-    const calculatedOverallStatus = groups.some((group) => group.status === 'outage')
-        ? 'CRITICAL'
-        : groups.some((group) => group.status === 'degraded')
-          ? 'DEGRADED'
-          : publicServices.length
-            ? 'UP'
-            : 'UNKNOWN';
-
-    const overall = overallContent[calculatedOverallStatus] ?? overallContent.UNKNOWN;
+    const overall = overallContent[displayed?.overallStatus] ?? overallContent.UNKNOWN;
     const OverallIcon = overall.icon;
 
     return (
@@ -220,6 +211,14 @@ export default function SystemStatus() {
                         Aktualisieren
                     </button>
                 </header>
+                <label className="mt-6 flex max-w-sm flex-col gap-2 text-xs text-zinc-400">
+                    Region
+                    <select className="rounded-xl border border-white/10 bg-[#111218] px-3 py-3 text-zinc-200"
+                        value={regionId} onChange={event => setRegionId(event.target.value)}>
+                        <option value="">Gesamtübersicht</option>
+                        {regions.map(value => <option key={value.region.regionId} value={value.region.regionId}>{value.region.displayName || value.region.regionId}</option>)}
+                    </select>
+                </label>
 
                 <section
                     className={`mt-10 flex flex-col gap-5 rounded-[30px] border p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8 ${overall.panel}`}
@@ -230,12 +229,12 @@ export default function SystemStatus() {
                             <OverallIcon />
                         </span>
                         <div>
-                            <h2 className="font-display text-xl font-bold text-white sm:text-2xl">{overall.title}</h2>
-                            <p className="mt-2 text-sm leading-6 text-zinc-400">{overall.copy}</p>
+                            <h2 className="font-display text-xl font-bold text-white sm:text-2xl">{state.error && !displayed ? 'Systemstatus nicht verfügbar' : overall.title}</h2>
+                            <p className="mt-2 text-sm leading-6 text-zinc-400">{state.error ? 'Letzter bekannter Stand – die aktuelle Abfrage ist fehlgeschlagen.' : overall.copy}</p>
                         </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2 text-xs text-zinc-500">
-                        <FaClock /> {formatDate(state.data?.generatedAt)}
+                        <FaClock /> {formatDate(displayed?.generatedAt)}
                     </div>
                 </section>
 
@@ -247,7 +246,7 @@ export default function SystemStatus() {
 
                 {state.loading ? (
                     <StatusSkeleton />
-                ) : (
+                ) : displayed ? (
                     <>
                         <section className="mt-12">
                             <div className="flex items-end justify-between gap-4">
@@ -260,16 +259,24 @@ export default function SystemStatus() {
                                 </span>
                             </div>
 
-                            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                                 {groups.map((group) => (
                                     <ServiceGroup group={group} key={group.name} />
                                 ))}
-                            </div>
-                        </section>
+                             </div>
+                            {!groups.length && <AdminEmptyState title="Keine Dienste gemeldet" text="Für diese Ansicht liegen keine überwachten öffentlichen Dienste vor; daraus wird kein gesunder oder ausgefallener Zustand erfunden." />}
+                         </section>
 
-                        <ConnectionFlow groups={groups} />
+                        <section className="mt-8 space-y-3" aria-label="Gemeldete Vorfälle">
+                            <h2 className="font-display text-xl font-bold">Gemeldete Vorfälle</h2>
+                            {(displayed?.incidents ?? []).map((incident, index) => <article key={`${incident.regionId}:${incident.monitorId}:${index}`} className="rounded-2xl border border-amber-400/15 bg-amber-400/[.04] p-4 text-sm">
+                                <b>{incident.serviceName || incident.monitorId}</b><p className="mt-1 text-zinc-400">{incident.message}</p>
+                                <small className="text-zinc-500">{incident.regionId} · {incident.severity}</small>
+                            </article>)}
+                            {!displayed?.incidents?.length && <AdminEmptyState title="Keine Vorfälle gemeldet" text="Der ausgewählte Status-Snapshot enthält keine Vorfälle." />}
+                        </section>
                     </>
-                )}
+                ) : null}
             </div>
         </main>
     );
@@ -290,7 +297,7 @@ function ServiceGroup({ group }) {
                 <StatusIcon className={`text-2xl ${visual.iconClass}`} aria-hidden="true" />
             </div>
             <p className="mt-4 font-display text-2xl font-bold tracking-[-.04em] text-white">
-                {group.averagePing} <span className="text-sm text-zinc-500">ms</span>
+                {group.averagePing == null ? '—' : <>{group.averagePing} <span className="text-sm text-zinc-500">ms</span></>}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-[.14em] text-zinc-600">Ø Antwortzeit</p>
             <div className="mt-4 flex w-full items-center justify-between gap-2 border-t border-white/[.06] pt-3 text-[9px]">

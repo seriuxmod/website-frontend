@@ -16,7 +16,8 @@ import {
     AdminDashboardSkeleton,
     AdminEmptyState,
     AdminMetricCard,
-    AdminPendingState
+    AdminPendingState,
+    AdminUnavailableState
 } from '../../components/admin/AdminUi';
 import {
     fetchAuthenticatedUser,
@@ -31,10 +32,11 @@ import { storeApi } from '../../lib/storeApi';
 import { teamApi } from '../../lib/teamApi';
 import { playerAvatar } from '../../lib/userApi';
 import { userAdminApi } from '../../lib/userAdminApi';
+import { statusApi } from '../../lib/statusAdminApi.js';
+import { statusPresentation } from '../../lib/statusPresentation.js';
+import AdminRegionStatus from '../../components/admin/AdminRegionStatus.jsx';
 
-const STATUS_API = 'https://api.seriuxmod.net/api/v1/status/summary';
 const EMPTY_DATA = { users: null, store: null, forum: null, status: null, team: null };
-const AdminApiWorldMap = lazy(() => import('../../components/admin/AdminApiWorldMap'));
 const AdminOverviewActivityChart = lazy(() => import('../../components/admin/AdminOverviewActivityChart'));
 
 export default function AdminDashboard() {
@@ -63,6 +65,7 @@ export default function AdminDashboard() {
             setUser(profile);
 
             if (!profile) {
+                setData(EMPTY_DATA);
                 setLoading(false);
                 setRefreshing(false);
                 return;
@@ -80,9 +83,7 @@ export default function AdminDashboard() {
             const tasks = [
                 {
                     key: 'status',
-                    promise: fetch(STATUS_API, { cache: 'no-store' }).then((response) =>
-                        response.ok ? response.json() : Promise.reject(new Error('Status unavailable'))
-                    )
+                    promise: statusApi.summary()
                 }
             ];
 
@@ -94,8 +95,8 @@ export default function AdminDashboard() {
                     key: 'forum',
                     promise: Promise.all([forumApi.admin.nodes(), forumApi.admin.reports(0, 1, 'OPEN')]).then(
                         ([nodes, reports]) => ({
-                            nodes: nodes?.nodes?.length ?? nodes?.length ?? 0,
-                            reports: reports?.totalElements ?? reports?.content?.length ?? 0
+                            nodes: nodes.nodes.length,
+                            reports: reports.total
                         })
                     )
                 });
@@ -112,7 +113,7 @@ export default function AdminDashboard() {
                     nextData[key] = entry.value;
                     nextStates[key] = 'ready';
                 } else {
-                    nextStates[key] = 'waiting';
+                    nextStates[key] = 'error';
                 }
             });
 
@@ -127,7 +128,7 @@ export default function AdminDashboard() {
             if (!active) return;
             setSourceState((current) =>
                 Object.fromEntries(
-                    Object.entries(current).map(([key, state]) => [key, state === 'hidden' ? state : 'waiting'])
+                    Object.entries(current).map(([key, state]) => [key, state === 'hidden' ? state : 'error'])
                 )
             );
             setLoading(false);
@@ -139,9 +140,12 @@ export default function AdminDashboard() {
         };
     }, [refreshKey]);
 
-    const monitoredServices = data.status?.monitoredServices ?? data.status?.services?.length ?? 0;
-    const healthyServices = data.status?.healthyServices ?? 0;
-    const serviceProblem = sourceState.status === 'ready' && healthyServices < monitoredServices;
+    const monitoredServices = data.status?.monitoredServices;
+    const healthyServices = data.status?.healthyServices;
+    const statusView = statusPresentation(data.status?.overallStatus);
+    const metricState = key => ({ pending: sourceState[key] === 'loading',
+        error: sourceState[key] === 'error' ? 'Abfrage fehlgeschlagen · über „Neu laden“ erneut versuchen' : '' });
+    const retry = () => setRefreshKey(key => key + 1);
 
     if (loading) return <AdminDashboardSkeleton />;
 
@@ -183,96 +187,64 @@ export default function AdminDashboard() {
                             detail="aktive Sitzungen"
                             icon={FaUserGroup}
                             label="Nutzer online"
-                            pending={sourceState.users !== 'ready'}
-                            pendingText={pendingText(sourceState.users)}
-                            pendingTitle={pendingTitle(sourceState.users)}
+                            {...metricState('users')}
                             tone="emerald"
-                            value={data.users?.onlineUsers ?? 0}
+                            value={data.users?.onlineUsers}
                         />
                         <AdminMetricCard
                             detail="SeriuxMod-Konten"
                             icon={FaUsers}
                             label="Registriert"
-                            pending={sourceState.users !== 'ready'}
-                            pendingText={pendingText(sourceState.users)}
-                            pendingTitle={pendingTitle(sourceState.users)}
+                            {...metricState('users')}
                             tone="sky"
-                            value={data.users?.registeredUsers ?? 0}
+                            value={data.users?.registeredUsers}
                         />
                     </>
                 )}
                 {isStoreAdministrator(user) && (
                     <AdminMetricCard
-                        detail={`${data.store?.completedPayments ?? 0} bezahlte Käufe`}
+                        detail={data.store ? `${data.store.completedPayments} abgeschlossene Zahlungen` : ''}
                         icon={FaBagShopping}
                         label="Shop-Umsatz"
-                        pending={sourceState.store !== 'ready'}
-                        pendingText={pendingText(sourceState.store)}
-                        pendingTitle={pendingTitle(sourceState.store)}
+                        {...metricState('store')}
                         tone="orange"
                         value={formatRevenue(data.store?.revenueByCurrency)}
                     />
                 )}
                 {isForumAdministrator(user) && (
                     <AdminMetricCard
-                        detail={`${data.forum?.nodes ?? 0} sichtbare Bereiche`}
+                        detail={data.forum ? `${data.forum.nodes} verwaltete Bereiche` : ''}
                         icon={FaComments}
                         label="Offene Meldungen"
-                        pending={sourceState.forum !== 'ready'}
-                        pendingText={pendingText(sourceState.forum)}
-                        pendingTitle={pendingTitle(sourceState.forum)}
+                        {...metricState('forum')}
                         tone="violet"
-                        value={data.forum?.reports ?? 0}
+                        value={data.forum?.reports}
                     />
                 )}
                 {isTeamAdministrator(user) && (
                     <AdminMetricCard
-                        detail={`${data.team?.activeTodayCount ?? 0} heute aktiv`}
+                        detail={data.team ? `${data.team.activeTodayCount} heute aktiv` : ''}
                         icon={FaUserGroup}
                         label="Offene Team-Aufgaben"
-                        pending={sourceState.team !== 'ready'}
-                        pendingText={pendingText(sourceState.team)}
-                        pendingTitle={pendingTitle(sourceState.team)}
+                        {...metricState('team')}
                         tone="sky"
-                        value={data.team?.openTodoCount ?? 0}
+                        value={data.team?.openTodoCount}
                     />
                 )}
                 <AdminMetricCard
-                    detail={
-                        serviceProblem
-                            ? `${monitoredServices - healthyServices} ${monitoredServices - healthyServices === 1 ? 'Dienst' : 'Dienste'} gestört`
-                            : 'überwachte Dienste erreichbar'
-                    }
-                    icon={serviceProblem ? FaTriangleExclamation : FaCircleCheck}
+                    detail={data.status ? `${healthyServices}/${monitoredServices} Dienste erreichbar` : ''}
+                    icon={data.status?.overallStatus === 'UP' ? FaCircleCheck : FaTriangleExclamation}
                     label="Systemzustand"
-                    pending={sourceState.status !== 'ready'}
-                    pendingText={pendingText(sourceState.status)}
-                    pendingTitle={pendingTitle(sourceState.status)}
-                    tone={serviceProblem ? 'red' : 'emerald'}
-                    value={`${healthyServices}/${monitoredServices}`}
+                    {...metricState('status')}
+                    tone={statusView.tone}
+                    value={statusView.label}
                 />
             </section>
 
             <div className="mt-6 grid gap-6 2xl:grid-cols-[minmax(0,1.35fr)_minmax(340px,.65fr)]">
-                <Suspense
-                    fallback={
-                        <section className="grid min-h-[580px] place-items-center rounded-[28px] border border-white/[.07] bg-[#0e1015]">
-                            <div className="text-center">
-                                <FaSpinner className="mx-auto animate-spin text-xl text-orange-300" />
-                                <p className="mt-3 text-xs font-bold text-zinc-500">Weltkarte wird geladen</p>
-                            </div>
-                        </section>
-                    }
-                >
-                    <AdminApiWorldMap />
-                </Suspense>
+                <AdminRegionStatus summary={data.status} state={sourceState.status} onRetry={retry} />
                 {isUserAdministrator(user) ? (
-                    <OnlineStaff staff={data.users?.onlineStaff ?? []} state={sourceState.users} />
-                ) : isTeamAdministrator(user) ? (
-                    <OnlineStaff
-                        staff={(data.team?.members ?? []).filter((member) => member.activeToday)}
-                        state={sourceState.team}
-                    />
+                    <OnlineStaff staff={data.users?.onlineStaff ?? []} state={sourceState.users} onRetry={retry} />
                 ) : (
                     <DataSources sourceState={sourceState} />
                 )}
@@ -293,9 +265,10 @@ export default function AdminDashboard() {
                         <AdminOverviewActivityChart
                             activity={data.team?.activityBuckets ?? []}
                             state={sourceState.team}
+                            onRetry={retry}
                         />
                     </Suspense>
-                    <TeamActivityFeed events={data.team?.recentActivity ?? []} state={sourceState.team} />
+                    <TeamActivityFeed events={data.team?.recentActivity ?? []} state={sourceState.team} onRetry={retry} />
                 </div>
             )}
 
@@ -372,7 +345,7 @@ export default function AdminDashboard() {
     );
 }
 
-function TeamActivityFeed({ events, state }) {
+function TeamActivityFeed({ events, state, onRetry }) {
     const ready = state === 'ready';
     return (
         <section className="rounded-[28px] border border-white/[.07] bg-[#111218] p-5 shadow-[0_24px_80px_rgba(0,0,0,.14)] sm:p-7">
@@ -386,16 +359,16 @@ function TeamActivityFeed({ events, state }) {
                 </div>
                 {ready && (
                     <span className="shrink-0 rounded-full border border-emerald-400/20 bg-emerald-400/[.07] px-3 py-1.5 text-[9px] font-extrabold uppercase tracking-[.15em] text-emerald-200">
-                        Live
+                        Abgefragt
                     </span>
                 )}
             </div>
 
-            {!ready ? (
+            {state === 'error' ? <div className="mt-6"><AdminUnavailableState title="Team-Verlauf nicht verfügbar" onRetry={onRetry} /></div> : !ready ? (
                 <div className="mt-6">
                     <AdminPendingState
                         compact
-                        title={state === 'waiting' ? 'Team-Verlauf nicht erreichbar' : 'Team-Verlauf wird geladen'}
+                        title="Team-Verlauf wird geladen"
                         text="Die Aktivitätsdaten werden direkt aus dem User-Service geladen."
                     />
                 </div>
@@ -437,7 +410,7 @@ function TeamActivityFeed({ events, state }) {
     );
 }
 
-function OnlineStaff({ staff, state }) {
+function OnlineStaff({ staff, state, onRetry }) {
     const ready = state === 'ready';
 
     return (
@@ -455,15 +428,11 @@ function OnlineStaff({ staff, state }) {
                 )}
             </div>
             <div className="mt-6 space-y-3">
-                {!ready ? (
+                {state === 'error' ? <AdminUnavailableState title="Präsenzdaten nicht verfügbar" onRetry={onRetry} /> : !ready ? (
                     <AdminPendingState
                         compact
-                        title={state === 'waiting' ? 'User-Service antwortet nicht' : 'Teamstatus wird geladen'}
-                        text={
-                            state === 'waiting'
-                                ? 'Es liegen noch keine Präsenzdaten vor. Über „Neu laden“ kann die Quelle erneut abgefragt werden.'
-                                : 'Der User-Service liefert aktuell noch keine Präsenzdaten.'
-                        }
+                        title="Teamstatus wird geladen"
+                        text="Die Präsenzdaten werden aus dem User-Service gelesen."
                     />
                 ) : staff.length ? (
                     staff.map((member) => (
@@ -520,12 +489,12 @@ function DataSources({ sourceState }) {
                     >
                         {state === 'ready' ? (
                             <FaCircleCheck className="text-emerald-300" />
-                        ) : (
+                        ) : state === 'error' ? <FaTriangleExclamation className="text-red-300" /> : (
                             <FaSpinner className="animate-spin text-orange-300" />
                         )}
                         <span className="flex-1 text-sm font-bold capitalize text-zinc-300">{source}</span>
                         <span className="text-[10px] font-bold uppercase tracking-[.12em] text-zinc-600">
-                            {state === 'ready' ? 'Verbunden' : 'Wartet'}
+                            {state === 'ready' ? 'Abgefragt' : state === 'error' ? 'Nicht verfügbar' : 'Wird geladen'}
                         </span>
                     </div>
                 ))}
@@ -547,8 +516,8 @@ function QuickLink({ icon: Icon, title, copy, to, pending = false, pendingState 
                 <b className="block text-sm text-white">{title}</b>
                 {pending ? (
                     <span className="mt-2 flex items-center gap-2 text-[11px] text-zinc-600">
-                        <FaSpinner className="animate-spin text-orange-300" />
-                        {pendingState === 'waiting' ? 'Datenquelle nicht verfügbar' : 'Datenquelle wird geladen'}
+                        {pendingState === 'error' ? <FaTriangleExclamation className="text-red-300" /> : <FaSpinner className="animate-spin text-orange-300" />}
+                        {pendingState === 'error' ? 'Datenquelle nicht verfügbar' : 'Datenquelle wird geladen'}
                     </span>
                 ) : (
                     <p className="mt-1 truncate text-xs text-zinc-600">{copy}</p>
@@ -564,8 +533,9 @@ function surfaceLabel(surface) {
 }
 
 function formatRevenue(revenueByCurrency) {
-    const entries = Object.entries(revenueByCurrency ?? {});
-    if (!entries.length) return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(0);
+    if (!revenueByCurrency) return 'Nicht verfügbar';
+    const entries = Object.entries(revenueByCurrency);
+    if (!entries.length) return 'Keine Umsätze gemeldet';
     return entries
         .slice(0, 2)
         .map(([currency, cents]) => new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(cents / 100))
@@ -592,12 +562,4 @@ function humanize(value) {
 function shortId(value) {
     const text = String(value || 'Unbekannt');
     return text.length > 12 ? `${text.slice(0, 8)}…` : text;
-}
-
-function pendingTitle(state) {
-    return state === 'waiting' ? 'Datenquelle wartet' : 'Daten werden geladen';
-}
-
-function pendingText(state) {
-    return state === 'waiting' ? 'Noch keine Daten · Neu laden möglich' : 'Quelle wartet auf eine Antwort';
 }

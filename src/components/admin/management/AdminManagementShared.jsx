@@ -52,11 +52,14 @@ export function AdminManagementPage({
     backend = 'Backend',
     loading = false,
     error = '',
+    connectionLabel,
     onRetry,
     actions,
     children
 }) {
-    const backendState = error
+    const backendState = connectionLabel
+        ? { label: connectionLabel, style: 'border-white/10 bg-white/[.025] text-zinc-400' }
+        : error
         ? { label: `${backend} nicht erreichbar`, style: 'border-red-400/20 bg-red-400/[.07] text-red-300' }
         : loading
           ? { label: `${backend} wird abgefragt`, style: 'border-amber-400/20 bg-amber-400/[.07] text-amber-200' }

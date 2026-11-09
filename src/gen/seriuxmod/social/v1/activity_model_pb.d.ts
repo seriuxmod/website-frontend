@@ -49,6 +49,21 @@ export declare type ClientActivity = Message<"seriuxmod.social.v1.ClientActivity
    * @generated from field: google.protobuf.Timestamp expires_at = 7;
    */
   expiresAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string network_id = 8;
+   */
+  networkId: string;
+
+  /**
+   * @generated from field: string server_id = 9;
+   */
+  serverId: string;
+
+  /**
+   * @generated from field: string network_name = 10;
+   */
+  networkName: string;
 };
 
 /**
@@ -116,6 +131,102 @@ export declare type ClientActivityResult = Message<"seriuxmod.social.v1.ClientAc
 export declare const ClientActivityResultSchema: GenMessage<ClientActivityResult>;
 
 /**
+ * Only short-lived socialclub_delegation tokens may use these commands. The
+ * backend derives user/network/node identity from the validated token, not input.
+ *
+ * @generated from message seriuxmod.social.v1.NetworkActivityContext
+ */
+export declare type NetworkActivityContext = Message<"seriuxmod.social.v1.NetworkActivityContext"> & {
+  /**
+   * @generated from field: string server_id = 1;
+   */
+  serverId: string;
+
+  /**
+   * Explicit public join address, never an inferred backend socket address.
+   *
+   * @generated from field: string server_address = 2;
+   */
+  serverAddress: string;
+
+  /**
+   * @generated from field: string server_name = 3;
+   */
+  serverName: string;
+
+  /**
+   * @generated from field: optional string game_mode = 4;
+   */
+  gameMode?: string | undefined;
+};
+
+/**
+ * Describes the message seriuxmod.social.v1.NetworkActivityContext.
+ * Use `create(NetworkActivityContextSchema)` to create a new message.
+ */
+export declare const NetworkActivityContextSchema: GenMessage<NetworkActivityContext>;
+
+/**
+ * @generated from message seriuxmod.social.v1.NetworkActivityLease
+ */
+export declare type NetworkActivityLease = Message<"seriuxmod.social.v1.NetworkActivityLease"> & {
+  /**
+   * Owner-only control token; never embedded in public activity.
+   *
+   * @generated from field: string lease_id = 1;
+   */
+  leaseId: string;
+
+  /**
+   * @generated from field: seriuxmod.social.v1.ClientActivity activity = 2;
+   */
+  activity?: ClientActivity | undefined;
+};
+
+/**
+ * Describes the message seriuxmod.social.v1.NetworkActivityLease.
+ * Use `create(NetworkActivityLeaseSchema)` to create a new message.
+ */
+export declare const NetworkActivityLeaseSchema: GenMessage<NetworkActivityLease>;
+
+/**
+ * @generated from message seriuxmod.social.v1.UpdateNetworkActivityRequest
+ */
+export declare type UpdateNetworkActivityRequest = Message<"seriuxmod.social.v1.UpdateNetworkActivityRequest"> & {
+  /**
+   * @generated from field: string lease_id = 1;
+   */
+  leaseId: string;
+
+  /**
+   * @generated from field: seriuxmod.social.v1.NetworkActivityContext context = 2;
+   */
+  context?: NetworkActivityContext | undefined;
+};
+
+/**
+ * Describes the message seriuxmod.social.v1.UpdateNetworkActivityRequest.
+ * Use `create(UpdateNetworkActivityRequestSchema)` to create a new message.
+ */
+export declare const UpdateNetworkActivityRequestSchema: GenMessage<UpdateNetworkActivityRequest>;
+
+/**
+ * @generated from message seriuxmod.social.v1.CloseNetworkActivityRequest
+ */
+export declare type CloseNetworkActivityRequest = Message<"seriuxmod.social.v1.CloseNetworkActivityRequest"> & {
+  /**
+   * @generated from field: string lease_id = 1;
+   */
+  leaseId: string;
+};
+
+/**
+ * Describes the message seriuxmod.social.v1.CloseNetworkActivityRequest.
+ * Use `create(CloseNetworkActivityRequestSchema)` to create a new message.
+ */
+export declare const CloseNetworkActivityRequestSchema: GenMessage<CloseNetworkActivityRequest>;
+
+/**
  * @generated from enum seriuxmod.social.v1.ActivitySource
  */
 export enum ActivitySource {
@@ -130,7 +241,7 @@ export enum ActivitySource {
   CLIENT_REPORTED = 1,
 
   /**
-   * Reserved for a later trusted integration, never set by a client request.
+   * Authenticated, consented network assertion; never a client-selected flag.
    *
    * @generated from enum value: ACTIVITY_SOURCE_SERVER_VERIFIED = 2;
    */

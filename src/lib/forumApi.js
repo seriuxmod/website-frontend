@@ -1,192 +1,104 @@
-import { authenticatedFetch } from './auth';
+import { ForumService } from '../gen/seriuxmod/forum/v1/forum_service_pb.js';
+import { ForumAdminService } from '../gen/seriuxmod/forum/v1/forum_admin_service_pb.js';
+import { TranslationAdminService } from '../gen/seriuxmod/forum/v1/translation_service_pb.js';
+import { PermissionService } from '../gen/seriuxmod/user/v1/permission_service_pb.js';
+import { userApi } from './userApi.js';
+import { websiteRpc as rpc, optional, fields } from './grpc/websiteRpc.js';
 
-const API = 'https://api.seriuxmod.net/api/v1';
-const FORUM_API = `${API}/forum`;
-const profileCache = new Map();
-
-async function request(path, options = {}) {
-    const response = await authenticatedFetch(`${FORUM_API}${path}`, {
-        ...options,
-        headers: {
-            ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(options.headers || {})
-        }
-    });
-    if (response.status === 204) return null;
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(
-            payload.detail || payload.message || payload.error_description || 'Die Forum-Anfrage ist fehlgeschlagen.'
-        );
-        error.status = response.status;
-        throw error;
-    }
-    return payload;
-}
+// Optional authenticated reads retain existing forum group visibility; no token means guest.
+const forum = (method, request) => rpc(ForumService, method, request);
+const admin = (method, request) => rpc(ForumAdminService, method, request);
+const translations = (method, request) => rpc(TranslationAdminService, method, request);
+const nodeWrite = body => fields(body, ['type', 'parentId', 'order', 'title', 'description', 'icon', 'displayAsNews', 'redirect', 'redirectUrl', 'hookIds', 'deleted']);
+const permissionWrite = body => fields(body, ['groupId', 'view', 'viewOtherTopics', 'createTopic', 'createPost', 'editTopic', 'editPost',
+    'deleteTopic', 'deletePost', 'lock', 'stick', 'move', 'merge', 'react', 'report']);
+const localeWrite = body => fields(body, ['code', 'displayName', 'nativeName', 'fallbackLocale', 'enabled', 'defaultLocale', 'sortOrder']);
+const entryWrite = body => fields(body, ['key', 'namespace', 'description', 'values']);
 
 export const forumApi = {
-    tree: () => request('/tree'),
-    latest: (page = 0, size = 10) => request(`/latest?page=${page}&size=${size}`),
-    forum: (forumId) => request(`/forums/${encodeURIComponent(forumId)}`),
-    topics: (forumId, page = 0, size = 20, labelId = '') =>
-        request(
-            `/forums/${encodeURIComponent(forumId)}/topics?page=${page}&size=${size}${labelId ? `&labelId=${encodeURIComponent(labelId)}` : ''}`
-        ),
-    topic: (topicId, incrementViews = true) =>
-        request(`/topics/${encodeURIComponent(topicId)}?incrementViews=${incrementViews}`),
-    posts: (topicId, page = 0, size = 20) =>
-        request(`/topics/${encodeURIComponent(topicId)}/posts?page=${page}&size=${size}`),
-    labels: (forumId) => request(`/public/labels${forumId ? `?forumId=${encodeURIComponent(forumId)}` : ''}`),
-    search: (query) => request(`/search?q=${encodeURIComponent(query)}&topicsLimit=30&postsLimit=30`),
-    createTopic: (forumId, body) =>
-        request(`/forums/${encodeURIComponent(forumId)}/topics`, { method: 'POST', body: JSON.stringify(body) }),
-    reply: (topicId, content) =>
-        request(`/topics/${encodeURIComponent(topicId)}/posts`, {
-            method: 'POST',
-            body: JSON.stringify({ content })
-        }),
-    updateTopic: (topicId, body) =>
-        request(`/topics/${encodeURIComponent(topicId)}`, { method: 'PATCH', body: JSON.stringify(body) }),
-    updatePost: (postId, content) =>
-        request(`/posts/${encodeURIComponent(postId)}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ content })
-        }),
-    deleteTopic: (topicId) => request(`/topics/${encodeURIComponent(topicId)}`, { method: 'DELETE' }),
-    deletePost: (postId) => request(`/posts/${encodeURIComponent(postId)}`, { method: 'DELETE' }),
-    lockTopic: (topicId, locked) =>
-        request(`/topics/${encodeURIComponent(topicId)}:${locked ? 'lock' : 'unlock'}`, { method: 'POST' }),
-    stickTopic: (topicId, sticky) =>
-        request(`/topics/${encodeURIComponent(topicId)}:${sticky ? 'stick' : 'unstick'}`, { method: 'POST' }),
-    moveTopic: (topicId, targetForumId) =>
-        request(`/topics/${encodeURIComponent(topicId)}:move`, {
-            method: 'POST',
-            body: JSON.stringify({ targetForumId })
-        }),
-    mergeTopic: (topicId, targetTopicId) =>
-        request(`/topics/${encodeURIComponent(topicId)}:merge`, {
-            method: 'POST',
-            body: JSON.stringify({ targetTopicId })
-        }),
-    react: (postId, reactionId) =>
-        request(`/posts/${encodeURIComponent(postId)}/reactions`, {
-            method: 'POST',
-            body: JSON.stringify({ reactionId })
-        }),
-    unreact: (postId, reactionId) =>
-        request(`/posts/${encodeURIComponent(postId)}/reactions/${encodeURIComponent(reactionId)}`, {
-            method: 'DELETE'
-        }),
-    toggleFollow: (topicId) => request(`/topics/${encodeURIComponent(topicId)}/follow`, { method: 'POST' }),
-    following: (page = 0, size = 20) => request(`/me/following?page=${page}&size=${size}`),
-    unfollowAll: () => request('/me/following', { method: 'DELETE' }),
-    markTopicRead: (topicId) => request(`/topics/${encodeURIComponent(topicId)}:read`, { method: 'POST' }),
-    preferences: () => request('/me/preferences'),
-    updatePreferences: (body) => request('/me/preferences', { method: 'PATCH', body: JSON.stringify(body) }),
-    notifications: (page = 0, size = 20, unreadOnly = false) =>
-        request(`/me/notifications?page=${page}&size=${size}&unreadOnly=${unreadOnly}`),
-    unreadCount: () => request('/me/notifications/unread-count'),
-    markNotificationRead: (notificationId) =>
-        request(`/me/notifications/${encodeURIComponent(notificationId)}:read`, { method: 'POST' }),
-    markAllNotificationsRead: () => request('/me/notifications:read-all', { method: 'POST' }),
-    userProfile: (userId, recentLimit = 8) =>
-        request(`/public/users/${encodeURIComponent(userId)}/profile?recentLimit=${recentLimit}`),
-    report: (body) => request('/reports', { method: 'POST', body: JSON.stringify(body) }),
+    tree: () => forum('getTree'),
+    latest: (page = 0, size = 10) => forum('listLatestTopics', { page, size }),
+    forum: forumId => forum('getForum', { forumId }),
+    topics: (forumId, page = 0, size = 20, labelId = '') => forum('listTopics', { forumId, page, size, labelId: optional(labelId) }),
+    topic: (topicId, incrementViews = true) => forum('getTopic', { topicId, incrementViews }),
+    posts: (topicId, page = 0, size = 20) => forum('listPosts', { topicId, page, size }),
+    labels: forumId => forum('listLabels', { forumId: optional(forumId) }).then(value => value.items),
+    search: query => forum('search', { query, topicsLimit: 30, postsLimit: 30 }),
+    createTopic: (forumId, body) => forum('createTopic', { ...fields(body, ['title', 'content', 'labelId']), forumId }),
+    reply: (topicId, content) => forum('createReply', { topicId, content }),
+    updateTopic: (topicId, body) => forum('patchTopic', { topicId, ...fields(body, ['title']), ...(Object.hasOwn(body, 'labelId') ? { labelId: body.labelId ?? '' } : {}) }),
+    updatePost: (postId, content) => forum('patchPost', { postId, content }),
+    deleteTopic: topicId => forum('deleteTopic', { topicId }),
+    deletePost: postId => forum('deletePost', { postId }),
+    lockTopic: (topicId, locked) => forum(locked ? 'lockTopic' : 'unlockTopic', { topicId }),
+    stickTopic: (topicId, sticky) => forum(sticky ? 'stickTopic' : 'unstickTopic', { topicId }),
+    moveTopic: (topicId, targetForumId) => forum('moveTopic', { topicId, targetForumId }),
+    mergeTopic: (topicId, targetTopicId) => forum('mergeTopic', { topicId, targetTopicId }),
+    react: (postId, reactionId) => forum('reactToPost', { postId, reactionId }),
+    unreact: (postId, reactionId) => forum('removePostReaction', { postId, reactionId }),
+    toggleFollow: topicId => forum('toggleFollow', { topicId }),
+    following: (page = 0, size = 20) => forum('listFollowing', { page, size }),
+    unfollowAll: () => forum('removeAllFollows'),
+    markTopicRead: topicId => forum('markTopicRead', { topicId }),
+    preferences: () => forum('getPreferences'),
+    updatePreferences: body => forum('patchPreferences', fields(body, ['autoFollowCreatedTopics', 'autoFollowRepliedTopics', 'notifyOnFollowedTopicReply', 'notifyOnReaction', 'topicsPerPage', 'postsPerPage'])),
+    notifications: (page = 0, size = 20, unreadOnly = false) => forum('listNotifications', { page, size, unreadOnly }),
+    unreadCount: () => forum('getUnreadCount'),
+    markNotificationRead: notificationId => forum('markNotificationRead', { notificationId }),
+    markAllNotificationsRead: () => forum('markAllNotificationsRead'),
+    userProfile: (userId, recentLimit = 8) => forum('getUserProfile', { userId, recentLimit }),
+    report: body => forum('createReport', fields(body, ['targetType', 'targetId', 'reason'])),
     admin: {
-        analytics: (days = 30) => request(`/admin/analytics?days=${encodeURIComponent(days)}`),
-        nodes: () => request('/admin/nodes'),
-        createNode: (body) => request('/admin/nodes', { method: 'POST', body: JSON.stringify(body) }),
-        updateNode: (nodeId, body) =>
-            request(`/admin/nodes/${encodeURIComponent(nodeId)}`, { method: 'PUT', body: JSON.stringify(body) }),
-        permissions: (forumId) => request(`/admin/nodes/${encodeURIComponent(forumId)}/permissions`),
-        permissionMatrix: () => request('/admin/permissions'),
-        savePermission: (forumId, body) =>
-            request(`/admin/nodes/${encodeURIComponent(forumId)}/permissions`, {
-                method: 'PUT',
-                body: JSON.stringify(body)
-            }),
-        deletePermission: (forumId, groupId) =>
-            request(`/admin/nodes/${encodeURIComponent(forumId)}/permissions/${encodeURIComponent(groupId)}`, {
-                method: 'DELETE'
-            }),
-        settings: () => request('/admin/settings'),
-        saveSettings: (body) => request('/admin/settings', { method: 'PATCH', body: JSON.stringify(body) }),
-        labels: (includeDeleted = false) => request(`/admin/labels?includeDeleted=${includeDeleted}`),
-        labelTypes: (includeDeleted = false) => request(`/admin/labels/types?includeDeleted=${includeDeleted}`),
-        saveLabelType: (typeId, body) =>
-            request(`/admin/labels/types/${encodeURIComponent(typeId)}`, {
-                method: 'PUT',
-                body: JSON.stringify(body)
-            }),
-        saveLabel: (labelId, body) =>
-            request(`/admin/labels/${encodeURIComponent(labelId)}`, { method: 'PUT', body: JSON.stringify(body) }),
-        reports: (page = 0, size = 20, status = '') =>
-            request(`/admin/reports?page=${page}&size=${size}${status ? `&status=${status}` : ''}`),
-        report: (reportId) => request(`/admin/reports/${encodeURIComponent(reportId)}`),
-        updateReport: (reportId, body) =>
-            request(`/admin/reports/${encodeURIComponent(reportId)}`, {
-                method: 'PATCH',
-                body: JSON.stringify(typeof body === 'string' ? { status: body } : body)
-            }),
-        translationsOverview: () => request('/admin/translations/overview'),
-        translationLocales: () => request('/admin/translations/locales'),
-        saveTranslationLocale: (code, body) =>
-            request(code ? `/admin/translations/locales/${encodeURIComponent(code)}` : '/admin/translations/locales', {
-                method: code ? 'PUT' : 'POST',
-                body: JSON.stringify(body)
-            }),
-        disableTranslationLocale: (code) =>
-            request(`/admin/translations/locales/${encodeURIComponent(code)}`, { method: 'DELETE' }),
-        translationEntries: ({ q = '', namespace = '', status = '', page = 0, size = 50 } = {}) => {
-            const params = new URLSearchParams({ page: String(page), size: String(size) });
-            if (q) params.set('q', q);
-            if (namespace) params.set('namespace', namespace);
-            if (status) params.set('status', status);
-            return request(`/admin/translations/entries?${params}`);
-        },
-        translationEntry: (id) => request(`/admin/translations/entries/${encodeURIComponent(id)}`),
-        saveTranslationEntry: (id, body) =>
-            request(id ? `/admin/translations/entries/${encodeURIComponent(id)}` : '/admin/translations/entries', {
-                method: id ? 'PUT' : 'POST',
-                body: JSON.stringify(body)
-            }),
-        setTranslationStatus: (id, status) =>
-            request(`/admin/translations/entries/${encodeURIComponent(id)}/status`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status })
-            }),
-        archiveTranslationEntry: (id) =>
-            request(`/admin/translations/entries/${encodeURIComponent(id)}`, { method: 'DELETE' })
+        analytics: (days = 30) => admin('getAnalytics', { days }),
+        auditLogs: (page = 0, size = 25) => admin('listAuditLogs', { page, size }),
+        nodes: () => admin('listNodes'),
+        createNode: body => admin('createNode', nodeWrite(body)),
+        updateNode: (nodeId, body) => admin('updateNode', { nodeId, node: nodeWrite(body) }),
+        deleteNode: nodeId => admin('deleteNode', { nodeId }),
+        permissions: forumId => admin('listGroupPermissions', { forumId }).then(value => value.permissions),
+        permissionMatrix: () => admin('getPermissionMatrix'),
+        savePermission: (forumId, body) => admin('upsertGroupPermission', { forumId, permission: permissionWrite(body) }),
+        deletePermission: (forumId, groupId) => admin('deleteGroupPermission', { forumId, groupId }),
+        settings: () => admin('getSettings'),
+        saveSettings: body => admin('patchSettings', {
+            ...fields(body, ['reactionsEnabled', 'maxTopicTitleLength', 'maxPostLength']),
+            ...(Object.hasOwn(body, 'bannedTerms') ? { bannedTerms: { values: body.bannedTerms ?? [] } } : {})
+        }),
+        labels: (includeDeleted = false) => admin('listTopicLabels', { includeDeleted }).then(value => value.items),
+        labelTypes: (includeDeleted = false) => admin('listLabelTypes', { includeDeleted }).then(value => value.items),
+        saveLabelType: (typeId, body) => admin('upsertLabelType', { typeId, labelType: fields(body, ['name', 'htmlTemplate', 'deleted']) }),
+        deleteLabelType: typeId => admin('deleteLabelType', { typeId }),
+        saveLabel: (labelId, body) => admin('upsertTopicLabel', { labelId, label: fields(body, ['name', 'labelTypeId', 'forumIds', 'groupIds', 'deleted']) }),
+        deleteLabel: labelId => admin('deleteTopicLabel', { labelId }),
+        reports: (page = 0, size = 20, status = '') => admin('listReports', { page, size, status: optional(status) }),
+        report: reportId => admin('getReport', { reportId }),
+        updateReport: (reportId, body) => admin('updateReport', { reportId, update: typeof body === 'string' ? { status: body }
+            : Object.fromEntries(Object.entries(fields(body, ['status', 'assignedToUserId', 'moderatorNote'])).map(([key, value]) => [key, value ?? ''])) }),
+        translationsOverview: () => translations('getOverview'),
+        translationLocales: () => translations('listLocales').then(value => value.items),
+        saveTranslationLocale: (code, body) => code ? translations('updateLocale', { code, locale: localeWrite(body) }) : translations('createLocale', localeWrite(body)),
+        disableTranslationLocale: code => translations('disableLocale', { code }),
+        translationEntries: ({ q = '', namespace = '', status = '', page = 0, size = 50 } = {}) => translations('listEntries', {
+            query: optional(q), namespace: optional(namespace), status: optional(status), page, size
+        }),
+        translationEntry: id => translations('getEntry', { id }),
+        saveTranslationEntry: (id, body) => id ? translations('updateEntry', { id, entry: entryWrite(body) }) : translations('createEntry', entryWrite(body)),
+        setTranslationStatus: (id, status) => translations('updateEntryStatus', { id, status }),
+        archiveTranslationEntry: id => translations('archiveEntry', { id })
     }
 };
 
+const profileCache = new Map();
+const unavailableProfile = playerId => ({ playerId, username: 'Profil nicht verfügbar', rank: null, unavailable: true,
+    avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId || 'Steve')}/128` });
 export async function getPublicUser(playerId) {
-    if (!playerId)
-        return {
-            playerId: '',
-            username: 'Unbekannter Spieler',
-            rank: null,
-            avatarUrl: 'https://mc-heads.net/avatar/Steve/128'
-        };
+    if (!playerId) return unavailableProfile('');
     if (profileCache.has(playerId)) return profileCache.get(playerId);
-    const pending = fetch(`${API}/user/public/users/${encodeURIComponent(playerId)}`)
-        .then((response) => (response.ok ? response.json() : Promise.reject()))
-        .then((profile) => ({
-            ...profile,
-            avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(profile.playerId || playerId)}/128`
-        }))
-        .catch(() => ({
-            playerId,
-            username: `${playerId.slice(0, 8)}…`,
-            rank: null,
-            avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(playerId)}/128`
-        }));
-    profileCache.set(playerId, pending);
-    return pending;
+    const pending = userApi.byId(playerId).then(profile => {
+        if (!profile) throw new Error('Profil nicht verfügbar');
+        return { ...profile, avatarUrl: `https://mc-heads.net/avatar/${encodeURIComponent(profile.playerId || playerId)}/128` };
+    }).catch(() => { profileCache.delete(playerId); return unavailableProfile(playerId); });
+    if (profileCache.size >= 128) profileCache.delete(profileCache.keys().next().value);
+    profileCache.set(playerId, pending); return pending;
 }
-
-export async function getPermissionGroups() {
-    const response = await authenticatedFetch(`${API}/user/permissions/groups`);
-    if (!response.ok) throw new Error('Benutzergruppen konnten nicht geladen werden.');
-    return response.json();
-}
+export const getPermissionGroups = () => rpc(PermissionService, 'listGroups').then(value => value.groups);

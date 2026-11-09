@@ -39,6 +39,11 @@ export declare type Incident = Message<"seriuxmod.status.v1.Incident"> & {
    * @generated from field: string message = 5;
    */
   message: string;
+
+  /**
+   * @generated from field: string region_id = 6;
+   */
+  regionId: string;
 };
 
 /**
@@ -100,6 +105,11 @@ export declare type PublicServiceStatus = Message<"seriuxmod.status.v1.PublicSer
    * @generated from field: int64 response_time_ms = 10;
    */
   responseTimeMs: bigint;
+
+  /**
+   * @generated from field: string region_id = 11;
+   */
+  regionId: string;
 };
 
 /**
@@ -146,6 +156,11 @@ export declare type StatusSummary = Message<"seriuxmod.status.v1.StatusSummary">
    * @generated from field: repeated seriuxmod.status.v1.Incident incidents = 7;
    */
   incidents: Incident[];
+
+  /**
+   * @generated from field: repeated seriuxmod.status.v1.RegionStatusSummary regions = 8;
+   */
+  regions: RegionStatusSummary[];
 };
 
 /**
@@ -169,6 +184,118 @@ export declare type ListIncidentsResponse = Message<"seriuxmod.status.v1.ListInc
  * Use `create(ListIncidentsResponseSchema)` to create a new message.
  */
 export declare const ListIncidentsResponseSchema: GenMessage<ListIncidentsResponse>;
+
+/**
+ * Region IDs are configured deployment identities, not inferred geolocation.
+ * Existing targets without an assignment belong to the configured default (global).
+ *
+ * @generated from message seriuxmod.status.v1.StatusRegion
+ */
+export declare type StatusRegion = Message<"seriuxmod.status.v1.StatusRegion"> & {
+  /**
+   * @generated from field: string region_id = 1;
+   */
+  regionId: string;
+
+  /**
+   * @generated from field: string display_name = 2;
+   */
+  displayName: string;
+
+  /**
+   * @generated from field: int32 sort_order = 3;
+   */
+  sortOrder: number;
+};
+
+/**
+ * Describes the message seriuxmod.status.v1.StatusRegion.
+ * Use `create(StatusRegionSchema)` to create a new message.
+ */
+export declare const StatusRegionSchema: GenMessage<StatusRegion>;
+
+/**
+ * @generated from message seriuxmod.status.v1.ListRegionsResponse
+ */
+export declare type ListRegionsResponse = Message<"seriuxmod.status.v1.ListRegionsResponse"> & {
+  /**
+   * @generated from field: repeated seriuxmod.status.v1.StatusRegion regions = 1;
+   */
+  regions: StatusRegion[];
+};
+
+/**
+ * Describes the message seriuxmod.status.v1.ListRegionsResponse.
+ * Use `create(ListRegionsResponseSchema)` to create a new message.
+ */
+export declare const ListRegionsResponseSchema: GenMessage<ListRegionsResponse>;
+
+/**
+ * @generated from message seriuxmod.status.v1.GetRegionSummaryRequest
+ */
+export declare type GetRegionSummaryRequest = Message<"seriuxmod.status.v1.GetRegionSummaryRequest"> & {
+  /**
+   * @generated from field: string region_id = 1;
+   */
+  regionId: string;
+};
+
+/**
+ * Describes the message seriuxmod.status.v1.GetRegionSummaryRequest.
+ * Use `create(GetRegionSummaryRequestSchema)` to create a new message.
+ */
+export declare const GetRegionSummaryRequestSchema: GenMessage<GetRegionSummaryRequest>;
+
+/**
+ * @generated from message seriuxmod.status.v1.RegionStatusSummary
+ */
+export declare type RegionStatusSummary = Message<"seriuxmod.status.v1.RegionStatusSummary"> & {
+  /**
+   * @generated from field: seriuxmod.status.v1.StatusRegion region = 1;
+   */
+  region?: StatusRegion | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp generated_at = 2;
+   */
+  generatedAt?: Timestamp | undefined;
+
+  /**
+   * @generated from field: string overall_status = 3;
+   */
+  overallStatus: string;
+
+  /**
+   * @generated from field: int32 monitored_services = 4;
+   */
+  monitoredServices: number;
+
+  /**
+   * @generated from field: int32 healthy_services = 5;
+   */
+  healthyServices: number;
+
+  /**
+   * @generated from field: int32 incident_count = 6;
+   */
+  incidentCount: number;
+
+  /**
+   * @generated from field: repeated seriuxmod.status.v1.PublicServiceStatus services = 7;
+   */
+  services: PublicServiceStatus[];
+
+  /**
+   * @generated from field: repeated seriuxmod.status.v1.Incident incidents = 8;
+   */
+  incidents: Incident[];
+};
+
+/**
+ * Describes the message seriuxmod.status.v1.RegionStatusSummary.
+ * Use `create(RegionStatusSummarySchema)` to create a new message.
+ */
+export declare const RegionStatusSummarySchema: GenMessage<RegionStatusSummary>;
 
 /**
  * Public, non-sensitive state change delivered through the central realtime stream.
@@ -220,6 +347,13 @@ export declare type StatusEvent = Message<"seriuxmod.status.v1.StatusEvent"> & {
    * @generated from field: google.protobuf.Timestamp occurred_at = 9;
    */
   occurredAt?: Timestamp | undefined;
+
+  /**
+   * Empty for platform-wide changes; otherwise the exact affected region.
+   *
+   * @generated from field: string region_id = 10;
+   */
+  regionId: string;
 };
 
 /**
@@ -974,6 +1108,11 @@ export enum StatusEventKind {
    * @generated from enum value: STATUS_EVENT_KIND_INCIDENT_RESOLVED = 4;
    */
   INCIDENT_RESOLVED = 4,
+
+  /**
+   * @generated from enum value: STATUS_EVENT_KIND_REGION_CHANGED = 5;
+   */
+  REGION_CHANGED = 5,
 }
 
 /**

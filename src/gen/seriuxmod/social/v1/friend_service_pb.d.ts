@@ -48,6 +48,22 @@ export declare const SocialFriendService: GenService<{
     output: typeof ListFriendRequestsResponseSchema;
   },
   /**
+   * @generated from rpc seriuxmod.social.v1.SocialFriendService.ListOutgoingRequests
+   */
+  listOutgoingRequests: {
+    methodKind: "unary";
+    input: typeof EmptySchema;
+    output: typeof ListFriendRequestsResponseSchema;
+  },
+  /**
+   * @generated from rpc seriuxmod.social.v1.SocialFriendService.CancelFriendRequest
+   */
+  cancelFriendRequest: {
+    methodKind: "unary";
+    input: typeof FriendRequestIdRequestSchema;
+    output: typeof EmptySchema;
+  },
+  /**
    * @generated from rpc seriuxmod.social.v1.SocialFriendService.ListFriends
    */
   listFriends: {

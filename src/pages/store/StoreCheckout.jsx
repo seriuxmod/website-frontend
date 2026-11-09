@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaArrowLeft, FaCircleInfo, FaCreditCard, FaFloppyDisk, FaLock } from 'react-icons/fa6';
 import { Link, useNavigate } from 'react-router-dom';
 import useStoreCart from '../../hooks/useStoreCart';
 import { beginLogin, getAuthenticatedUser } from '../../lib/auth';
 import { formatStorePrice, storeApi } from '../../lib/storeApi';
+import { submitStoreCheckout } from '../../lib/storeCheckout.js';
+import { AdminPendingState, AdminUnavailableState } from '../../components/admin/AdminUi.jsx';
 
 const emptyProfile = {
     email: '',
@@ -31,9 +33,13 @@ export default function StoreCheckout() {
     const [selectedMethodId, setSelectedMethodId] = useState('');
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
+    const [needsReview, setNeedsReview] = useState(false);
+    const [retry, setRetry] = useState(0);
+    const orderCommand = useRef(null);
 
     useEffect(() => {
         let active = true;
+        setState(current => ({ ...current, loading: true, error: '' }));
         const requests = [storeApi.config(), storeApi.products()];
         if (user) requests.push(storeApi.billingProfile());
         Promise.all(requests)
@@ -51,7 +57,7 @@ export default function StoreCheckout() {
         return () => {
             active = false;
         };
-    }, [user?.playerId]);
+    }, [user?.playerId, retry]);
 
     const lines = useMemo(
         () =>
@@ -81,28 +87,36 @@ export default function StoreCheckout() {
     const submit = async (event) => {
         event.preventDefault();
         if (!user) return beginLogin('/store/checkout');
-        if (!state.config?.checkoutEnabled) return;
+        if (!state.config?.checkoutEnabled || saving || needsReview) return;
         setSaving(true);
         setMessage('');
         try {
-            await storeApi.updateBillingProfile(profile);
-            const order = await storeApi.createOrder({
+            const body = {
                 recipientUserId: null,
                 products: cart.items,
                 termsAccepted,
                 digitalContentConsent
-            });
+            };
+            const fingerprint = JSON.stringify(body);
+            if (orderCommand.current?.fingerprint !== fingerprint) orderCommand.current = { fingerprint, key: crypto.randomUUID() };
             const paymentMethod = state.config.paymentMethods?.find((method) => method.id === selectedMethodId);
-            if (!paymentMethod) throw new Error('Bitte wähle eine verfügbare Zahlungsmethode aus.');
-            await storeApi.createPayment(order.id, paymentMethod.provider, paymentMethod.id);
+            const order = await submitStoreCheckout({ profile, order: { ...body, idempotencyKey: orderCommand.current.key }, paymentMethod });
             cart.clear();
             navigate('/store/account', { state: { orderCreated: order.id } });
         } catch (error) {
-            setMessage(error.message);
+            if (error.name !== 'AbortError') {
+                setMessage(`${error.message} Bestell- und Zahlungszustand zuerst unter „Deine Käufe“ prüfen. Keine automatische Wiederholung.`);
+                setNeedsReview(true);
+            }
         } finally {
             setSaving(false);
         }
     };
+
+    if (state.loading || state.error) return <main className="min-h-screen px-4 pb-24 pt-36 text-white"><div className="mx-auto max-w-4xl">
+        <h1 className="mb-6 font-display text-3xl font-bold">Checkout</h1>
+        {state.error ? <AdminUnavailableState text={state.error} onRetry={() => setRetry(value => value + 1)} /> : <AdminPendingState title="Katalog und Rechnungsdaten werden geladen" />}
+    </div></main>;
 
     return (
         <main className="min-h-screen bg-[#090a0d] px-4 pb-24 pt-32 text-white sm:px-6 sm:pt-36">
@@ -304,7 +318,7 @@ export default function StoreCheckout() {
                             className="forum-button-primary mt-5 w-full"
                             disabled={
                                 !user ||
-                                saving ||
+                                saving || needsReview ||
                                 lines.length === 0 ||
                                 !termsAccepted ||
                                 !digitalContentConsent ||

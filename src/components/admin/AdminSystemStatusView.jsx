@@ -156,7 +156,6 @@ export default function AdminSystemStatusView() {
             setScaleOperation({ serviceName: service.serviceName, error: null });
             try {
                 await statusAdminApi.scaleService(service.serviceName, replicas);
-                await new Promise((resolve) => window.setTimeout(resolve, 1200));
                 await load(true);
                 setScaleOperation({ serviceName: null, error: null });
             } catch (scaleError) {
@@ -271,9 +270,9 @@ function PlatformCapacity({ platform }) {
 
     if (!platform?.cpuCores) {
         return (
-            <AdminPendingState
-                title="Docker-Kapazität wird ermittelt"
-                text="Die Docker Engine hat noch keine Host- und Node-Ressourcen geliefert."
+            <AdminEmptyState
+                title="Keine Docker-Kapazität gemeldet"
+                text="Dieser Status-Snapshot enthält keine auswertbaren Host- und Node-Ressourcen. Über „Neu laden“ kann die Quelle erneut abgefragt werden."
             />
         );
     }
@@ -361,10 +360,9 @@ function PlatformCapacity({ platform }) {
                             height={310}
                         />
                     ) : (
-                        <AdminPendingState
-                            compact
-                            title="Messhistorie wird aufgebaut"
-                            text="Für das Streuungsband werden mindestens zwei Live-Snapshots benötigt."
+                        <AdminEmptyState
+                            title="Noch keine ausreichende Messhistorie"
+                            text="Der Snapshot enthält weniger als zwei Messpunkte. Für das Streuungsband werden mindestens zwei benötigt."
                         />
                     )}
                 </div>
@@ -845,10 +843,9 @@ function TopologyCard({ topology, generatedAt }) {
                 </>
             ) : (
                 <div className="p-5 sm:p-6">
-                    <AdminPendingState
-                        compact
-                        title="Topologie wird ermittelt"
-                        text="Docker hat noch keine Netzwerk- oder Task-Zuordnungen gemeldet."
+                    <AdminEmptyState
+                        title="Keine Topologie gemeldet"
+                        text="Der Status-Snapshot enthält keine Netzwerk- oder Task-Zuordnungen."
                     />
                 </div>
             )}
@@ -1058,13 +1055,12 @@ function ServiceLoadDonut({ services }) {
                 </div>
             ) : (
                 <div className="p-5 sm:p-6">
-                    <AdminPendingState
-                        compact
-                        title={`${config.label}-Metrik wird ermittelt`}
+                    <AdminEmptyState
+                        title={services.some(service => service?.[config.available] && Number.isFinite(config.value(service))) ? `Keine positiven ${config.label}-Anteile` : `${config.label}-Metrik nicht verfügbar`}
                         text={
                             factor === 'networking'
-                                ? 'Für die Netzwerkgeschwindigkeit werden zwei Docker-Snapshots benötigt.'
-                                : 'Die Docker Engine hat für diese Metrik noch keine verwertbaren Werte geliefert.'
+                                ? 'Dieser Snapshot enthält keine darstellbaren Netzwerkanteile. Für Geschwindigkeiten werden mindestens zwei Messpunkte benötigt.'
+                                : 'Dieser Snapshot enthält keine positiven, als verfügbar markierten Messwerte für diese Metrik.'
                         }
                     />
                 </div>

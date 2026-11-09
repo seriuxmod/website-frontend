@@ -95,7 +95,7 @@ export default function PlayersAdminView({ user }) {
     return (
         <AdminManagementPage
             backend="User-Service"
-            description="Registrierte SeriuxMod-Konten, Sicherheitsmerkmale, Präsenz und Berechtigungszuweisungen aus dem produktiven User-Service."
+            description="Registrierte SeriuxMod-Konten, Sicherheitsmerkmale, Präsenz und Berechtigungszuweisungen aus dem angebundenen User-Service."
             error={error}
             eyebrow="SPIELERVERZEICHNIS"
             icon={FaUsers}
@@ -331,7 +331,7 @@ function ManualPlayerActions({ canLock, canWriteDirect, canAssign, groups }) {
                                 className="admin-forum-input min-h-24 resize-y"
                                 maxLength={500}
                                 onChange={(event) => setLockReason(event.target.value)}
-                                placeholder="Begründung oder interne Notiz"
+                                placeholder="Für den Nutzer sichtbare Sperrbegründung"
                                 value={lockReason}
                             />
                             <button className="admin-forum-secondary w-full" type="submit">

@@ -15,35 +15,32 @@ import {
 import { Link } from 'react-router-dom';
 import HomeBlogSlider from './HomeBlogSlider';
 import LauncherShowcase, { LauncherWindow } from './LauncherShowcase';
-
-const API = 'https://api.seriuxmod.net/api/v1';
+import { statusApi } from '../../lib/statusAdminApi.js';
+import { statusPresentation } from '../../lib/statusPresentation.js';
 
 function SystemStatus() {
-    const [online, setOnline] = useState(null);
+    const [state, setState] = useState({ loading: true, error: false, status: 'UNKNOWN' });
     useEffect(() => {
         const controller = new AbortController();
-        fetch(`${API}/status/summary`, { signal: controller.signal })
-            .then((response) => (response.ok ? response.json() : Promise.reject()))
-            .then((data) => {
-                const core = data.services?.filter((service) => service.group === 'seriuxmod') ?? [];
-                setOnline(core.length > 0 && core.every((service) => service.state === 'UP'));
-            })
-            .catch(() => setOnline(false));
+        statusApi.summary(controller.signal)
+            .then(data => { if (!controller.signal.aborted) setState({ loading: false, error: false, status: data.overallStatus }); })
+            .catch(error => { if (error.name !== 'AbortError' && !controller.signal.aborted) setState({ loading: false, error: true, status: 'UNKNOWN' }); });
         return () => controller.abort();
     }, []);
+    const view = statusPresentation(state.status);
     return (
         <Link to="/status" className="home-status-pill inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs">
             <i
-                className={`h-2 w-2 rounded-full ${online === false ? 'bg-amber-400' : 'bg-emerald-400 shadow-[0_0_0_4px_rgba(52,211,153,.12)]'}`}
+                className={`h-2 w-2 rounded-full ${state.loading ? 'animate-pulse bg-zinc-500' : view.dot}`}
             />
-            {online ? 'Alle Kernsysteme online' : 'Systemstatus ansehen'}
+            {state.loading ? 'Systemstatus wird geladen' : state.error ? 'Systemstatus nicht verfügbar' : `Systemstatus: ${view.label}`}
         </Link>
     );
 }
 
 const proofPoints = [
-    { icon: FaLayerGroup, value: '212', label: 'Module im aktuellen Pack' },
-    { icon: FaGamepad, value: '1.21.4', label: 'Aktuelle Minecraft-Basis' },
+    { icon: FaLayerGroup, value: 'Modpack', label: 'Mods und Konfiguration zusammen' },
+    { icon: FaGamepad, value: 'Minecraft', label: 'Versionen im Launcher auswählen' },
     { icon: FaRotate, value: 'Automatisch', label: 'Updates und Synchronisierung' },
     { icon: FaShieldHalved, value: 'Eine Seriux-ID', label: 'Für Client und Community' }
 ];
@@ -160,7 +157,7 @@ export default function Home() {
                     <div className="landing-launcher relative z-10 mx-auto w-full max-w-[900px]">
                         <LauncherWindow hero />
                         <p className="mt-5 text-center text-[9px] font-bold uppercase tracking-[.18em] text-zinc-400/70">
-                            Der aktuelle SeriuxMod Launcher · Modpack v5.2.0
+                            Einblick in den SeriuxMod Launcher
                         </p>
                     </div>
                 </div>

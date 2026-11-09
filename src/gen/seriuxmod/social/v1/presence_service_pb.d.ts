@@ -5,7 +5,7 @@
 import type { GenFile, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 import type { GetPublicPresenceRequestSchema, OwnPresenceSchema, PublicPresenceSchema, SetPresenceStatusRequestSchema } from "./presence_model_pb.js";
-import type { ClientActivityResultSchema, ClientActivitySchema, GetClientActivityRequestSchema, ReportClientActivityRequestSchema } from "./activity_model_pb.js";
+import type { ClientActivityResultSchema, ClientActivitySchema, CloseNetworkActivityRequestSchema, GetClientActivityRequestSchema, NetworkActivityContextSchema, NetworkActivityLeaseSchema, ReportClientActivityRequestSchema, UpdateNetworkActivityRequestSchema } from "./activity_model_pb.js";
 
 /**
  * Describes the file seriuxmod/social/v1/presence_service.proto.
@@ -55,6 +55,30 @@ export declare const PresenceService: GenService<{
     methodKind: "unary";
     input: typeof GetClientActivityRequestSchema;
     output: typeof ClientActivityResultSchema;
+  },
+  /**
+   * @generated from rpc seriuxmod.social.v1.PresenceService.OpenNetworkActivity
+   */
+  openNetworkActivity: {
+    methodKind: "unary";
+    input: typeof NetworkActivityContextSchema;
+    output: typeof NetworkActivityLeaseSchema;
+  },
+  /**
+   * @generated from rpc seriuxmod.social.v1.PresenceService.UpdateNetworkActivity
+   */
+  updateNetworkActivity: {
+    methodKind: "unary";
+    input: typeof UpdateNetworkActivityRequestSchema;
+    output: typeof NetworkActivityLeaseSchema;
+  },
+  /**
+   * @generated from rpc seriuxmod.social.v1.PresenceService.CloseNetworkActivity
+   */
+  closeNetworkActivity: {
+    methodKind: "unary";
+    input: typeof CloseNetworkActivityRequestSchema;
+    output: typeof EmptySchema;
   },
   /**
    * @generated from rpc seriuxmod.social.v1.PresenceService.Heartbeat

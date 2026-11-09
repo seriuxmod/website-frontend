@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -28,13 +28,14 @@ import StoreAccount from './pages/store/StoreAccount';
 import Security from './pages/platform/Security';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminLayout from './components/admin/AdminLayout';
+import { AdminPendingState } from './components/admin/AdminUi.jsx';
 import VerifyEmail from './pages/platform/VerifyEmail';
 import ResetPassword from './pages/platform/ResetPassword';
 import ForgotPassword from './pages/platform/ForgotPassword';
 import SystemStatus from './pages/status/SystemStatus';
 import SocialHub from './pages/social/SocialWorkspace';
+import { getSessionGeneration } from './lib/auth.js';
 
-const AdminModulePreview = lazy(() => import('./pages/admin/AdminModulePreview'));
 const AdminCommerceView = lazy(() => import('./components/admin/commerce/AdminCommerceView'));
 const AdminForumView = lazy(() => import('./components/admin/forum/AdminForumView'));
 const AdminSystemStatusView = lazy(() => import('./components/admin/AdminSystemStatusView'));
@@ -42,13 +43,22 @@ const AdminTeamView = lazy(() => import('./components/admin/team/AdminTeamView')
 const AdminManagementView = lazy(() => import('./components/admin/management/AdminManagementView'));
 const AdminSocialView = lazy(() => import('./components/admin/management/AdminSocialView'));
 const UserAdministrationView = lazy(() => import('./components/admin/management/UserAdministrationView'));
+const SkinCatalog = lazy(() => import('./pages/community/SkinCatalog.jsx'));
+const SkinCatalogAdminView = lazy(() => import('./components/admin/management/SkinCatalogAdminView.jsx'));
+const PublicServers = lazy(() => import('./pages/community/PublicServers.jsx'));
 
 export default function App() {
     useScrollToTop();
+    const [session, setSession] = useState(getSessionGeneration);
+    useEffect(() => {
+        const changed = () => setSession(getSessionGeneration());
+        window.addEventListener('seriux-auth-changed', changed);
+        return () => window.removeEventListener('seriux-auth-changed', changed);
+    }, []);
     return (
         <div className="app-shell min-h-screen">
-            <Navbar />
-            <Routes>
+            <Navbar key={`navbar-${session}`} />
+            <Routes key={`routes-${session}`}>
                 <Route path="/" element={<Home />} exact />
                 <Route path="/disclosure" element={<Disclosure />} exact />
                 <Route path="/privacy" element={<Privacy />} exact />
@@ -65,6 +75,9 @@ export default function App() {
                 <Route path="/forum/account" element={<ForumAccount />} />
                 <Route path="/forum/user/:userId" element={<LegacyForumProfileRedirect />} />
                 <Route path="/store" element={<StoreIndex />} />
+                <Route path="/community/skins" element={<Suspense fallback={<main className="px-5 pb-24 pt-36"><AdminPendingState title="Skin-Bibliothek wird geöffnet" /></main>}><SkinCatalog /></Suspense>} />
+                <Route path="/skins" element={<Navigate to="/community/skins" replace />} />
+                <Route path="/community/servers" element={<Suspense fallback={<main className="px-5 pb-24 pt-36"><AdminPendingState title="Serververzeichnis wird geöffnet" /></main>}><PublicServers /></Suspense>} />
                 <Route path="/store/checkout" element={<StoreCheckout />} />
                 <Route path="/store/account" element={<StoreAccount />} />
                 <Route path="/admin" element={<AdminLayout />}>
@@ -78,6 +91,7 @@ export default function App() {
                     <Route path="players" element={<UserAdministrationView module="players" />} />
                     <Route path="permissions" element={<UserAdministrationView module="permissions" />} />
                     <Route path="cosmetics" element={<AdminManagementView module="cosmetics" />} />
+                    <Route path="skins" element={<SkinCatalogAdminView />} />
                     <Route path="friends" element={<AdminSocialView module="friends" />} />
                     <Route path="clans" element={<AdminSocialView module="clans" />} />
                     <Route path="parties" element={<AdminSocialView module="parties" />} />
@@ -91,13 +105,13 @@ export default function App() {
                         element={<UserAdministrationView module="moderation-settings" />}
                     />
                     <Route path="forum/analytics" element={<AdminForumView module="forum-analytics" />} />
-                    <Route path="forum/structure" element={<AdminModulePreview module="forum-structure" />} />
-                    <Route path="forum/permissions" element={<AdminModulePreview module="forum-permissions" />} />
-                    <Route path="forum/labels" element={<AdminModulePreview module="forum-labels" />} />
-                    <Route path="forum/reports" element={<AdminModulePreview module="forum-reports" />} />
-                    <Route path="forum/suggestions" element={<AdminModulePreview module="forum-suggestions" />} />
-                    <Route path="forum/blog" element={<AdminModulePreview module="forum-blog" />} />
-                    <Route path="forum/settings" element={<AdminModulePreview module="forum-settings" />} />
+                    <Route path="forum/structure" element={<AdminForumView module="forum-structure" />} />
+                    <Route path="forum/permissions" element={<AdminForumView module="forum-permissions" />} />
+                    <Route path="forum/labels" element={<AdminForumView module="forum-labels" />} />
+                    <Route path="forum/reports" element={<AdminForumView module="forum-reports" />} />
+                    <Route path="forum/suggestions" element={<AdminForumView module="forum-suggestions" />} />
+                    <Route path="forum/blog" element={<AdminForumView module="forum-blog" />} />
+                    <Route path="forum/settings" element={<AdminForumView module="forum-settings" />} />
                     <Route path="commerce" element={<AdminCommerceView module="commerce" />} />
                     <Route path="commerce/customers" element={<AdminCommerceView module="customers" />} />
                     <Route path="commerce/catalog" element={<AdminCommerceView module="catalog" />} />

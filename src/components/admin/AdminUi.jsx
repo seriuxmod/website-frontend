@@ -35,6 +35,7 @@ export function AdminMetricCard({
     detail,
     tone = 'orange',
     pending = false,
+    error = '',
     pendingTitle = 'Daten werden geladen',
     pendingText = 'Quelle wartet auf eine Antwort'
 }) {
@@ -52,7 +53,13 @@ export function AdminMetricCard({
                         <Icon />
                     </span>
                 </div>
-                {pending ? (
+                {error ? (
+                    <div className="flex min-h-12 items-center gap-3" role="alert">
+                        <FaCircleExclamation className="shrink-0 text-red-300" />
+                        <div><b className="block text-sm text-zinc-200">Nicht verfügbar</b>
+                            <span className="mt-1 block text-[10px] text-zinc-500">{error}</span></div>
+                    </div>
+                ) : pending ? (
                     <div className="flex min-h-12 items-center gap-3" role="status" aria-live="polite">
                         <span className={`grid h-9 w-9 place-items-center rounded-full ${styles.icon}`}>
                             <FaSpinner className="animate-spin" />
@@ -65,7 +72,7 @@ export function AdminMetricCard({
                 ) : (
                     <div>
                         <strong className="block break-words font-display text-[clamp(1.45rem,2vw,2rem)] font-bold leading-none text-white">
-                            {value}
+                            {value ?? 'Nicht verfügbar'}
                         </strong>
                         <span className={`mt-2 block text-[11px] font-semibold ${styles.detail}`}>{detail}</span>
                     </div>
@@ -73,6 +80,16 @@ export function AdminMetricCard({
             </div>
         </article>
     );
+}
+
+export function AdminUnavailableState({ title = 'Datenquelle nicht verfügbar', text = 'Die Abfrage ist fehlgeschlagen.', onRetry }) {
+    return <div className="flex min-h-32 items-center justify-center rounded-2xl border border-red-400/15 bg-red-400/[.025] px-5 py-8 text-center" role="alert">
+        <div><FaCircleExclamation className="mx-auto text-red-300" />
+            <b className="mt-3 block text-sm text-zinc-200">{title}</b>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">{text}</p>
+            {onRetry && <button type="button" className="mt-4 text-xs font-bold text-orange-300" onClick={onRetry}>Erneut versuchen</button>}
+        </div>
+    </div>;
 }
 
 export function AdminPendingState({

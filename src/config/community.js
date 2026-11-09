@@ -1,6 +1,17 @@
-import { FaAt, FaCircleQuestion, FaLightbulb, FaMedal } from 'react-icons/fa6';
+import { FaAt, FaCircleQuestion, FaLightbulb, FaMedal, FaPalette, FaServer } from 'react-icons/fa6';
 
 export const communityItems = [
+    {
+        slug: 'servers', label: 'Server', description: 'Freigegebene Minecraft-Server entdecken', icon: FaServer,
+        eyebrow: 'SERVERVERZEICHNIS', title: 'Minecraft-Server entdecken',
+        copy: 'Öffentliche Einträge aus dem Social-Katalog.', features: ['Freigegebene Einträge', 'Optionale Spielerzahlen']
+    },
+    {
+        slug: 'skins', label: 'Skins', description: 'Veröffentlichte Skin-Texturen entdecken', icon: FaPalette,
+        eyebrow: 'GEMEINSAME BIBLIOTHEK', title: 'Skin-Texturen entdecken',
+        copy: 'Explizit veröffentlichte, exakt deduplizierte Texturen ohne öffentliche Herkunftsbezüge.',
+        features: ['Veröffentlichter Katalog', 'Exakte Pixelidentität', 'Keine öffentlichen Herkunfts-UUIDs']
+    },
     {
         slug: 'badges',
         label: 'Badges',

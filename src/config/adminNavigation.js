@@ -16,6 +16,7 @@ import {
     FaMoneyCheckDollar,
     FaNoteSticky,
     FaObjectGroup,
+    FaPalette,
     FaPeopleGroup,
     FaReceipt,
     FaServer,
@@ -106,6 +107,13 @@ export const adminNavigationGroups = [
                 description: 'Konten und Profile verwalten.',
                 icon: FaUsers,
                 permissions: ['users.read.any', 'users.lock', 'permissions.user.write', 'permissions.assignment.write']
+            },
+            {
+                to: '/admin/skins',
+                label: 'Skin-Katalog',
+                description: 'Texturen, begrenzte Ausgangslisten und Veröffentlichungen prüfen.',
+                icon: FaPalette,
+                permissions: ['forum.skins.read', 'forum.skins.import', 'forum.skins.ingest', 'forum.skins.publish']
             },
             {
                 to: '/admin/permissions',

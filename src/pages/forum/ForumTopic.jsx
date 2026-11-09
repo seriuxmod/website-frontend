@@ -14,7 +14,7 @@ import {
     FaUnlock
 } from 'react-icons/fa6';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser } from '../../lib/auth';
+import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, getSessionGeneration, assertSessionGeneration } from '../../lib/auth';
 import { forumApi } from '../../lib/forumApi';
 import {
     ForumError,
@@ -47,13 +47,16 @@ export default function ForumTopic() {
     });
 
     const load = useCallback(async () => {
+        const session = getSessionGeneration();
         setState((current) => ({ ...current, loading: true, error: '' }));
         try {
             const topic = await forumApi.topic(topicId, page === 0);
+            assertSessionGeneration(session);
             const [forum, posts] = await Promise.all([
                 forumApi.forum(topic.forumId),
                 forumApi.posts(topicId, page, pageSize)
             ]);
+            assertSessionGeneration(session);
             let following = false;
             if (getAuthenticatedUser()) {
                 try {
@@ -62,6 +65,7 @@ export default function ForumTopic() {
                     /* optional state */
                 }
             }
+            assertSessionGeneration(session);
             if (getAuthenticatedUser()) forumApi.markTopicRead(topicId).catch(() => {});
             setState({ loading: false, topic, forum, posts, following, error: '' });
         } catch (reason) {

@@ -1,173 +1,90 @@
-import { authenticatedFetch } from './auth';
+import { StoreCatalogService } from '../gen/seriuxmod/store/v1/catalog_service_pb.js';
+import { StoreCustomerService } from '../gen/seriuxmod/store/v1/checkout_service_pb.js';
+import { StoreAdminService } from '../gen/seriuxmod/store/v1/admin_service_pb.js';
+import { AdminCosmeticService } from '../gen/seriuxmod/store/v1/cosmetic_service_pb.js';
+import { websiteRpc as rpc, optional, fields } from './grpc/websiteRpc.js';
 
-const STORE_API = 'https://api.seriuxmod.net/api/v1/store';
-
-async function request(path, options = {}, authenticated = false) {
-    const execute = authenticated ? authenticatedFetch : fetch;
-    const response = await execute(`${STORE_API}${path}`, {
-        ...options,
-        headers: {
-            ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-            ...(options.headers || {})
-        }
-    });
-    if (response.status === 204) return null;
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-        const error = new Error(payload.message || payload.detail || 'Die Store-Anfrage ist fehlgeschlagen.');
-        error.status = response.status;
-        throw error;
-    }
-    return payload;
-}
+const catalog = (method, request = {}) => rpc(StoreCatalogService, method, request, { public: true });
+const customer = (method, request = {}) => rpc(StoreCustomerService, method, request);
+const admin = (method, request = {}) => rpc(StoreAdminService, method, request);
+const cosmetics = (method, request = {}) => rpc(AdminCosmeticService, method, request);
+const categoryWrite = body => fields(body, ['name', 'description', 'imageUrl', 'parentCategoryId', 'onlySubcategories', 'hidden', 'disabled', 'order']);
+const fieldWrite = body => fields(body, ['identifier', 'description', 'typeId', 'required', 'min', 'max', 'options', 'regex', 'defaultValue', 'order']);
+const productWrite = body => fields(body, ['categoryId', 'name', 'priceCents', 'currency', 'description', 'imageUrl', 'globalLimit', 'userLimit',
+    'requiredProductIds', 'requiredGroupIds', 'paymentType', 'hidden', 'disabled', 'order', 'fieldIds']);
+const couponWrite = body => fields(body, ['code', 'type', 'value', 'minimumOrderCents', 'productIds', 'enabled', 'startsAt', 'expiresAt', 'maxRedemptions']);
+const cosmeticWrite = body => fields(body, ['slug', 'name', 'description', 'type', 'visibility', 'status', 'assetUrl', 'previewImageUrl', 'storeProductId',
+    'tags', 'supportedMinecraftVersions', 'availableFrom', 'availableUntil', 'sortOrder', 'renderMetadata']);
+const address = value => value == null ? value : fields(value, ['fullName', 'company', 'addressLine1', 'addressLine2', 'postalCode', 'city', 'region', 'countryCode', 'vatId']);
 
 export const storeApi = {
-    config: () => request('/config'),
-    categories: () => request('/categories'),
-    products: (categoryId = '') =>
-        request(
-            `/products?description=true&fields=true${categoryId ? `&categoryId=${encodeURIComponent(categoryId)}` : ''}`
-        ),
-    billingProfile: () => request('/me/billing-profile', {}, true),
-    updateBillingProfile: (profile) =>
-        request('/me/billing-profile', { method: 'PUT', body: JSON.stringify(profile) }, true),
-    createOrder: (order) => request('/orders', { method: 'POST', body: JSON.stringify(order) }, true),
-    orders: (page = 0, size = 20) => request(`/orders?page=${page}&size=${size}`, {}, true),
-    order: (orderId) => request(`/orders/${encodeURIComponent(orderId)}`, {}, true),
-    createPayment: (orderId, gatewayId, paymentMethodId) =>
-        request('/payments', { method: 'POST', body: JSON.stringify({ orderId, gatewayId, paymentMethodId }) }, true),
-    payments: (page = 0, size = 20) => request(`/payments?page=${page}&size=${size}`, {}, true),
-    entitlements: () => request('/entitlements', {}, true),
-    credits: () => request('/me/credits', {}, true),
+    config: () => catalog('getConfig'),
+    categories: () => catalog('listCategories'),
+    products: (categoryId = '') => catalog('listProducts', { categoryId: optional(categoryId), includeDescription: true, includeFields: true, includeActions: false }),
+    billingProfile: () => customer('getBillingProfile'),
+    updateBillingProfile: profile => customer('updateBillingProfile', { email: profile.email, address: address(profile.address) }),
+    createOrder: order => customer('createOrder', {
+        ...fields(order, ['recipientUserId', 'termsAccepted', 'digitalContentConsent', 'idempotencyKey']),
+        products: order.products?.map(product => ({ productId: product.productId, quantity: product.quantity,
+            fields: product.fields?.map(field => fields(field, ['identifier', 'value'])) }))
+    }),
+    orders: (page = 0, size = 20) => customer('listOrders', { page, size }),
+    order: orderId => customer('getOrder', { orderId }),
+    createPayment: (orderId, gatewayId, paymentMethodId) => customer('createPayment', { orderId, gatewayId, paymentMethodId: optional(paymentMethodId) }),
+    payment: paymentId => customer('getPayment', { paymentId }),
+    payments: (page = 0, size = 20) => customer('listPayments', { page, size }),
+    entitlements: () => customer('listEntitlements'),
+    credits: () => customer('getCredits'),
     admin: {
-        overview: () => request('/admin/overview', {}, true),
-        analytics: (days = 30) => request('/admin/analytics?days=' + encodeURIComponent(days), {}, true),
-        settings: () => request('/admin/settings', {}, true),
-        saveSettings: (body) => request('/admin/settings', { method: 'PUT', body: JSON.stringify(body) }, true),
-        categories: () => request('/admin/categories', {}, true),
-        saveCategory: (id, body) =>
-            request(
-                id ? `/admin/categories/${encodeURIComponent(id)}` : '/admin/categories',
-                {
-                    method: id ? 'PUT' : 'POST',
-                    body: JSON.stringify(body)
-                },
-                true
-            ),
-        deleteCategory: (id) => request(`/admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
-        fields: () => request('/admin/fields', {}, true),
-        saveField: (id, body) =>
-            request(
-                id ? `/admin/fields/${encodeURIComponent(id)}` : '/admin/fields',
-                {
-                    method: id ? 'PUT' : 'POST',
-                    body: JSON.stringify(body)
-                },
-                true
-            ),
-        deleteField: (id) => request(`/admin/fields/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
-        products: () => request('/admin/products', {}, true),
-        saveProduct: (id, body) =>
-            request(
-                id ? `/admin/products/${encodeURIComponent(id)}` : '/admin/products',
-                {
-                    method: id ? 'PUT' : 'POST',
-                    body: JSON.stringify(body)
-                },
-                true
-            ),
-        deleteProduct: (id) => request(`/admin/products/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
-        coupons: () => request('/admin/coupons', {}, true),
-        saveCoupon: (id, body) =>
-            request(
-                id ? `/admin/coupons/${encodeURIComponent(id)}` : '/admin/coupons',
-                {
-                    method: id ? 'PUT' : 'POST',
-                    body: JSON.stringify(body)
-                },
-                true
-            ),
-        deleteCoupon: (id) => request(`/admin/coupons/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
-        orders: (page = 0, size = 25, status = '') =>
-            request(
-                `/admin/orders?page=${page}&size=${size}${status ? `&status=${encodeURIComponent(status)}` : ''}`,
-                {},
-                true
-            ),
-        order: (id) => request(`/admin/orders/${encodeURIComponent(id)}`, {}, true),
-        cancelOrder: (id) => request(`/admin/orders/${encodeURIComponent(id)}:cancel`, { method: 'POST' }, true),
-        fulfillOrder: (id) => request(`/admin/orders/${encodeURIComponent(id)}:fulfill`, { method: 'POST' }, true),
-        payments: (page = 0, size = 25, status = '') =>
-            request(
-                `/admin/payments?page=${page}&size=${size}${status ? `&status=${encodeURIComponent(status)}` : ''}`,
-                {},
-                true
-            ),
-        customers: (page = 0, size = 25, query = '') =>
-            request(
-                `/admin/customers?page=${page}&size=${size}${query ? `&q=${encodeURIComponent(query)}` : ''}`,
-                {},
-                true
-            ),
-        customer: (id, limit = 50) =>
-            request(`/admin/customers/${encodeURIComponent(id)}?limit=${encodeURIComponent(limit)}`, {}, true),
-        adjustCredits: (id, deltaCents) =>
-            request(
-                `/admin/customers/${encodeURIComponent(id)}/credits`,
-                {
-                    method: 'POST',
-                    body: JSON.stringify({ deltaCents })
-                },
-                true
-            ),
-        entitlements: (page = 0, size = 25) => request(`/admin/entitlements?page=${page}&size=${size}`, {}, true),
-        auditLogs: ({ page = 0, size = 25, q = '', action = '', entityType = '', actorUserId = '' } = {}) => {
-            const params = new URLSearchParams({ page: String(page), size: String(size) });
-            if (q) params.set('q', q);
-            if (action) params.set('action', action);
-            if (entityType) params.set('entityType', entityType);
-            if (actorUserId) params.set('actorUserId', actorUserId);
-            return request(`/admin/audit-logs?${params}`, {}, true);
-        },
-        cosmetics: ({ page = 0, size = 25, q = '', type = '', visibility = '', status = '' } = {}) => {
-            const params = new URLSearchParams({ page: String(page), size: String(size) });
-            if (q) params.set('q', q);
-            if (type) params.set('type', type);
-            if (visibility) params.set('visibility', visibility);
-            if (status) params.set('status', status);
-            return request(`/admin/cosmetics?${params}`, {}, true);
-        },
-        cosmetic: (id) => request(`/admin/cosmetics/${encodeURIComponent(id)}`, {}, true),
-        saveCosmetic: (id, body) =>
-            request(
-                id ? `/admin/cosmetics/${encodeURIComponent(id)}` : '/admin/cosmetics',
-                { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) },
-                true
-            ),
-        deleteCosmetic: (id) => request(`/admin/cosmetics/${encodeURIComponent(id)}`, { method: 'DELETE' }, true),
-        cosmeticOwners: (id, page = 0, size = 25) =>
-            request(`/admin/cosmetics/${encodeURIComponent(id)}/owners?page=${page}&size=${size}`, {}, true),
-        grantCosmetic: (id, userId, body = {}) =>
-            request(
-                `/admin/cosmetics/${encodeURIComponent(id)}/owners/${encodeURIComponent(userId)}`,
-                { method: 'PUT', body: JSON.stringify(body) },
-                true
-            ),
-        revokeCosmetic: (id, userId) =>
-            request(
-                `/admin/cosmetics/${encodeURIComponent(id)}/owners/${encodeURIComponent(userId)}`,
-                { method: 'DELETE' },
-                true
-            )
+        overview: () => admin('getOverview'),
+        analytics: (days = 30) => admin('getAnalytics', { days }),
+        settings: () => admin('getSettings'),
+        saveSettings: body => admin('updateSettings', {
+            ...fields(body, ['checkoutEnabled', 'currency', 'merchant', 'invoicePrefix', 'pricesIncludeVat', 'defaultVatRateBasisPoints']),
+            paymentMethods: body.paymentMethods?.map(value => fields(value, ['id', 'enabled', 'order']))
+        }),
+        categories: () => admin('listCategories').then(value => value.categories),
+        saveCategory: (id, body) => id ? admin('updateCategory', { id, category: categoryWrite(body) }) : admin('createCategory', categoryWrite(body)),
+        deleteCategory: id => admin('deleteCategory', { id }),
+        fields: () => admin('listFields').then(value => value.fields),
+        saveField: (id, body) => id ? admin('updateField', { id, field: fieldWrite(body) }) : admin('createField', fieldWrite(body)),
+        deleteField: id => admin('deleteField', { id }),
+        products: () => admin('listProducts').then(value => value.products),
+        saveProduct: (id, body) => id ? admin('updateProduct', { id, product: productWrite(body) }) : admin('createProduct', productWrite(body)),
+        deleteProduct: id => admin('deleteProduct', { id }),
+        coupons: () => admin('listCoupons').then(value => value.coupons),
+        saveCoupon: (id, body) => id ? admin('updateCoupon', { id, coupon: couponWrite(body) }) : admin('createCoupon', couponWrite(body)),
+        deleteCoupon: id => admin('deleteCoupon', { id }),
+        orders: (page = 0, size = 25, status = '') => admin('listOrders', { page, size, status: optional(status) }),
+        order: id => admin('getOrder', { id }),
+        cancelOrder: id => admin('cancelOrder', { id }),
+        fulfillOrder: id => admin('fulfillOrder', { id }),
+        payments: (page = 0, size = 25, status = '') => admin('listPayments', { page, size, status: optional(status) }),
+        customers: (page = 0, size = 25, query = '') => admin('listCustomers', { page, size, query: optional(query) }),
+        customer: (id, limit = 50) => admin('getCustomer', { id, limit }),
+        adjustCredits: (customerId, deltaCents) => admin('adjustCredits', { customerId, deltaCents }),
+        entitlements: (page = 0, size = 25) => admin('listEntitlements', { page, size }),
+        auditLogs: ({ page = 0, size = 25, q = '', action = '', entityType = '', actorUserId = '' } = {}) => admin('listAuditLogs', {
+            page, size, query: optional(q), action: optional(action), entityType: optional(entityType), actorUserId: optional(actorUserId)
+        }),
+        cosmetics: ({ page = 0, size = 25, q = '', type = '', visibility = '', status = '' } = {}) => cosmetics('listCosmetics', {
+            page, size, query: optional(q), type: optional(type), visibility: optional(visibility), status: optional(status)
+        }),
+        cosmetic: cosmeticId => cosmetics('getCosmetic', { cosmeticId }),
+        saveCosmetic: (cosmeticId, body) => cosmetics(cosmeticId ? 'updateCosmetic' : 'createCosmetic', { cosmeticId: optional(cosmeticId), cosmetic: cosmeticWrite(body) }),
+        deleteCosmetic: cosmeticId => cosmetics('deleteCosmetic', { cosmeticId }),
+        cosmeticOwners: (cosmeticId, page = 0, size = 25) => cosmetics('listOwners', { cosmeticId, page, size }),
+        grantCosmetic: (cosmeticId, userId, body = {}) => cosmetics('grantCosmetic', {
+            cosmeticId, userId, ...fields(body, ['source', 'sourceReference', 'expiresAt'])
+        }),
+        revokeCosmetic: (cosmeticId, userId) => cosmetics('revokeCosmetic', { cosmeticId, userId })
     }
 };
 
 export function formatStorePrice(cents, currency = 'EUR') {
+    if (cents == null || cents === '') return 'Nicht verfügbar';
     const amount = Number(cents);
-    if (!Number.isFinite(amount) || !currency) return 'Nicht verfügbar';
-    try {
-        return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(amount / 100);
-    } catch {
-        return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(amount / 100)} ${currency}`;
-    }
+    if (!Number.isSafeInteger(amount) || !currency) return 'Nicht verfügbar';
+    try { return new Intl.NumberFormat('de-DE', { style: 'currency', currency }).format(amount / 100); }
+    catch { return `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(amount / 100)} ${currency}`; }
 }

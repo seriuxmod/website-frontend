@@ -17,6 +17,13 @@ const base64Url = (bytes) =>
         .replaceAll('=', '');
 
 export const getAccessToken = () => sessionStorage.getItem('seriux_access_token');
+// Opaque account/login boundary for discarding late private RPC results; not a credential.
+export const getSessionGeneration = () => sessionEpoch;
+export function assertSessionGeneration(expected) {
+    if (expected !== sessionEpoch) {
+        const error = new Error('Website-Sitzung wurde gewechselt.'); error.name = 'AbortError'; throw error;
+    }
+}
 const getIdentityToken = () => sessionStorage.getItem('seriux_identity_token');
 
 const buildUser = (username, playerId) => ({
@@ -165,29 +172,34 @@ export async function refreshAuthenticatedSession() {
 }
 
 export async function fetchAuthenticatedUser() {
+    const generation = getSessionGeneration();
     await refreshAuthenticatedSession();
+    if (generation !== getSessionGeneration()) return null;
     const accessToken = getAccessToken();
     const tokenUser = getAuthenticatedUser();
     if (!tokenUser || !accessToken) return null;
 
     try {
         const { profile } = await identityCall(() => publicUsers.getPublicUser({ playerId: tokenUser.playerId }));
+        if (generation !== getSessionGeneration()) return null;
         const username = profile.username;
         const playerId = profile.playerId;
         const user = buildUser(username, playerId);
         try {
             const permissionSnapshot = await identityCall(() => permissions.getMyPermissions({}));
+            if (generation !== getSessionGeneration()) return null;
             user.permissions = permissionSnapshot.effectivePermissions ?? [];
             user.groups = (permissionSnapshot.assignedGroups ?? [])
                 .filter((assignment) => assignment.active)
                 .map((assignment) => assignment.groupKey);
         } catch {
+            if (generation !== getSessionGeneration()) return null;
             // The identity remains usable if the permission service is temporarily unavailable.
         }
         sessionStorage.setItem(PROFILE_KEY, JSON.stringify(user));
         return user;
     } catch {
-        return tokenUser;
+        return generation === getSessionGeneration() ? tokenUser : null;
     }
 }
 
@@ -203,6 +215,12 @@ export const hasAnyPermission = (user = getAuthenticatedUser(), ...permissions) 
 
 export const isForumAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.includes('forum.admin'));
+
+export const isSkinAdministrator = (user = getAuthenticatedUser()) =>
+    hasAnyPermission(user, 'forum.skins.read', 'forum.skins.import', 'forum.skins.ingest', 'forum.skins.publish');
+
+export const isContentAdministrator = (user = getAuthenticatedUser()) =>
+    isSkinAdministrator(user) || hasAnyPermission(user, 'forum.translations.read', 'forum.translations.write', 'forum.translations.publish');
 
 export const isStoreAdministrator = (user = getAuthenticatedUser()) =>
     Boolean(user?.permissions?.some((permission) => permission === 'store.admin' || permission.startsWith('store.')));
@@ -229,13 +247,17 @@ export const isUserAdministrator = (user = getAuthenticatedUser()) =>
 
 export const isAdministrator = (user = getAuthenticatedUser()) =>
     isForumAdministrator(user) ||
+    isContentAdministrator(user) ||
+    isSocialAdministrator(user) ||
     isStoreAdministrator(user) ||
     isTeamAdministrator(user) ||
-    isSocialAdministrator(user) ||
     isStatusAdministrator(user) ||
     isUserAdministrator(user);
 
 export async function authenticatedFetch(input, init = {}) {
+    const { retryUnauthorized = true, expectedSessionGeneration = sessionEpoch, ...fetchInit } = init;
+    const checkSession = () => assertSessionGeneration(expectedSessionGeneration);
+    checkSession();
     let accessToken = getAccessToken();
     if (
         sessionStorage.getItem(REFRESH_TOKEN_KEY) &&
@@ -245,16 +267,17 @@ export async function authenticatedFetch(input, init = {}) {
     }
 
     const request = (token) => {
-        const headers = new Headers(init.headers);
+        checkSession();
+        const headers = new Headers(fetchInit.headers);
         if (token) headers.set('Authorization', `Bearer ${token}`);
         return fetch(input, {
-            ...init,
+            ...fetchInit,
             headers
         });
     };
 
     let response = await request(accessToken);
-    if (response.status === 401 && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
+    if (retryUnauthorized && response.status === 401 && sessionStorage.getItem(REFRESH_TOKEN_KEY)) {
         accessToken = await refreshAccessToken();
         if (accessToken) response = await request(accessToken);
     }

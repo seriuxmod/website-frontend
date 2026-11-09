@@ -3,6 +3,7 @@ import { FaArrowRight, FaBell, FaComments, FaGear, FaMagnifyingGlass, FaMessage,
 import { Link, useSearchParams } from 'react-router-dom';
 import { beginLogin, fetchAuthenticatedUser, getAuthenticatedUser, isForumAdministrator } from '../../lib/auth';
 import { forumApi } from '../../lib/forumApi';
+import { AdminEmptyState } from '../../components/admin/AdminUi.jsx';
 import {
     ForumError,
     ForumIcon,
@@ -118,6 +119,7 @@ export default function ForumIndex() {
             {!state.loading && !state.error && !state.results && (
                 <div className="grid gap-7 xl:grid-cols-[minmax(0,1fr)_340px]">
                     <div className="space-y-7">
+                        {!categories.length && <AdminEmptyState title="Keine öffentlichen Foren freigegeben" text="Für diese Ansicht meldet das Backend keine sichtbaren Bereiche. Daraus wird kein leerer globaler Datenbestand abgeleitet." />}
                         {categories.map((category) => (
                             <section className="forum-panel overflow-hidden rounded-3xl" key={category.id}>
                                 <header className="border-b border-white/[.06] px-6 py-5 sm:px-7">
@@ -171,10 +173,11 @@ export default function ForumIndex() {
                                     </span>
                                 </Link>
                             ))}
+                            {!state.latest.length && <div className="p-5"><AdminEmptyState title="Keine sichtbaren aktuellen Themen" text="Sobald für diese Ansicht Themen freigegeben sind, erscheinen sie hier." /></div>}
                         </section>
                         <section className="forum-panel rounded-3xl p-6">
                             <p className="text-xs font-bold uppercase tracking-[.16em] text-zinc-600">
-                                Community-Statistik
+                                Bestand der sichtbaren Foren
                             </p>
                             <div className="mt-5 grid grid-cols-2 gap-3">
                                 <Stat

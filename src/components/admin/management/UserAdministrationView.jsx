@@ -2,16 +2,25 @@ import { Navigate } from 'react-router-dom';
 import { getAuthenticatedUser, hasAnyPermission, hasPermission } from '../../../lib/auth';
 import PlayersAdminView from './PlayersAdminView';
 import PermissionsAdminView from './PermissionsAdminView';
-import { BansAdminView, ModerationOverviewView, ModerationSettingsView, MutesAdminView } from './ModerationAdminViews';
+import { AdminEmptyState } from '../AdminUi';
 
 const VIEWS = {
     players: PlayersAdminView,
     permissions: PermissionsAdminView,
-    moderation: ModerationOverviewView,
-    bans: BansAdminView,
-    mutes: MutesAdminView,
-    'moderation-settings': ModerationSettingsView
+    moderation: ModerationUnavailable,
+    bans: ModerationUnavailable,
+    mutes: ModerationUnavailable,
+    'moderation-settings': ModerationUnavailable
 };
+
+function ModerationUnavailable() {
+    return <section aria-label="Moderation noch nicht implementiert">
+        <p className="eyebrow">MODERATION · NOCH NICHT IMPLEMENTIERT</p>
+        <h2 className="mt-3 font-display text-3xl font-bold">Ban- und Mute-Verwaltung</h2>
+        <div className="mt-6"><AdminEmptyState title="Noch nicht mit dem Backend verbunden"
+            text="Der aktuelle User-Service bietet keine Ban-/Mute-Fälle, Fallhistorien oder Sanktionsgründe an. Hier werden deshalb keine erfundenen Zähler oder wirksamen Verwaltungsaktionen angezeigt. Kontozugriffssperren sind davon getrennt in der Spielerverwaltung verfügbar." /></div>
+    </section>;
+}
 
 function canOpen(user, module) {
     switch (module) {

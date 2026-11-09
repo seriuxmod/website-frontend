@@ -638,7 +638,11 @@ function formValues(cosmetic) {
         storeProductId: cosmetic?.storeProductId || '',
         tags: listValue(cosmetic?.tags),
         versions: listValue(cosmetic?.supportedMinecraftVersions),
-        sortOrder: String(cosmetic?.sortOrder || 0)
+        sortOrder: String(cosmetic?.sortOrder || 0),
+        // Preserve server rendering and availability when editing unrelated catalog text.
+        renderMetadata: cosmetic?.renderMetadata ?? null,
+        availableFrom: cosmetic?.availableFrom ?? null,
+        availableUntil: cosmetic?.availableUntil ?? null
     };
 }
 function toPayload(value) {
@@ -654,8 +658,9 @@ function toPayload(value) {
         storeProductId: value.storeProductId.trim() || null,
         tags: splitList(value.tags),
         supportedMinecraftVersions: splitList(value.versions),
-        availableFrom: null,
-        availableUntil: null,
+        availableFrom: value.availableFrom,
+        availableUntil: value.availableUntil,
+        renderMetadata: value.renderMetadata,
         sortOrder: Number(value.sortOrder) || 0
     };
 }
