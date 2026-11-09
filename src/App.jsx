@@ -32,8 +32,7 @@ import VerifyEmail from './pages/platform/VerifyEmail';
 import ResetPassword from './pages/platform/ResetPassword';
 import ForgotPassword from './pages/platform/ForgotPassword';
 import SystemStatus from './pages/status/SystemStatus';
-import SocialHub from './pages/social/SocialHub';
-import PresenceReporter from './components/PresenceReporter';
+import SocialHub from './pages/social/SocialWorkspace';
 
 const AdminModulePreview = lazy(() => import('./pages/admin/AdminModulePreview'));
 const AdminCommerceView = lazy(() => import('./components/admin/commerce/AdminCommerceView'));
@@ -48,7 +47,6 @@ export default function App() {
     useScrollToTop();
     return (
         <div className="app-shell min-h-screen">
-            <PresenceReporter />
             <Navbar />
             <Routes>
                 <Route path="/" element={<Home />} exact />
@@ -59,6 +57,8 @@ export default function App() {
                 <Route path="/clans" element={<SocialHub initialTab="clans" />} />
                 <Route path="/friends" element={<SocialHub initialTab="friends" />} />
                 <Route path="/party" element={<SocialHub initialTab="party" />} />
+                <Route path="/chat" element={<SocialHub initialTab="chat" />} />
+                <Route path="/notifications" element={<SocialHub initialTab="notifications" />} />
                 <Route path="/forum" element={<ForumIndex />} />
                 <Route path="/forum/:forumId" element={<ForumBoard />} />
                 <Route path="/forum/topic/:topicId" element={<ForumTopic />} />

@@ -1,4 +1,5 @@
-import { authenticatedFetch } from './auth';
+import { authenticatedFetch } from './auth.js';
+import { grpcSocial } from './grpc/socialClients.js';
 
 const SOCIAL_API = 'https://api.seriuxmod.net/api/v1/social';
 
@@ -24,7 +25,7 @@ async function request(path, options = {}, authenticated = true) {
     return payload;
 }
 
-export const socialApi = {
+const legacySocialApi = {
     presence: {
         heartbeat: () => request('/presence/heartbeat', { method: 'POST' }),
         public: (userId, days = 112, signal) =>
@@ -179,6 +180,10 @@ export const socialApi = {
             })
     }
 };
+
+// Existing admin work remains out of this user-facing Phase-2 transport change.
+// No new admin/internal RPC is exposed through the browser gateway.
+export const socialApi = { ...grpcSocial, admin: legacySocialApi.admin };
 
 function adminParams(values) {
     const params = new URLSearchParams();

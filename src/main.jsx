@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.jsx';
 import './index.css';
+import { SocialProvider } from './lib/SocialContext.jsx';
 
 function restoreGitHubPagesRoute() {
     const shellUrl = new URL(window.location.href);
@@ -34,7 +35,7 @@ restoreGitHubPagesRoute();
 ReactDOM.createRoot(document.getElementById('app')).render(
     <React.StrictMode>
         <BrowserRouter>
-            <App />
+            <SocialProvider><App /></SocialProvider>
         </BrowserRouter>
     </React.StrictMode>
 );

@@ -32,6 +32,7 @@ import {
 import { communityItems } from '../config/community';
 import { adminGroupIsActive, adminItemIsActive, adminNavigationGroups } from '../config/adminNavigation';
 import NavbarNotifications from './NavbarNotifications';
+import NavbarSocial from './NavbarSocial.jsx';
 import PlayerSearch from './PlayerSearch';
 import { publicProfilePath } from '../lib/profileRoutes';
 
@@ -428,6 +429,7 @@ export default function Navbar() {
                 />
 
                 <NavbarNotifications user={user} onUnreadChange={setUnreadForumNotifications} />
+                <NavbarSocial />
 
                 {user ? (
                     <div ref={profileRef} className="relative ml-1 hidden sm:block">

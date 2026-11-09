@@ -153,7 +153,11 @@ export declare type PublicUserProfile = Message<"seriuxmod.user.v1.PublicUserPro
   memberSince?: Timestamp | undefined;
 
   /**
-   * @generated from field: google.protobuf.Timestamp last_online = 5;
+   * Kept for wire compatibility, no longer populated. Login timestamps bypass
+   * Social privacy preferences; use PresenceService/GetPublicPresence instead.
+   *
+   * @generated from field: google.protobuf.Timestamp last_online = 5 [deprecated = true];
+   * @deprecated
    */
   lastOnline?: Timestamp | undefined;
 };

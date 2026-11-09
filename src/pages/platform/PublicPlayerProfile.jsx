@@ -23,6 +23,8 @@ import { forumApi } from '../../lib/forumApi';
 import { getAuthenticatedUser } from '../../lib/auth';
 import { playerAvatar, userApi } from '../../lib/userApi';
 import { socialApi } from '../../lib/socialApi';
+import { presenceDescription, presenceLabels } from '../../lib/presenceDisplay.js';
+import { useSocial } from '../../lib/SocialContext.jsx';
 
 const PRESENCE_LABELS = {
     CLIENT: 'Client',
@@ -140,6 +142,7 @@ function activityLevel(events = 0) {
 }
 
 export default function PublicPlayerProfile() {
+    const { state: socialState } = useSocial();
     const { profileSlug } = useParams();
     const username = profileSlug?.startsWith('@') ? profileSlug.slice(1) : profileSlug;
     const [state, setState] = useState({
@@ -172,12 +175,12 @@ export default function PublicPlayerProfile() {
                 const profile = /^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$/i.test(username)
                     ? await userApi.byId(username, signal) : await userApi.byUsername(username, signal);
                 const directoryPlayer = null;
+                if (signal?.aborted) return;
                 setState({ loading: false, profile, directoryPlayer, hasSeriuxProfile: true,
                     forum: null, presence: null, friends: [], error: '' });
 
-                const [forum, presence, friendRelations] = await Promise.all([
+                const [forum, friendRelations] = await Promise.all([
                     forumApi.userProfile(profile.playerId, 6).catch(() => null),
-                    socialApi.presence.public(profile.playerId, 112, signal).catch(() => null),
                     socialApi.profiles.friends(profile.playerId, 100, signal).catch(() => null)
                 ]);
                 const friendProfiles = await userApi
@@ -194,19 +197,19 @@ export default function PublicPlayerProfile() {
                     })
                     .filter(Boolean);
                 if (signal?.aborted) return;
-                setState({
+                setState(current => ({
                     loading: false,
                     profile,
                     directoryPlayer,
                     hasSeriuxProfile: true,
                     forum,
-                    presence,
+                    presence: current.profile?.playerId === profile.playerId ? current.presence : null,
                     friends,
                     friendsAvailable: friendRelations !== null,
                     error: ''
-                });
+                }));
             } catch (error) {
-                if (error.name !== 'AbortError') {
+                if (!signal?.aborted && error.name !== 'AbortError') {
                     setState({
                         loading: false,
                         profile: null,
@@ -230,6 +233,18 @@ export default function PublicPlayerProfile() {
         load(controller.signal);
         return () => controller.abort();
     }, [load]);
+
+    useEffect(() => {
+        const playerId = state.profile?.playerId;
+        if (!playerId) return;
+        const controller = new AbortController();
+        const refresh = () => socialApi.presence.public(playerId, 112, controller.signal)
+            .then(presence => { if (!controller.signal.aborted) setState(current => current.profile?.playerId === playerId ? { ...current, presence } : current); })
+            .catch(() => { if (!controller.signal.aborted) setState(current => current.profile?.playerId === playerId ? { ...current, presence: null } : current); });
+        void refresh();
+        const interval = !socialState.userId ? window.setInterval(refresh, 60_000) : null;
+        return () => { controller.abort(); if (interval) window.clearInterval(interval); };
+    }, [state.profile?.playerId, socialState.updatedAt, socialState.userId]);
 
     useEffect(() => {
         if (!state.profile || !identityRef.current) return undefined;
@@ -292,8 +307,7 @@ export default function PublicPlayerProfile() {
     const { profile, directoryPlayer, hasSeriuxProfile, forum, presence, friends } = state;
     const color = rankColor(profile.rank?.color);
     const online = Boolean(presence?.online);
-    const surfaces = presence?.surfaces || [];
-    const lastOnline = presence?.lastSeenAt || profile.lastOnline;
+    const lastOnline = presence?.lastSeenAt;
     const weeks = activityWeeks(presence?.activity);
     const nameHistory = [...(directoryPlayer?.history?.names || [])].sort(historySort);
     const skinHistory = [...(directoryPlayer?.history?.skins || [])].sort(historySort);
@@ -353,7 +367,7 @@ export default function PublicPlayerProfile() {
                                     />
                                 </span>
                                 {online
-                                    ? `Online · ${surfaces.map((surface) => PRESENCE_LABELS[surface] || surface).join(', ')}`
+                                    ? presenceDescription(presence)
                                     : hasSeriuxProfile
                                       ? (presence ? 'Offline' : 'Präsenz nicht verfügbar')
                                       : 'Nicht verknüpft'}
@@ -631,10 +645,10 @@ export default function PublicPlayerProfile() {
                                 <span
                                     className={`flex items-center gap-2 text-[10px] font-bold ${online ? 'text-emerald-300' : 'text-zinc-600'}`}
                                 >
-                                    <FaCircle className="text-[6px]" /> {online ? 'Online' : 'Offline'}
+                                    <FaCircle className="text-[6px]" /> {presenceLabels[presence.status] || 'Status unbekannt'}
                                 </span>
                             </header>
-                            <div className="mt-6 overflow-x-auto pb-2">
+                            {!presence.activity?.length ? <p className="mt-5 text-sm text-zinc-500">Keine öffentlichen Aktivitätsdaten verfügbar.</p> : <><div className="mt-6 overflow-x-auto pb-2">
                                 <div className="min-w-[570px]">
                                     <div className="mb-2 grid grid-cols-[34px_1fr] gap-3 text-[9px] font-bold uppercase tracking-[.1em] text-zinc-700">
                                         <span />
@@ -679,7 +693,7 @@ export default function PublicPlayerProfile() {
                                     <span key={value} className={`h-3 w-3 rounded-[3px] ${activityLevel(value)}`} />
                                 ))}
                                 <span>Mehr</span>
-                            </div>
+                            </div></>}
                         </section>
                     )}
 
